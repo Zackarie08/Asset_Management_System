@@ -10,9 +10,11 @@ app.use(express.json());
 // ✅ routes
 const inventoryRoutes = require("./routes/inventory");
 const authRoutes = require("./routes/auth");
+const logsRoutes = require("./routes/logs");
 
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/logs", logsRoutes);
 
 // ✅ test route
 app.get("/", (req, res) => {
@@ -24,8 +26,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
-
-// Logs
-const logsRoutes = require("./routes/logs");
-
-app.use("/api/logs", logsRoutes);

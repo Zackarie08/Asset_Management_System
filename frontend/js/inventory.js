@@ -62,7 +62,8 @@ function saveInvItem() {
       quantity_limit: limit,
       price,
       unit, 
-      remarks
+      remarks,
+      user_id: currentUser.user_id
     })
   })
   .then(() => {
@@ -77,7 +78,11 @@ function withdrawItem(id, qty) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ id, qty })
+    body: JSON.stringify({ 
+      id, 
+      qty,
+      user_id: currentUser.user_id
+    })
   })
   .then(() => {
     renderInventory();

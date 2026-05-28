@@ -41,35 +41,22 @@ function doLogin() {
     },
     body: JSON.stringify({ email, password })
   })
-  .then(res => res.json())
-  .then(data => {
-
-    if (!data.user) {
-      document.getElementById("login-error").innerText = "Invalid email or password";
-      return;
-    }
-
-    // ✅ Save user
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    // ✅ Set current user (for your UI system)
-    currentUser = {
-      name: data.user.name,
-      role: data.user.role,
-      initials: data.user.name.substring(0,2).toUpperCase()
-    };
-
-    // ✅ Hide login
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-
-    // ✅ Load UI
-    buildSidebar();
-    initAllModules();
+  .then(res => {
+    if (!res.ok) throw new Error("Invalid login");
+    return res.json();
   })
-  .catch(err => {
-    console.error(err);
-    document.getElementById("login-error").innerText = "Server error";
+  .then(user => {
+    currentUser = user;
+
+    console.log("Logged in user:", currentUser);
+
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+
+    initApp();
+  })
+  .catch(() => {
+    showToast("Invalid login","t-error");
   });
 }
 

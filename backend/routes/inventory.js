@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { name, qty, category, quantity_limit, price, unit, remarks } = req.body;
+    const { name, qty, category, quantity_limit, price, unit, remarks, user_id } = req.body;
 
     await pool.query(
       "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks) VALUES ($1, $2, $3, $4, $5, $6, $7)",
@@ -27,7 +27,7 @@ router.post("/", async (req, res) => {
 
     // ✅ LOG INSIDE TRY
     await logAction({
-      user_id: 1,
+      user_id: user_id,
       action_type: "ADD",
       module: "INVENTORY",
       description: `Added ${name}`,
@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
 // ✅ WITHDRAW STOCK ONLY
 router.post("/withdraw", async (req, res) => {
   try {
-    const { id, qty } = req.body;
+    const { id, qty, user_id } = req.body;
 
     await pool.query(
       "UPDATE inventory_gen SET current_quantity = current_quantity - $1 WHERE inventory_gen_id = $2",
@@ -55,7 +55,7 @@ router.post("/withdraw", async (req, res) => {
     );
 
     await logAction({
-      user_id: 1,
+      user_id: user_id,
       action_type: "UPDATE",
       module: "INVENTORY",
       description: `Withdraw ${qty}`,
@@ -81,10 +81,11 @@ router.delete("/:id", async (req, res) => {
     );
 
     await logAction({
-      user_id: 1,
+      user_id: user_id,
       action_type: "DELETE",
       module: "INVENTORY",
-      description: `Deleted item ID ${req.params.id}`
+      description: `Deleted item ID ${req.params.id}`,
+      reference_type: "MANUAL"
     });
 
     res.sendStatus(200);
