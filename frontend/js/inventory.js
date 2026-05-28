@@ -13,13 +13,20 @@ async function renderInventory() {
     if (isLow) low++;
 
     const tr = document.createElement("tr");
+    tr.className = 'tr-clickable';
+
+    tr.addEventListener('click', () => {
+      openDP('inventory', item.id, tr);
+    });
 
     tr.innerHTML = `
       <td>${item.name}</td>
       <td>${item.category}</td>
       <td>${item.qty}</td>
+      <td>${isLow ? "⚠️ LOW" : "OK"}</td>
       <td>
-        ${isLow ? "⚠️ LOW" : "OK"}
+        <button onclick="event.stopPropagation(); openWithdraw(${item.id})">➖</button>
+        <button onclick="event.stopPropagation(); deleteItem(${item.id})">🗑️</button>
       </td>
     `;
     
@@ -95,23 +102,31 @@ async function openWithdraw(id) {
   openM('m-withdraw');
 }
 
-async function doWithdraw() {
-  const res = await fetch("http://localhost:3000/api/inventory");
-  const items = await res.json();
-  const item = items.find(i => i.id === withdrawItemId);
-  if (!item) return;
+function doWithdraw() {
   const qty = parseInt(document.getElementById('wd-qty').value) || 0;
-  const by  = document.getElementById('wd-by').value.trim() || currentUser.name;
-  const rem = document.getElementById('wd-remarks').value.trim();
-  if (qty <= 0) { showToast('Enter a valid quantity','t-error'); return; }
-  if (qty > item.qty) { showToast('Insufficient stock!','t-error'); return; }
-  item.qty -= qty;
-  closeM('m-withdraw');
-  renderInventory();
-  addLog('WITHDRAW', 'Inventory', `${by} withdrew ${qty} ${item.unit} of "${item.name}". ${rem ? 'Reason: '+rem : ''}`, 'Manual');
-  showToast(`Withdrew ${qty} ${item.unit} of ${item.name}`, 't-success');
-  if (dpOpen && dpCurrentType === 'inventory' && dpCurrentId === withdrawItemId) dpInventory(withdrawItemId);
+
+  if (qty <= 0) {
+    showToast('Enter a valid quantity','t-error');
+    return;
+  }
+
+  fetch("http://localhost:3000/api/inventory/withdraw", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      id: withdrawItemId,
+      qty: qty
+    })
+  })
+  .then(() => {
+    closeM('m-withdraw');
+    renderInventory();
+    showToast('Withdraw successful','t-success');
+  });
 }
+
 
 
 async function dpInventory(id) {

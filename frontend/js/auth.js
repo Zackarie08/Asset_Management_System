@@ -78,23 +78,3 @@ function doLogout() {
   location.reload();
 }
 ``
-
-window.onload = function() {
-  const savedUser = localStorage.getItem("user");
-
-  if (savedUser) {
-    const user = JSON.parse(savedUser);
-
-    currentUser = {
-      name: user.name,
-      role: user.role,
-      initials: user.name.substring(0,2).toUpperCase()
-    };
-
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-
-    buildSidebar();
-    initAllModules();
-  }
-};
