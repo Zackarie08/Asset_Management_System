@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AssetCore — Asset Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🏢</div>
+      <div>
+        <div class="login-logo-text">AssetCore</div>
+        <div class="login-logo-sub">Asset Management System</div>
+      </div>
+    </div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in to access your workspace</div>
+    <label class="login-label">Select Account</label>
+    <input id="email" class="login-input" placeholder="Email">
+  <input id="password" type="password" class="login-input" placeholder="Password">
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🏢</div>
+      <div>
+        <div class="sb-logo-name">AssetCore</div>
+        <div class="sb-logo-sub">v2.0 · Enterprise</div>
+      </div>
+    </div>
+
+    <div class="sb-role-badge">
+      <div class="sb-role-avatar" id="sb-avatar">MA</div>
+      <div>
+        <div class="sb-role-name" id="sb-uname">Maria Alonzo</div>
+      </div>
+      <span class="sb-role-tag" id="sb-role-tag">Admin</span>
+    </div>
+
+    <div class="sb-section-label">Navigation</div>
+    <nav class="sb-nav" id="sb-nav">
+      <!-- Dynamically rendered based on role -->
+    </nav>
+
+    <div class="sb-footer">
+      <div class="logout-item" onclick="doLogout()">
+        <span class="nav-icon">🚪</span> Sign Out
+      </div>
+    </div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header class="topbar" id="topbar" style="left:var(--sb-width)">
+    <div class="topbar-breadcrumb">
+      <span class="tb-crumb-parent" id="tb-parent">AssetCore</span>
+      <span class="tb-crumb-sep">›</span>
+      <span class="tb-crumb-current" id="tb-current">Dashboard</span>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="tb-search">🔍&nbsp; Quick search...</div>
+    <div class="tb-btn" title="Notifications">🔔<span class="notif-dot"></span></div>
+    <div class="tb-btn" title="Help">❓</div>
+    <div class="tb-user">
+      <div class="tb-avatar" id="tb-avatar">MA</div>
+      <div>
+        <div class="tb-user-name" id="tb-uname">Maria Alonzo</div>
+        <div class="tb-user-role" id="tb-urole">Administrator</div>
+      </div>
+      <span class="tb-role-pill admin" id="tb-role-pill">Admin</span>
+    </div>
+  </header>
+
+  <!-- MAIN BODY -->
+  <div class="app-body" id="app-body">
+    <div class="main-content">
+
+      <!-- ════════════════ DASHBOARD ════════════════ -->
+      <section class="page active" id="page-dashboard">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Dashboard</div>
+            <div class="pg-sub">System overview — <span id="dash-date"></span></div>
+          </div>
+          <div class="pg-actions">
+            <button class="btn btn-outline btn-sm" onclick="refreshDashboard()">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-icon si-blue">📦</div>
+            <div>
+              <div class="stat-num" id="dc-total">—</div>
+              <div class="stat-label">Total Inventory Items</div>
+              <div class="stat-delta d-up" id="dc-total-d">—</div>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon si-red">⚠️</div>
+            <div>
+              <div class="stat-num" id="dc-low">—</div>
+              <div class="stat-label">Low Stock Items</div>
+              <div class="stat-delta d-dn" id="dc-low-d">—</div>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon si-green">💻</div>
+            <div>
+              <div class="stat-num" id="dc-laptops">—</div>
+              <div class="stat-label">Active Laptops</div>
+              <div class="stat-delta d-up" id="dc-laptops-d">—</div>
+            </div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon si-amber">🛒</div>
+            <div>
+              <div class="stat-num" id="dc-orders">—</div>
+              <div class="stat-label">Pending Orders</div>
+              <div class="stat-delta d-dn" id="dc-orders-d">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">⚠️ Low Stock Alerts</div>
+              <span class="panel-count" id="dash-low-ct">—</span>
+            </div>
+            <div id="dash-low-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">📦 Pending Orders</div>
+              <span class="panel-count" id="dash-order-ct">—</span>
+            </div>
+            <div id="dash-order-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">🖥️ Laptops for Maintenance</div>
+              <span class="panel-count" id="dash-maint-ct">—</span>
+            </div>
+            <div id="dash-maint-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">🚗 Vehicle Maintenance Alerts</div>
+              <span class="panel-count" id="dash-veh-ct">—</span>
+            </div>
+            <div id="dash-veh-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ INVENTORY MANAGEMENT ════════════════ -->
+      <section class="page" id="page-inventory">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Inventory Management</div>
+            <div class="pg-sub">Stock levels · Click any row to view details</div>
+          </div>
+          <div class="pg-actions" id="inv-actions"></div>
+        </div>
+
+        <!-- Category filter tabs -->
+        <div class="flex-gap" style="margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm cat-filter active" onclick="filterInventory('all',this)">All</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Office Supplies',this)">Office Supplies</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Pantry Supplies',this)">Pantry Supplies</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Finance Documents',this)">Finance Documents</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Company Event Supplies',this)">Event Supplies</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Wine',this)">Wine</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('First Aid Kit',this)">First Aid</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Medicine Kit',this)">Medicine Kit</button>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📋 Inventory Items</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="inv-low-ct">0 low stock</span>
+              <span class="badge b-slate" id="inv-total-ct">0 items</span>
+              <button class="btn btn-ghost btn-sm" onclick="showToast('Exported','t-success')">📥 Export</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Item Name</th><th>Category</th><th>Quantity</th>
+                <th>Unit</th><th>Location</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="inv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ OFFICE FURNITURE ════════════════ -->
+      <section class="page" id="page-furniture">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Office Furniture</div>
+            <div class="pg-sub">Furniture assets · Click any row for details</div>
+          </div>
+          <div class="pg-actions" id="fur-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🪑 Furniture Register</div>
+            <span class="badge b-slate" id="fur-ct">0 items</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Asset Name</th><th>Qty</th><th>Date Purchased</th>
+                <th>Supplier</th><th>Price (₱)</th><th>Location</th><th>Condition</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="fur-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ IT SUPPLIES ════════════════ -->
+      <section class="page" id="page-itsupplies">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">IT Supplies</div>
+            <div class="pg-sub">Hardware & peripherals · Serial tracked · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="it-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🖨️ IT Supply Inventory</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="it-low-ct">0 low stock</span>
+              <span class="badge b-slate" id="it-total-ct">0 items</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Asset Name</th><th>Serial / Model</th><th>Quantity</th>
+                <th>Reorder Level</th><th>Warranty</th><th>Supplier</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="it-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ LAPTOPS ════════════════ -->
+      <section class="page" id="page-laptops">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Laptop Management</div>
+            <div class="pg-sub">Lifecycle, assignment, maintenance · Click row for full details</div>
+          </div>
+          <div class="pg-actions" id="lp-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">💻 Laptop Inventory</div>
+            <span class="badge b-slate" id="lp-ct">0 units</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Asset No.</th><th>Description</th><th>Assigned To</th>
+                <th>Status</th><th>Warranty</th><th>Maintenance</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="lp-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ PURCHASE ORDERS ════════════════ -->
+      <section class="page" id="page-orders">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Purchase Orders</div>
+            <div class="pg-sub">Stock ordering & delivery tracking · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="po-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🛒 Orders</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="po-delay-ct">0 delayed</span>
+              <span class="badge b-slate" id="po-total-ct">0 orders</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>PO #</th><th>Item Name</th><th>Category</th><th>Qty</th>
+                <th>Order Date</th><th>Expected Delivery</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="po-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ VEHICLE MANAGEMENT ════════════════ -->
+      <section class="page" id="page-vehicles">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Vehicle Management</div>
+            <div class="pg-sub">Fleet management & maintenance scheduling · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="veh-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🚗 Fleet Register</div>
+            <span class="badge b-slate" id="veh-ct">0 vehicles</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Vehicle Name</th><th>Type</th><th>Plate Number</th>
+                <th>Assigned To</th><th>Status</th><th>Next Maintenance</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="veh-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ GLOBE MOBILE PLAN ════════════════ -->
+      <section class="page" id="page-globe">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Globe Mobile Plans</div>
+            <div class="pg-sub">Employee mobile subscriptions · Admin only · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="globe-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📱 Mobile Plan Registry</div>
+            <div class="card-actions">
+              <span class="badge b-amber" id="globe-renew-ct">0 renewing soon</span>
+              <span class="badge b-slate" id="globe-ct">0 plans</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Employee Name</th><th>Mobile Number</th><th>Plan Name</th>
+                <th>Monthly Cost</th><th>Renewal Date</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="globe-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ M365 LICENSES ════════════════ -->
+      <section class="page" id="page-m365">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">M365 Licenses</div>
+            <div class="pg-sub">Microsoft 365 subscriptions · Admin only · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="m365-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">💼 License Registry</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="m365-exp-ct">0 expired</span>
+              <span class="badge b-slate" id="m365-ct">0 licenses</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Assigned Email</th><th>License Type</th><th>Category</th>
+                <th>Expiry Date</th><th>Monthly Cost</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="m365-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ SYSTEM LOGS ════════════════ -->
+      <section class="page" id="page-logs">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">System Logs</div>
+            <div class="pg-sub">Full audit trail — all user actions · Click row for details</div>
+          </div>
+          <div class="pg-actions">
+            <button class="btn btn-outline btn-sm" onclick="clearLogs()">🗑️ Clear Logs</button>
+            <button class="btn btn-outline btn-sm" onclick="showToast('Exported to CSV','t-success')">📥 Export</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📜 Activity Log</div>
+            <span class="badge b-slate" id="log-ct">0 entries</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Timestamp</th><th>User</th><th>Action</th>
+                <th>Module</th><th>Description</th><th>Reference</th>
+              </tr></thead>
+              <tbody id="log-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- end main-content -->
+  </div><!-- end app-body -->
+
+  <!-- ════════════════ DETAIL PANEL ════════════════ -->
+  <aside class="detail-panel" id="detail-panel">
+    <div class="dp-topbar">
+      <div class="dp-top-left">
+        <div class="dp-icon" id="dp-icon">📄</div>
+        <div>
+          <div class="dp-title" id="dp-title">Details</div>
+          <div class="dp-subtitle" id="dp-subtitle">Select a record to view</div>
+        </div>
+      </div>
+      <button class="dp-close" onclick="closeDP()">✕</button>
+    </div>
+    <div class="dp-body" id="dp-body"></div>
+    <div class="dp-footer" id="dp-footer" style="display:none"></div>
+  </aside>
+
+</div><!-- end #app -->
+
+<!-- ══════════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════════ -->
+
+<!-- Withdraw Inventory -->
+<div class="modal-overlay" id="m-withdraw">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">➖ Withdraw Item</div>
+      <button class="modal-close" onclick="closeM('m-withdraw')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--amber-50);border:1.5px solid var(--amber-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#92400e">Item: <span id="wd-item-name">—</span></div>
+        <div style="font-size:12px;color:#b45309;margin-top:2px">Current Stock: <span id="wd-current">—</span></div>
+      </div>
+      <div class="form-grp">
+        <label>Quantity to Withdraw *</label>
+        <input class="form-ctrl" id="wd-qty" type="number" min="1" placeholder="e.g. 5"/>
+      </div>
+      <div class="form-grp">
+        <label>Withdrawn By</label>
+        <input class="form-ctrl" id="wd-by" placeholder="Employee name"/>
+      </div>
+      <div class="form-grp">
+        <label>Purpose / Remarks</label>
+        <textarea class="form-ctrl" id="wd-remarks" rows="2" placeholder="Reason for withdrawal..."></textarea>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-withdraw')">Cancel</button>
+        <button class="btn btn-amber" onclick="doWithdraw()">➖ Withdraw</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Inventory Item (Admin) -->
+<div class="modal-overlay" id="m-add-inv">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="m-add-inv-title">➕ Add Inventory Item</div>
+      <button class="modal-close" onclick="closeM('m-add-inv')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="inv-f-name" placeholder="Item name"/></div>
+        <div class="form-grp"><label>Category *</label>
+          <select class="form-ctrl" id="inv-f-cat">
+            <option>Office Supplies</option><option>Pantry Supplies</option>
+            <option>Finance Documents</option><option>Company Event Supplies</option>
+            <option>Wine</option><option>First Aid Kit</option><option>Medicine Kit</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="inv-f-qty" type="number" min="0" placeholder="0"/></div>
+        <div class="form-grp"><label>Unit</label>
+          <select class="form-ctrl" id="inv-f-unit">
+            <option>Piece</option><option>Ream</option><option>Pack</option><option>Box</option>
+            <option>Bottle</option><option>Roll</option><option>Set</option><option>Kit</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Reorder Level</label><input class="form-ctrl" id="inv-f-reorder" type="number" min="0" placeholder="5"/></div>
+        <div class="form-grp"><label>Price / Unit (₱)</label><input class="form-ctrl" id="inv-f-price" type="number" placeholder="0.00"/></div>
+      </div>
+      <div class="form-grp"><label>Location</label><input class="form-ctrl" id="inv-f-loc" placeholder="Storage location"/></div>
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="inv-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="inv-f-contact" placeholder="email or phone"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="inv-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-inv')">Cancel</button>
+        <button class="btn btn-green" onclick="saveInvItem()">✅ Save Item</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Purchase Order Modal -->
+<div class="modal-overlay" id="m-add-po">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="m-po-title">📦 Create Purchase Order</div>
+      <button class="modal-close" onclick="closeM('m-add-po')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="po-f-item" placeholder="Item to order"/></div>
+        <div class="form-grp"><label>Category</label>
+          <select class="form-ctrl" id="po-f-cat">
+            <option>Office Supplies</option><option>Pantry Supplies</option>
+            <option>Finance Documents</option><option>Company Event Supplies</option>
+            <option>Wine</option><option>First Aid Kit</option><option>Medicine Kit</option>
+            <option>IT Supplies</option><option>Furniture</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="po-f-qty" type="number" min="1" placeholder="1"/></div>
+        <div class="form-grp"><label>Unit</label>
+          <select class="form-ctrl" id="po-f-unit">
+            <option>Piece</option><option>Ream</option><option>Pack</option><option>Box</option>
+            <option>Bottle</option><option>Roll</option><option>Set</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier *</label><input class="form-ctrl" id="po-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-f-price" type="number" placeholder="0.00"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Order Date</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
+        <div class="form-grp"><label>Expected Delivery</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
+      </div>
+      <div class="form-grp"><label>Notes</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Special instructions..."></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-po')">Cancel</button>
+        <button class="btn btn-green" onclick="savePO()">📦 Create Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Furniture -->
+<div class="modal-overlay" id="m-add-fur">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🪑 Add Furniture</div>
+      <button class="modal-close" onclick="closeM('m-add-fur')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Asset Name *</label><input class="form-ctrl" id="fur-f-name" placeholder="e.g. Executive Chair"/></div>
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="fur-f-qty" type="number" min="1" placeholder="1"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Date Purchased</label><input class="form-ctrl" id="fur-f-date" type="date"/></div>
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="fur-f-supplier" placeholder="Supplier name"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Price / Unit (₱)</label><input class="form-ctrl" id="fur-f-price" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Location</label><input class="form-ctrl" id="fur-f-loc" placeholder="Office location"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Condition</label>
+          <select class="form-ctrl" id="fur-f-cond">
+            <option>New</option><option>Good</option><option>Fair</option><option>For Repair</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="fur-f-contact" placeholder="email or phone"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Notes..."></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-fur')">Cancel</button>
+        <button class="btn btn-green" onclick="saveFurniture()">✅ Add Furniture</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add IT Supply -->
+<div class="modal-overlay" id="m-add-it">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🖨️ Add IT Supply</div>
+      <button class="modal-close" onclick="closeM('m-add-it')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Asset Name *</label><input class="form-ctrl" id="it-f-name" placeholder="e.g. HP Toner CF280A"/></div>
+        <div class="form-grp"><label>Serial / Model *</label><input class="form-ctrl" id="it-f-serial" placeholder="SN or model no."/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="it-f-qty" type="number" min="0" placeholder="0"/></div>
+        <div class="form-grp"><label>Reorder Level</label><input class="form-ctrl" id="it-f-reorder" type="number" min="0" placeholder="5"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Warranty Expiry</label><input class="form-ctrl" id="it-f-warranty" type="date"/></div>
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="it-f-supplier" placeholder="Supplier name"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="it-f-contact" placeholder="email or phone"/></div>
+        <div class="form-grp"><label>Supplier Website</label><input class="form-ctrl" id="it-f-website" placeholder="https://..."/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="it-f-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-it')">Cancel</button>
+        <button class="btn btn-green" onclick="saveITSupply()">✅ Add Supply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Laptop -->
+<div class="modal-overlay" id="m-add-lp">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <div class="modal-title">💻 Add Laptop</div>
+      <button class="modal-close" onclick="closeM('m-add-lp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Asset Number</label><input class="form-ctrl" id="lp-f-asset" placeholder="LPT-YYYY-###"/></div>
+        <div class="form-grp"><label>Brand / Description *</label><input class="form-ctrl" id="lp-f-desc" placeholder="e.g. Dell Latitude 5510"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Serial Number</label><input class="form-ctrl" id="lp-f-serial" placeholder="Serial number"/></div>
+        <div class="form-grp"><label>Brand</label>
+          <select class="form-ctrl" id="lp-f-brand">
+            <option>Dell</option><option>HP</option><option>Lenovo</option><option>Apple</option>
+            <option>Acer</option><option>ASUS</option><option>Microsoft</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>User Assigned</label><input class="form-ctrl" id="lp-f-user" placeholder="Name or Unassigned"/></div>
+        <div class="form-grp"><label>Department</label>
+          <select class="form-ctrl" id="lp-f-dept">
+            <option>IT Department</option><option>Finance</option><option>HR</option>
+            <option>Operations</option><option>Executive</option><option>Marketing</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Status</label>
+          <select class="form-ctrl" id="lp-f-status">
+            <option>Active</option><option>For Repair</option><option>Disposed</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Warranty Expiry</label><input class="form-ctrl" id="lp-f-warranty" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Purchase Price (₱)</label><input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Date Purchased</label><input class="form-ctrl" id="lp-f-bought" type="date"/></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-lp')">Cancel</button>
+        <button class="btn btn-green" onclick="saveLaptop()">✅ Add Laptop</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Maintenance Record -->
+<div class="modal-overlay" id="m-maint">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔧 Add Maintenance Record</div>
+      <button class="modal-close" onclick="closeM('m-maint')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af">Device: <span id="maint-name">—</span></div>
+        <div style="font-size:12px;color:#3b5bdb;margin-top:2px;font-family:var(--mono)">SN: <span id="maint-sn">—</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Check Date *</label><input class="form-ctrl" id="maint-date" type="date"/></div>
+        <div class="form-grp"><label>Technician</label><input class="form-ctrl" id="maint-tech" placeholder="Technician name"/></div>
+      </div>
+      <div class="form-grp"><label>Condition</label>
+        <select class="form-ctrl" id="maint-cond">
+          <option value="GOOD">✅ GOOD — Fully functional</option>
+          <option value="NEEDS REPAIR">🔴 NEEDS REPAIR — Issue found</option>
+        </select>
+      </div>
+      <div class="form-grp"><label>Remarks / Findings</label>
+        <textarea class="form-ctrl" id="maint-remarks" rows="3" placeholder="Describe condition, issues, actions taken..."></textarea>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-maint')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveMaintenance()">💾 Save Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Laptop User -->
+<div class="modal-overlay" id="m-assign">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd">
+      <div class="modal-title">👤 Assign User</div>
+      <button class="modal-close" onclick="closeM('m-assign')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--green-50);border:1.5px solid var(--green-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#166534">Laptop: <span id="assign-lp-name">—</span></div>
+      </div>
+      <div class="form-grp"><label>Assign To *</label><input class="form-ctrl" id="assign-user" placeholder="Full name"/></div>
+      <div class="form-grp"><label>Department</label>
+        <select class="form-ctrl" id="assign-dept">
+          <option>IT Department</option><option>Finance</option><option>HR</option>
+          <option>Operations</option><option>Executive</option><option>Marketing</option>
+        </select>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-assign')">Cancel</button>
+        <button class="btn btn-green" onclick="doAssign()">✅ Assign</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Vehicle -->
+<div class="modal-overlay" id="m-add-veh">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🚗 Add Vehicle</div>
+      <button class="modal-close" onclick="closeM('m-add-veh')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Vehicle Name *</label><input class="form-ctrl" id="veh-f-name" placeholder="e.g. Toyota Vios 2022"/></div>
+        <div class="form-grp"><label>Type</label>
+          <select class="form-ctrl" id="veh-f-type">
+            <option>Car</option><option>Motorcycle</option><option>Van</option><option>Truck</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Plate Number</label><input class="form-ctrl" id="veh-f-plate" placeholder="AAA 1234"/></div>
+        <div class="form-grp"><label>Assigned To</label><input class="form-ctrl" id="veh-f-assigned" placeholder="Driver name"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Status</label>
+          <select class="form-ctrl" id="veh-f-status">
+            <option>Active</option><option>For Maintenance</option><option>Out of Service</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Next Maintenance Date</label><input class="form-ctrl" id="veh-f-maint" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Year Model</label><input class="form-ctrl" id="veh-f-year" type="number" placeholder="2023"/></div>
+        <div class="form-grp"><label>OR/CR Expiry</label><input class="form-ctrl" id="veh-f-orcr" type="date"/></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-veh')">Cancel</button>
+        <button class="btn btn-green" onclick="saveVehicle()">✅ Add Vehicle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vehicle Maintenance Record -->
+<div class="modal-overlay" id="m-veh-maint">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔧 Vehicle Maintenance Record</div>
+      <button class="modal-close" onclick="closeM('m-veh-maint')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af">Vehicle: <span id="veh-maint-name">—</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Service Date *</label><input class="form-ctrl" id="vm-date" type="date"/></div>
+        <div class="form-grp"><label>Odometer (km)</label><input class="form-ctrl" id="vm-odo" type="number" placeholder="0"/></div>
+      </div>
+      <div class="form-grp"><label>Service Type</label>
+        <select class="form-ctrl" id="vm-type">
+          <option>Oil Change</option><option>Tire Rotation</option><option>Brake Service</option>
+          <option>Battery Replacement</option><option>General Checkup</option><option>Repair</option>
+        </select>
+      </div>
+      <div class="form-grp"><label>Cost (₱)</label><input class="form-ctrl" id="vm-cost" type="number" placeholder="0.00"/></div>
+      <div class="form-grp"><label>Next Maintenance Date</label><input class="form-ctrl" id="vm-next" type="date"/></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-veh-maint')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveVehicleMaint()">💾 Save Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Globe Mobile Plan Modal -->
+<div class="modal-overlay" id="m-add-globe">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📱 Add Mobile Plan</div>
+      <button class="modal-close" onclick="closeM('m-add-globe')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Employee Name *</label><input class="form-ctrl" id="globe-f-name" placeholder="Full name"/></div>
+        <div class="form-grp"><label>Mobile Number</label><input class="form-ctrl" id="globe-f-num" placeholder="09XX-XXX-XXXX"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Account Number</label><input class="form-ctrl" id="globe-f-acct" placeholder="Account no."/></div>
+        <div class="form-grp"><label>Plan Name</label><input class="form-ctrl" id="globe-f-plan" placeholder="e.g. Globe Postpaid Plan 999"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Monthly Cost (₱)</label><input class="form-ctrl" id="globe-f-cost" type="number" placeholder="0"/></div>
+        <div class="form-grp"><label>Data Allocation</label><input class="form-ctrl" id="globe-f-data" placeholder="e.g. 50GB"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Renewal Date</label><input class="form-ctrl" id="globe-f-renew" type="date"/></div>
+        <div class="form-grp"><label>Credit Limit (₱)</label><input class="form-ctrl" id="globe-f-credit" type="number" placeholder="0"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="globe-f-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-globe')">Cancel</button>
+        <button class="btn btn-green" onclick="saveGlobe()">✅ Add Plan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M365 License Modal -->
+<div class="modal-overlay" id="m-add-m365">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">💼 Add M365 License</div>
+      <button class="modal-close" onclick="closeM('m-add-m365')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Assigned Email *</label><input class="form-ctrl" id="m365-f-email" type="email" placeholder="user@company.com"/></div>
+        <div class="form-grp"><label>License Type</label>
+          <select class="form-ctrl" id="m365-f-type">
+            <option>Microsoft 365 Business Basic</option>
+            <option>Microsoft 365 Business Standard</option>
+            <option>Microsoft 365 Business Premium</option>
+            <option>Microsoft 365 Apps</option>
+            <option>Office 2021 (Perpetual)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Category</label>
+          <select class="form-ctrl" id="m365-f-cat">
+            <option>Subscription</option><option>Perpetual</option><option>Trial</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Expiry Date</label><input class="form-ctrl" id="m365-f-expiry" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Monthly Cost (₱)</label><input class="form-ctrl" id="m365-f-cost" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="m365-f-supplier" placeholder="e.g. Microsoft, CDRKing"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="m365-f-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-m365')">Cancel</button>
+        <button class="btn btn-green" onclick="saveM365()">✅ Add License</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>

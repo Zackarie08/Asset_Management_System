@@ -1,0 +1,3361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AssetCore — Asset Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   ROOT VARIABLES
+═══════════════════════════════════════════ */
+:root {
+  --navy-950: #060d1a;
+  --navy-900: #0c1829;
+  --navy-800: #0f2039;
+  --navy-700: #162847;
+  --navy-600: #1e3356;
+  --navy-400: #2f4d72;
+  --navy-300: #4a6890;
+  --navy-200: #7a9ab8;
+  --navy-100: #b8cfe0;
+
+  --blue-600: #2563eb;
+  --blue-500: #3b82f6;
+  --blue-400: #60a5fa;
+  --blue-100: #dbeafe;
+  --blue-50:  #eff6ff;
+
+  --amber-500: #f59e0b;
+  --amber-400: #fbbf24;
+  --amber-100: #fef3c7;
+  --amber-50:  #fffbeb;
+
+  --green-600: #16a34a;
+  --green-500: #22c55e;
+  --green-100: #dcfce7;
+  --green-50:  #f0fdf4;
+
+  --red-600:   #dc2626;
+  --red-500:   #ef4444;
+  --red-100:   #fee2e2;
+  --red-50:    #fef2f2;
+
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50:  #f8fafc;
+  --white:     #ffffff;
+
+  --sb-width: 252px;
+  --topbar-h: 60px;
+  --detail-w: 400px;
+
+  --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --radius-pill: 99px;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.08);
+  --shadow-xl: 0 20px 48px rgba(0,0,0,0.14), 0 8px 16px rgba(0,0,0,0.08);
+
+  --trans: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --trans-slow: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font);
+  background: var(--slate-100);
+  color: var(--slate-800);
+  line-height: 1.55;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+button { font-family: var(--font); cursor: pointer; border: none; }
+input, select, textarea { font-family: var(--font); outline: none; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--slate-400); }
+
+/* ═══════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════ */
+#login-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: linear-gradient(135deg, var(--navy-950) 0%, var(--navy-800) 50%, var(--navy-700) 100%);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.4s ease;
+}
+#login-screen::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(37,99,235,0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 20%, rgba(245,158,11,0.07) 0%, transparent 50%);
+  pointer-events: none;
+}
+.login-box {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 20px;
+  padding: 40px;
+  width: 420px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  animation: slideUp 0.5s cubic-bezier(0.34,1.3,0.64,1);
+}
+@keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+.login-logo {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+}
+.login-logo-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-400));
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 8px 24px rgba(37,99,235,0.4);
+}
+.login-logo-text { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+.login-logo-sub { color: var(--navy-100); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+.login-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.login-sub { font-size: 13px; color: var(--navy-200); margin-bottom: 28px; }
+.login-label { font-size: 11px; font-weight: 600; color: var(--navy-100); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+.login-input {
+  width: 100%; padding: 11px 14px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm); color: #fff; font-size: 14px;
+  margin-bottom: 16px; transition: all var(--trans);
+}
+.login-input:focus { border-color: var(--blue-400); background: rgba(255,255,255,0.09); }
+.login-input option { background: var(--navy-800); color: #fff; }
+.login-btn {
+  width: 100%; padding: 12px;
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-500));
+  color: #fff; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 700; letter-spacing: 0.2px;
+  transition: all var(--trans);
+  box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+  margin-top: 4px;
+}
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,0.45); }
+.login-btn:active { transform: translateY(0); }
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════ */
+#app { display: none; }
+#app.visible { display: flex; }
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: var(--sb-width);
+  background: linear-gradient(180deg, var(--navy-900) 0%, var(--navy-950) 100%);
+  display: flex; flex-direction: column;
+  z-index: 100;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.sb-logo {
+  display: flex; align-items: center; gap: 11px;
+  padding: 20px 18px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sb-logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-400));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+}
+.sb-logo-name { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
+.sb-logo-sub { font-size: 9.5px; color: var(--navy-300); letter-spacing: 0.8px; text-transform: uppercase; }
+
+.sb-role-badge {
+  margin: 12px 14px;
+  padding: 8px 12px;
+  background: rgba(37,99,235,0.12);
+  border: 1px solid rgba(37,99,235,0.2);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; gap: 8px;
+}
+.sb-role-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue-500), var(--blue-400));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.sb-role-name { font-size: 12px; font-weight: 600; color: var(--navy-100); }
+.sb-role-tag {
+  margin-left: auto;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 2px 7px; border-radius: var(--radius-pill);
+  text-transform: uppercase;
+}
+.sb-role-tag.admin { background: rgba(245,158,11,0.2); color: var(--amber-400); }
+.sb-role-tag.employee { background: rgba(34,197,94,0.15); color: var(--green-500); }
+
+.sb-section-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--navy-400);
+  padding: 16px 18px 6px;
+}
+
+.sb-nav { flex: 1; padding: 4px 10px; overflow-y: auto; }
+.sb-nav::-webkit-scrollbar { display: none; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: var(--radius-sm);
+  color: var(--navy-200); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all var(--trans);
+  margin-bottom: 1px; position: relative; user-select: none;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); color: #e2ebf5; }
+.nav-item.active {
+  background: rgba(37,99,235,0.15);
+  color: var(--blue-400);
+  font-weight: 600;
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px;
+  background: linear-gradient(var(--blue-400), var(--blue-600));
+  border-radius: 0 2px 2px 0;
+}
+.nav-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; background: var(--red-600);
+  color: #fff; font-size: 9.5px; font-weight: 700;
+  padding: 1px 6px; border-radius: var(--radius-pill); min-width: 18px; text-align: center;
+}
+.nav-admin-tag {
+  margin-left: auto;
+  font-size: 9px; font-weight: 700; padding: 1px 6px;
+  border-radius: var(--radius-pill); background: rgba(245,158,11,0.15);
+  color: var(--amber-400); letter-spacing: 0.3px;
+}
+
+.sb-footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 10px; }
+.logout-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: var(--radius-sm);
+  color: #f87171; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all var(--trans);
+}
+.logout-item:hover { background: rgba(239,68,68,0.1); }
+
+/* ═══════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════ */
+.topbar {
+  position: fixed; left: var(--sb-width); right: 0; top: 0;
+  height: var(--topbar-h);
+  background: var(--white);
+  border-bottom: 1px solid var(--slate-200);
+  display: flex; align-items: center; padding: 0 24px;
+  gap: 14px; z-index: 90;
+  box-shadow: var(--shadow-xs);
+}
+.topbar-breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+}
+.tb-crumb-parent { font-size: 13px; color: var(--slate-400); font-weight: 500; }
+.tb-crumb-sep { color: var(--slate-300); font-size: 12px; }
+.tb-crumb-current { font-size: 14px; font-weight: 700; color: var(--slate-800); }
+.topbar-spacer { flex: 1; }
+
+.tb-search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--slate-100); border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-sm); padding: 7px 12px;
+  font-size: 12.5px; color: var(--slate-400); width: 200px;
+  transition: all var(--trans); cursor: text;
+}
+.tb-search:hover { border-color: var(--slate-300); }
+
+.tb-btn {
+  width: 34px; height: 34px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--slate-100); border: 1.5px solid var(--slate-200);
+  cursor: pointer; font-size: 14px; position: relative;
+  transition: all var(--trans);
+}
+.tb-btn:hover { background: var(--slate-200); border-color: var(--slate-300); }
+.notif-dot {
+  position: absolute; top: 7px; right: 7px;
+  width: 6px; height: 6px; background: var(--red-500); border-radius: 50%;
+  border: 2px solid var(--white);
+}
+
+.tb-user {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 10px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background var(--trans);
+}
+.tb-user:hover { background: var(--slate-100); }
+.tb-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-400));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+}
+.tb-user-name { font-size: 13px; font-weight: 600; }
+.tb-user-role { font-size: 10.5px; color: var(--slate-400); }
+.tb-role-pill {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.3px;
+}
+.tb-role-pill.admin { background: var(--amber-100); color: #92400e; }
+.tb-role-pill.employee { background: var(--green-100); color: #166534; }
+
+/* ═══════════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════════ */
+.app-body {
+  margin-left: var(--sb-width);
+  margin-top: var(--topbar-h);
+  flex: 1; position: relative;
+  transition: margin-right var(--trans-slow);
+  min-height: calc(100vh - var(--topbar-h));
+}
+.app-body.panel-open { margin-right: var(--detail-w); }
+
+.main-content { padding: 24px; }
+
+/* ═══════════════════════════════════════════
+   PAGES
+═══════════════════════════════════════════ */
+.page { display: none; }
+.page.active { display: block; animation: pgIn 0.22s ease; }
+@keyframes pgIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* ═══════════════════════════════════════════
+   PAGE HEADER
+═══════════════════════════════════════════ */
+.pg-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.pg-title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--slate-900); }
+.pg-sub { font-size: 12.5px; color: var(--slate-400); margin-top: 2px; font-weight: 400; }
+.pg-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ═══════════════════════════════════════════
+   STAT CARDS
+═══════════════════════════════════════════ */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 14px; margin-bottom: 22px;
+}
+.stat-card {
+  background: var(--white); border-radius: var(--radius);
+  padding: 18px 20px; border: 1.5px solid var(--slate-200);
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; gap: 14px;
+  transition: transform var(--trans), box-shadow var(--trans);
+  cursor: default; position: relative; overflow: hidden;
+}
+.stat-card::after {
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 0 var(--radius) var(--radius) 0;
+}
+.stat-card.blue::after { background: var(--blue-500); }
+.stat-card.amber::after { background: var(--amber-500); }
+.stat-card.green::after { background: var(--green-500); }
+.stat-card.red::after { background: var(--red-500); }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.stat-icon {
+  width: 44px; height: 44px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.si-blue { background: var(--blue-50); }
+.si-amber { background: var(--amber-50); }
+.si-green { background: var(--green-50); }
+.si-red { background: var(--red-50); }
+
+.stat-num { font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -1.5px; }
+.stat-label { font-size: 12px; color: var(--slate-500); margin-top: 3px; font-weight: 500; }
+.stat-delta { font-size: 11px; margin-top: 4px; font-weight: 600; }
+.d-up { color: var(--green-600); } .d-dn { color: var(--red-600); }
+
+/* ═══════════════════════════════════════════
+   DASHBOARD PANELS
+═══════════════════════════════════════════ */
+.dash-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.dash-grid-full { grid-column: 1 / -1; }
+
+.panel {
+  background: var(--white); border-radius: var(--radius);
+  border: 1.5px solid var(--slate-200); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.panel-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1.5px solid var(--slate-100);
+}
+.panel-title { font-size: 13.5px; font-weight: 700; color: var(--slate-800); }
+.panel-count {
+  font-size: 10.5px; font-weight: 600; padding: 2px 8px;
+  border-radius: var(--radius-pill); background: var(--slate-100); color: var(--slate-500);
+}
+.panel-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 18px; border-bottom: 1px solid var(--slate-50);
+  transition: background var(--trans); cursor: default;
+}
+.panel-row:last-child { border-bottom: none; }
+.panel-row:hover { background: var(--slate-50); }
+.pr-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pr-dot.red { background: var(--red-500); box-shadow: 0 0 0 3px var(--red-100); }
+.pr-dot.amber { background: var(--amber-500); box-shadow: 0 0 0 3px var(--amber-100); }
+.pr-dot.blue { background: var(--blue-500); box-shadow: 0 0 0 3px var(--blue-100); }
+.pr-dot.green { background: var(--green-500); box-shadow: 0 0 0 3px var(--green-100); }
+.pr-name { font-size: 13px; font-weight: 600; flex: 1; }
+.pr-meta { font-size: 11px; color: var(--slate-400); margin-top: 1px; }
+
+/* ═══════════════════════════════════════════
+   CARD / TABLE CONTAINER
+═══════════════════════════════════════════ */
+.card {
+  background: var(--white); border-radius: var(--radius);
+  border: 1.5px solid var(--slate-200); box-shadow: var(--shadow-sm);
+  overflow: hidden; margin-bottom: 18px;
+}
+.card-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 1.5px solid var(--slate-100);
+  flex-wrap: wrap; gap: 10px;
+}
+.card-title { font-size: 13.5px; font-weight: 700; }
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ═══════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════ */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  background: var(--slate-50); padding: 10px 16px;
+  text-align: left; font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  color: var(--slate-400); border-bottom: 1.5px solid var(--slate-200);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 12px 16px; border-bottom: 1px solid var(--slate-100);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+.tr-clickable { cursor: pointer; transition: background var(--trans); }
+.tr-clickable:hover td { background: #f8faff; }
+.tr-clickable.selected td {
+  background: var(--blue-50);
+  border-bottom-color: #dbeafe;
+}
+.tr-clickable.selected td:first-child { border-left: 3px solid var(--blue-500); }
+.tr-warn td { background: #fffbf0; }
+.tr-warn.tr-clickable:hover td { background: #fff7e6; }
+.tr-danger td { background: var(--red-50); }
+.tr-danger.tr-clickable:hover td { background: #fee2e2; }
+.td-mono { font-family: var(--mono); font-size: 11.5px; color: var(--slate-500); }
+.td-strong { font-weight: 700; color: var(--slate-800); }
+.td-muted { color: var(--slate-400); font-size: 12px; }
+
+/* ═══════════════════════════════════════════
+   BADGES / STATUS
+═══════════════════════════════════════════ */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: var(--radius-pill); white-space: nowrap; letter-spacing: 0.1px;
+}
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.b-green { background: var(--green-100); color: #166534; }
+.b-green::before { background: var(--green-500); }
+.b-red { background: var(--red-100); color: #991b1b; }
+.b-red::before { background: var(--red-500); }
+.b-amber { background: var(--amber-100); color: #92400e; }
+.b-amber::before { background: var(--amber-500); }
+.b-blue { background: var(--blue-100); color: #1e40af; }
+.b-blue::before { background: var(--blue-500); }
+.b-slate { background: var(--slate-100); color: var(--slate-600); }
+.b-slate::before { background: var(--slate-400); }
+.b-purple { background: #f3e8ff; color: #6b21a8; }
+.b-purple::before { background: #a855f7; }
+.b-none::before { display: none; }
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  font-size: 12.5px; font-weight: 700; cursor: pointer;
+  border: none; transition: all var(--trans);
+  white-space: nowrap; font-family: var(--font); letter-spacing: 0.1px;
+}
+.btn:active { transform: scale(0.97); }
+.btn-sm { padding: 5px 10px; font-size: 11.5px; border-radius: var(--radius-xs); }
+.btn-xs { padding: 4px 8px; font-size: 11px; border-radius: 5px; }
+
+.btn-primary { background: var(--blue-600); color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
+.btn-primary:hover { background: #1d4ed8; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+.btn-green { background: var(--green-600); color: #fff; box-shadow: 0 2px 8px rgba(22,163,74,0.2); }
+.btn-green:hover { background: #15803d; }
+.btn-amber { background: var(--amber-500); color: #fff; box-shadow: 0 2px 8px rgba(245,158,11,0.25); }
+.btn-amber:hover { background: var(--amber-400); }
+.btn-red { background: var(--red-600); color: #fff; box-shadow: 0 2px 8px rgba(220,38,38,0.18); }
+.btn-red:hover { background: #b91c1c; }
+.btn-outline { background: transparent; color: var(--slate-700); border: 1.5px solid var(--slate-200); }
+.btn-outline:hover { background: var(--slate-100); border-color: var(--slate-300); }
+.btn-ghost { background: transparent; color: var(--slate-500); }
+.btn-ghost:hover { background: var(--slate-100); color: var(--slate-700); }
+.btn-supplier { background: var(--blue-50); color: var(--blue-600); border: 1.5px solid var(--blue-100); }
+.btn-supplier:hover { background: var(--blue-100); }
+.btn-warning { background: var(--amber-50); color: #92400e; border: 1.5px solid var(--amber-100); }
+.btn-warning:hover { background: var(--amber-100); }
+
+/* ═══════════════════════════════════════════
+   DETAIL PANEL
+═══════════════════════════════════════════ */
+.detail-panel {
+  position: fixed; top: var(--topbar-h); right: 0; bottom: 0;
+  width: var(--detail-w);
+  background: var(--white);
+  border-left: 1.5px solid var(--slate-200);
+  box-shadow: -8px 0 32px rgba(0,0,0,0.08);
+  z-index: 80;
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform var(--trans-slow);
+  overflow: hidden;
+}
+.detail-panel.open { transform: translateX(0); }
+
+.dp-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1.5px solid var(--slate-100);
+  background: var(--slate-50); flex-shrink: 0;
+}
+.dp-top-left { display: flex; align-items: center; gap: 10px; }
+.dp-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.dp-title { font-size: 13.5px; font-weight: 800; color: var(--slate-800); letter-spacing: -0.3px; }
+.dp-subtitle { font-size: 11px; color: var(--slate-400); margin-top: 1px; }
+
+.dp-close {
+  width: 28px; height: 28px; border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--slate-400);
+  background: var(--slate-200); border: none;
+  transition: all var(--trans); flex-shrink: 0;
+}
+.dp-close:hover { background: var(--red-100); color: var(--red-600); }
+
+.dp-body { flex: 1; overflow-y: auto; padding: 18px; }
+
+/* Detail sections */
+.dp-section { margin-bottom: 18px; }
+.dp-section-hd {
+  font-size: 10px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--slate-400);
+  margin-bottom: 10px; padding-bottom: 7px;
+  border-bottom: 1px solid var(--slate-100);
+  display: flex; align-items: center; gap: 6px;
+}
+.dp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.dp-field {
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm); padding: 9px 12px;
+}
+.dp-field.full { grid-column: 1 / -1; }
+.dp-label { font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+.dp-value { font-size: 13px; font-weight: 600; color: var(--slate-800); line-height: 1.4; }
+.dp-value.mono { font-family: var(--mono); font-size: 12px; color: var(--slate-600); }
+.dp-value.muted { color: var(--slate-400); font-weight: 400; font-style: italic; }
+
+/* Supplier card */
+.supplier-card {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1.5px solid var(--blue-100); border-radius: var(--radius);
+  padding: 14px;
+}
+.sc-name { font-size: 14px; font-weight: 800; color: #1e40af; margin-bottom: 3px; }
+.sc-note { font-size: 11.5px; color: #3b5bdb; margin-bottom: 12px; line-height: 1.5; }
+.sc-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: var(--blue-600);
+  background: var(--white); border: 1.5px solid var(--blue-100);
+  padding: 6px 12px; border-radius: var(--radius-xs);
+  cursor: pointer; transition: all var(--trans);
+}
+.sc-link:hover { background: var(--blue-50); border-color: var(--blue-400); }
+
+/* Maint history */
+.mh-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.mh-item {
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.mh-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.mh-dot.good { background: var(--green-500); }
+.mh-dot.repair { background: var(--red-500); }
+.mh-cond { font-size: 12px; font-weight: 700; }
+.mh-cond.good { color: var(--green-600); }
+.mh-cond.repair { color: var(--red-600); }
+.mh-date { font-size: 11px; color: var(--slate-400); font-family: var(--mono); }
+.mh-remarks { font-size: 12px; color: var(--slate-600); margin-top: 3px; }
+
+/* Status bar in panel */
+.dp-status-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm); padding: 11px 14px; margin-bottom: 12px;
+}
+.dp-status-label { font-size: 12px; color: var(--slate-400); margin-left: 4px; }
+
+/* Warning / delay bars */
+.dp-alert {
+  display: flex; align-items: center; gap: 10px;
+  border-radius: var(--radius-sm); padding: 11px 14px; margin-bottom: 12px;
+}
+.dp-alert.warning { background: var(--amber-50); border: 1.5px solid var(--amber-100); }
+.dp-alert.danger { background: var(--red-50); border: 1.5px solid var(--red-100); }
+.dp-alert.info { background: var(--blue-50); border: 1.5px solid var(--blue-100); }
+.dp-alert-text { font-size: 12.5px; font-weight: 600; }
+.dp-alert.warning .dp-alert-text { color: #92400e; }
+.dp-alert.danger .dp-alert-text { color: #991b1b; }
+.dp-alert.info .dp-alert-text { color: #1e40af; }
+
+.dp-action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.dp-footer {
+  padding: 14px 18px; border-top: 1.5px solid var(--slate-100);
+  background: var(--slate-50); flex-shrink: 0;
+}
+
+/* Progress bar */
+.prog-bar-wrap { margin: 8px 0; }
+.prog-bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--slate-400); margin-bottom: 5px; }
+.prog-bar-track { height: 6px; background: var(--slate-200); border-radius: 3px; overflow: hidden; }
+.prog-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+/* ═══════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(10,20,40,0.55); z-index: 500;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+  width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+  animation: modalPop 0.25s cubic-bezier(0.34,1.3,0.64,1);
+}
+.modal-lg { max-width: 640px; }
+@keyframes modalPop { from { opacity:0; transform:scale(0.9) translateY(12px); } to { opacity:1; transform:none; } }
+.modal-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; border-bottom: 1.5px solid var(--slate-100);
+}
+.modal-title { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
+.modal-close {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--slate-500);
+  background: var(--slate-100); border: none; transition: all var(--trans);
+}
+.modal-close:hover { background: var(--red-100); color: var(--red-600); }
+.modal-body { padding: 20px 22px; }
+
+/* ═══════════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════════ */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grp { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.form-grp label { font-size: 11px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.4px; }
+.form-ctrl {
+  padding: 9px 12px; border: 1.5px solid var(--slate-200); border-radius: var(--radius-sm);
+  font-size: 13.5px; font-family: var(--font); color: var(--slate-800);
+  background: var(--white); transition: all var(--trans);
+}
+.form-ctrl:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
+select.form-ctrl { cursor: pointer; }
+textarea.form-ctrl { resize: vertical; line-height: 1.5; }
+.form-footer {
+  display: flex; gap: 9px; justify-content: flex-end;
+  padding-top: 14px; border-top: 1.5px solid var(--slate-100); margin-top: 4px;
+}
+.form-note { font-size: 11.5px; color: var(--slate-400); margin-top: 6px; font-style: italic; }
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 600; }
+.toast {
+  display: flex; align-items: center; gap: 11px;
+  background: var(--white); border: 1.5px solid var(--slate-200);
+  border-radius: 10px; padding: 12px 16px; min-width: 280px;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn 0.28s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes toastIn { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:none; } }
+.toast-icon { font-size: 16px; }
+.toast-msg { font-size: 13px; font-weight: 600; flex: 1; }
+.toast.t-success { border-left: 3px solid var(--green-500); }
+.toast.t-error   { border-left: 3px solid var(--red-500); }
+.toast.t-warning { border-left: 3px solid var(--amber-500); }
+.toast.t-info    { border-left: 3px solid var(--blue-500); }
+
+/* ═══════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════ */
+.empty-state {
+  text-align: center; padding: 48px 24px; color: var(--slate-400);
+}
+.empty-state .es-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-state .es-title { font-size: 14px; font-weight: 700; color: var(--slate-500); margin-bottom: 4px; }
+.empty-state .es-sub { font-size: 12.5px; }
+
+/* ═══════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════ */
+.flex-gap { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.text-muted { color: var(--slate-400); }
+.font-mono { font-family: var(--mono); }
+.nowrap { white-space: nowrap; }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  :root { --sb-width: 0px; --detail-w: 100%; }
+  .sidebar { display: none; }
+  .dash-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .form-row { grid-template-columns: 1fr; }
+  .main-content { padding: 14px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ═══════════════════════════════════════════
+   LOGS PAGE
+═══════════════════════════════════════════ */
+.log-action-badge {
+  font-size: 10.5px; font-weight: 700; padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+.la-create  { background: var(--green-100); color: #166534; }
+.la-update  { background: var(--blue-100); color: #1e40af; }
+.la-delete  { background: var(--red-100); color: #991b1b; }
+.la-deliver { background: var(--amber-100); color: #92400e; }
+.la-withdraw{ background: #f3e8ff; color: #6b21a8; }
+.la-system  { background: var(--slate-100); color: var(--slate-600); }
+
+/* ═══════════════════════════════════════════
+   VEHICLE MODULE EXTRAS
+═══════════════════════════════════════════ */
+.vehicle-type-icon { font-size: 20px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🏢</div>
+      <div>
+        <div class="login-logo-text">AssetCore</div>
+        <div class="login-logo-sub">Asset Management System</div>
+      </div>
+    </div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in to access your workspace</div>
+    <label class="login-label">Select Account</label>
+    <select class="login-input" id="login-user-select">
+      <option value="admin">Maria Alonzo — Administrator</option>
+      <option value="emp1">Juan Reyes — IT Technician</option>
+      <option value="emp2">Ana Cruz — Finance Officer</option>
+      <option value="emp3">Carlos Santos — Operations Staff</option>
+    </select>
+    <label class="login-label">Role</label>
+    <select class="login-input" id="login-role-select">
+      <option value="admin">👑 Administrator</option>
+      <option value="employee">👤 Employee</option>
+    </select>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🏢</div>
+      <div>
+        <div class="sb-logo-name">AssetCore</div>
+        <div class="sb-logo-sub">v2.0 · Enterprise</div>
+      </div>
+    </div>
+
+    <div class="sb-role-badge">
+      <div class="sb-role-avatar" id="sb-avatar">MA</div>
+      <div>
+        <div class="sb-role-name" id="sb-uname">Maria Alonzo</div>
+      </div>
+      <span class="sb-role-tag" id="sb-role-tag">Admin</span>
+    </div>
+
+    <div class="sb-section-label">Navigation</div>
+    <nav class="sb-nav" id="sb-nav">
+      <!-- Dynamically rendered based on role -->
+    </nav>
+
+    <div class="sb-footer">
+      <div class="logout-item" onclick="doLogout()">
+        <span class="nav-icon">🚪</span> Sign Out
+      </div>
+    </div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header class="topbar" id="topbar" style="left:var(--sb-width)">
+    <div class="topbar-breadcrumb">
+      <span class="tb-crumb-parent" id="tb-parent">AssetCore</span>
+      <span class="tb-crumb-sep">›</span>
+      <span class="tb-crumb-current" id="tb-current">Dashboard</span>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="tb-search">🔍&nbsp; Quick search...</div>
+    <div class="tb-btn" title="Notifications">🔔<span class="notif-dot"></span></div>
+    <div class="tb-btn" title="Help">❓</div>
+    <div class="tb-user">
+      <div class="tb-avatar" id="tb-avatar">MA</div>
+      <div>
+        <div class="tb-user-name" id="tb-uname">Maria Alonzo</div>
+        <div class="tb-user-role" id="tb-urole">Administrator</div>
+      </div>
+      <span class="tb-role-pill admin" id="tb-role-pill">Admin</span>
+    </div>
+  </header>
+
+  <!-- MAIN BODY -->
+  <div class="app-body" id="app-body">
+    <div class="main-content">
+
+      <!-- ════════════════ DASHBOARD ════════════════ -->
+      <section class="page active" id="page-dashboard">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Dashboard</div>
+            <div class="pg-sub">System overview — <span id="dash-date"></span></div>
+          </div>
+          <div class="pg-actions">
+            <button class="btn btn-outline btn-sm" onclick="refreshDashboard()">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-icon si-blue">📦</div>
+            <div>
+              <div class="stat-num" id="dc-total">—</div>
+              <div class="stat-label">Total Inventory Items</div>
+              <div class="stat-delta d-up" id="dc-total-d">—</div>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon si-red">⚠️</div>
+            <div>
+              <div class="stat-num" id="dc-low">—</div>
+              <div class="stat-label">Low Stock Items</div>
+              <div class="stat-delta d-dn" id="dc-low-d">—</div>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon si-green">💻</div>
+            <div>
+              <div class="stat-num" id="dc-laptops">—</div>
+              <div class="stat-label">Active Laptops</div>
+              <div class="stat-delta d-up" id="dc-laptops-d">—</div>
+            </div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon si-amber">🛒</div>
+            <div>
+              <div class="stat-num" id="dc-orders">—</div>
+              <div class="stat-label">Pending Orders</div>
+              <div class="stat-delta d-dn" id="dc-orders-d">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">⚠️ Low Stock Alerts</div>
+              <span class="panel-count" id="dash-low-ct">—</span>
+            </div>
+            <div id="dash-low-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">📦 Pending Orders</div>
+              <span class="panel-count" id="dash-order-ct">—</span>
+            </div>
+            <div id="dash-order-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">🖥️ Laptops for Maintenance</div>
+              <span class="panel-count" id="dash-maint-ct">—</span>
+            </div>
+            <div id="dash-maint-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="panel-title">🚗 Vehicle Maintenance Alerts</div>
+              <span class="panel-count" id="dash-veh-ct">—</span>
+            </div>
+            <div id="dash-veh-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ INVENTORY MANAGEMENT ════════════════ -->
+      <section class="page" id="page-inventory">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Inventory Management</div>
+            <div class="pg-sub">Stock levels · Click any row to view details</div>
+          </div>
+          <div class="pg-actions" id="inv-actions"></div>
+        </div>
+
+        <!-- Category filter tabs -->
+        <div class="flex-gap" style="margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm cat-filter active" onclick="filterInventory('all',this)">All</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Office Supplies',this)">Office Supplies</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Pantry Supplies',this)">Pantry Supplies</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Finance Documents',this)">Finance Documents</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Company Event Supplies',this)">Event Supplies</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Wine',this)">Wine</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('First Aid Kit',this)">First Aid</button>
+          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Medicine Kit',this)">Medicine Kit</button>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📋 Inventory Items</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="inv-low-ct">0 low stock</span>
+              <span class="badge b-slate" id="inv-total-ct">0 items</span>
+              <button class="btn btn-ghost btn-sm" onclick="showToast('Exported','t-success')">📥 Export</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Item Name</th><th>Category</th><th>Quantity</th>
+                <th>Unit</th><th>Location</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="inv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ OFFICE FURNITURE ════════════════ -->
+      <section class="page" id="page-furniture">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Office Furniture</div>
+            <div class="pg-sub">Furniture assets · Click any row for details</div>
+          </div>
+          <div class="pg-actions" id="fur-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🪑 Furniture Register</div>
+            <span class="badge b-slate" id="fur-ct">0 items</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Asset Name</th><th>Qty</th><th>Date Purchased</th>
+                <th>Supplier</th><th>Price (₱)</th><th>Location</th><th>Condition</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="fur-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ IT SUPPLIES ════════════════ -->
+      <section class="page" id="page-itsupplies">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">IT Supplies</div>
+            <div class="pg-sub">Hardware & peripherals · Serial tracked · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="it-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🖨️ IT Supply Inventory</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="it-low-ct">0 low stock</span>
+              <span class="badge b-slate" id="it-total-ct">0 items</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Asset Name</th><th>Serial / Model</th><th>Quantity</th>
+                <th>Reorder Level</th><th>Warranty</th><th>Supplier</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="it-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ LAPTOPS ════════════════ -->
+      <section class="page" id="page-laptops">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Laptop Management</div>
+            <div class="pg-sub">Lifecycle, assignment, maintenance · Click row for full details</div>
+          </div>
+          <div class="pg-actions" id="lp-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">💻 Laptop Inventory</div>
+            <span class="badge b-slate" id="lp-ct">0 units</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Asset No.</th><th>Description</th><th>Assigned To</th>
+                <th>Status</th><th>Warranty</th><th>Maintenance</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="lp-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ PURCHASE ORDERS ════════════════ -->
+      <section class="page" id="page-orders">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Purchase Orders</div>
+            <div class="pg-sub">Stock ordering & delivery tracking · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="po-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🛒 Orders</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="po-delay-ct">0 delayed</span>
+              <span class="badge b-slate" id="po-total-ct">0 orders</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>PO #</th><th>Item Name</th><th>Category</th><th>Qty</th>
+                <th>Order Date</th><th>Expected Delivery</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="po-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ VEHICLE MANAGEMENT ════════════════ -->
+      <section class="page" id="page-vehicles">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Vehicle Management</div>
+            <div class="pg-sub">Fleet management & maintenance scheduling · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="veh-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🚗 Fleet Register</div>
+            <span class="badge b-slate" id="veh-ct">0 vehicles</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Vehicle Name</th><th>Type</th><th>Plate Number</th>
+                <th>Assigned To</th><th>Status</th><th>Next Maintenance</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="veh-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ GLOBE MOBILE PLAN ════════════════ -->
+      <section class="page" id="page-globe">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Globe Mobile Plans</div>
+            <div class="pg-sub">Employee mobile subscriptions · Admin only · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="globe-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📱 Mobile Plan Registry</div>
+            <div class="card-actions">
+              <span class="badge b-amber" id="globe-renew-ct">0 renewing soon</span>
+              <span class="badge b-slate" id="globe-ct">0 plans</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Employee Name</th><th>Mobile Number</th><th>Plan Name</th>
+                <th>Monthly Cost</th><th>Renewal Date</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="globe-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ M365 LICENSES ════════════════ -->
+      <section class="page" id="page-m365">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">M365 Licenses</div>
+            <div class="pg-sub">Microsoft 365 subscriptions · Admin only · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="m365-actions"></div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">💼 License Registry</div>
+            <div class="card-actions">
+              <span class="badge b-red" id="m365-exp-ct">0 expired</span>
+              <span class="badge b-slate" id="m365-ct">0 licenses</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Assigned Email</th><th>License Type</th><th>Category</th>
+                <th>Expiry Date</th><th>Monthly Cost</th><th>Status</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="m365-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ SYSTEM LOGS ════════════════ -->
+      <section class="page" id="page-logs">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">System Logs</div>
+            <div class="pg-sub">Full audit trail — all user actions · Click row for details</div>
+          </div>
+          <div class="pg-actions">
+            <button class="btn btn-outline btn-sm" onclick="clearLogs()">🗑️ Clear Logs</button>
+            <button class="btn btn-outline btn-sm" onclick="showToast('Exported to CSV','t-success')">📥 Export</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📜 Activity Log</div>
+            <span class="badge b-slate" id="log-ct">0 entries</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Timestamp</th><th>User</th><th>Action</th>
+                <th>Module</th><th>Description</th><th>Reference</th>
+              </tr></thead>
+              <tbody id="log-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- end main-content -->
+  </div><!-- end app-body -->
+
+  <!-- ════════════════ DETAIL PANEL ════════════════ -->
+  <aside class="detail-panel" id="detail-panel">
+    <div class="dp-topbar">
+      <div class="dp-top-left">
+        <div class="dp-icon" id="dp-icon">📄</div>
+        <div>
+          <div class="dp-title" id="dp-title">Details</div>
+          <div class="dp-subtitle" id="dp-subtitle">Select a record to view</div>
+        </div>
+      </div>
+      <button class="dp-close" onclick="closeDP()">✕</button>
+    </div>
+    <div class="dp-body" id="dp-body"></div>
+    <div class="dp-footer" id="dp-footer" style="display:none"></div>
+  </aside>
+
+</div><!-- end #app -->
+
+<!-- ══════════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════════ -->
+
+<!-- Withdraw Inventory -->
+<div class="modal-overlay" id="m-withdraw">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">➖ Withdraw Item</div>
+      <button class="modal-close" onclick="closeM('m-withdraw')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--amber-50);border:1.5px solid var(--amber-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#92400e">Item: <span id="wd-item-name">—</span></div>
+        <div style="font-size:12px;color:#b45309;margin-top:2px">Current Stock: <span id="wd-current">—</span></div>
+      </div>
+      <div class="form-grp">
+        <label>Quantity to Withdraw *</label>
+        <input class="form-ctrl" id="wd-qty" type="number" min="1" placeholder="e.g. 5"/>
+      </div>
+      <div class="form-grp">
+        <label>Withdrawn By</label>
+        <input class="form-ctrl" id="wd-by" placeholder="Employee name"/>
+      </div>
+      <div class="form-grp">
+        <label>Purpose / Remarks</label>
+        <textarea class="form-ctrl" id="wd-remarks" rows="2" placeholder="Reason for withdrawal..."></textarea>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-withdraw')">Cancel</button>
+        <button class="btn btn-amber" onclick="doWithdraw()">➖ Withdraw</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Inventory Item (Admin) -->
+<div class="modal-overlay" id="m-add-inv">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="m-add-inv-title">➕ Add Inventory Item</div>
+      <button class="modal-close" onclick="closeM('m-add-inv')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="inv-f-name" placeholder="Item name"/></div>
+        <div class="form-grp"><label>Category *</label>
+          <select class="form-ctrl" id="inv-f-cat">
+            <option>Office Supplies</option><option>Pantry Supplies</option>
+            <option>Finance Documents</option><option>Company Event Supplies</option>
+            <option>Wine</option><option>First Aid Kit</option><option>Medicine Kit</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="inv-f-qty" type="number" min="0" placeholder="0"/></div>
+        <div class="form-grp"><label>Unit</label>
+          <select class="form-ctrl" id="inv-f-unit">
+            <option>Piece</option><option>Ream</option><option>Pack</option><option>Box</option>
+            <option>Bottle</option><option>Roll</option><option>Set</option><option>Kit</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Reorder Level</label><input class="form-ctrl" id="inv-f-reorder" type="number" min="0" placeholder="5"/></div>
+        <div class="form-grp"><label>Price / Unit (₱)</label><input class="form-ctrl" id="inv-f-price" type="number" placeholder="0.00"/></div>
+      </div>
+      <div class="form-grp"><label>Location</label><input class="form-ctrl" id="inv-f-loc" placeholder="Storage location"/></div>
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="inv-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="inv-f-contact" placeholder="email or phone"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="inv-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-inv')">Cancel</button>
+        <button class="btn btn-green" onclick="saveInvItem()">✅ Save Item</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Purchase Order Modal -->
+<div class="modal-overlay" id="m-add-po">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="m-po-title">📦 Create Purchase Order</div>
+      <button class="modal-close" onclick="closeM('m-add-po')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="po-f-item" placeholder="Item to order"/></div>
+        <div class="form-grp"><label>Category</label>
+          <select class="form-ctrl" id="po-f-cat">
+            <option>Office Supplies</option><option>Pantry Supplies</option>
+            <option>Finance Documents</option><option>Company Event Supplies</option>
+            <option>Wine</option><option>First Aid Kit</option><option>Medicine Kit</option>
+            <option>IT Supplies</option><option>Furniture</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="po-f-qty" type="number" min="1" placeholder="1"/></div>
+        <div class="form-grp"><label>Unit</label>
+          <select class="form-ctrl" id="po-f-unit">
+            <option>Piece</option><option>Ream</option><option>Pack</option><option>Box</option>
+            <option>Bottle</option><option>Roll</option><option>Set</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier *</label><input class="form-ctrl" id="po-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-f-price" type="number" placeholder="0.00"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Order Date</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
+        <div class="form-grp"><label>Expected Delivery</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
+      </div>
+      <div class="form-grp"><label>Notes</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Special instructions..."></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-po')">Cancel</button>
+        <button class="btn btn-green" onclick="savePO()">📦 Create Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Furniture -->
+<div class="modal-overlay" id="m-add-fur">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🪑 Add Furniture</div>
+      <button class="modal-close" onclick="closeM('m-add-fur')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Asset Name *</label><input class="form-ctrl" id="fur-f-name" placeholder="e.g. Executive Chair"/></div>
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="fur-f-qty" type="number" min="1" placeholder="1"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Date Purchased</label><input class="form-ctrl" id="fur-f-date" type="date"/></div>
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="fur-f-supplier" placeholder="Supplier name"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Price / Unit (₱)</label><input class="form-ctrl" id="fur-f-price" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Location</label><input class="form-ctrl" id="fur-f-loc" placeholder="Office location"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Condition</label>
+          <select class="form-ctrl" id="fur-f-cond">
+            <option>New</option><option>Good</option><option>Fair</option><option>For Repair</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="fur-f-contact" placeholder="email or phone"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Notes..."></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-fur')">Cancel</button>
+        <button class="btn btn-green" onclick="saveFurniture()">✅ Add Furniture</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add IT Supply -->
+<div class="modal-overlay" id="m-add-it">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🖨️ Add IT Supply</div>
+      <button class="modal-close" onclick="closeM('m-add-it')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Asset Name *</label><input class="form-ctrl" id="it-f-name" placeholder="e.g. HP Toner CF280A"/></div>
+        <div class="form-grp"><label>Serial / Model *</label><input class="form-ctrl" id="it-f-serial" placeholder="SN or model no."/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="it-f-qty" type="number" min="0" placeholder="0"/></div>
+        <div class="form-grp"><label>Reorder Level</label><input class="form-ctrl" id="it-f-reorder" type="number" min="0" placeholder="5"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Warranty Expiry</label><input class="form-ctrl" id="it-f-warranty" type="date"/></div>
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="it-f-supplier" placeholder="Supplier name"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="it-f-contact" placeholder="email or phone"/></div>
+        <div class="form-grp"><label>Supplier Website</label><input class="form-ctrl" id="it-f-website" placeholder="https://..."/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="it-f-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-it')">Cancel</button>
+        <button class="btn btn-green" onclick="saveITSupply()">✅ Add Supply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Laptop -->
+<div class="modal-overlay" id="m-add-lp">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <div class="modal-title">💻 Add Laptop</div>
+      <button class="modal-close" onclick="closeM('m-add-lp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Asset Number</label><input class="form-ctrl" id="lp-f-asset" placeholder="LPT-YYYY-###"/></div>
+        <div class="form-grp"><label>Brand / Description *</label><input class="form-ctrl" id="lp-f-desc" placeholder="e.g. Dell Latitude 5510"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Serial Number</label><input class="form-ctrl" id="lp-f-serial" placeholder="Serial number"/></div>
+        <div class="form-grp"><label>Brand</label>
+          <select class="form-ctrl" id="lp-f-brand">
+            <option>Dell</option><option>HP</option><option>Lenovo</option><option>Apple</option>
+            <option>Acer</option><option>ASUS</option><option>Microsoft</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>User Assigned</label><input class="form-ctrl" id="lp-f-user" placeholder="Name or Unassigned"/></div>
+        <div class="form-grp"><label>Department</label>
+          <select class="form-ctrl" id="lp-f-dept">
+            <option>IT Department</option><option>Finance</option><option>HR</option>
+            <option>Operations</option><option>Executive</option><option>Marketing</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Status</label>
+          <select class="form-ctrl" id="lp-f-status">
+            <option>Active</option><option>For Repair</option><option>Disposed</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Warranty Expiry</label><input class="form-ctrl" id="lp-f-warranty" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Purchase Price (₱)</label><input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Date Purchased</label><input class="form-ctrl" id="lp-f-bought" type="date"/></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-lp')">Cancel</button>
+        <button class="btn btn-green" onclick="saveLaptop()">✅ Add Laptop</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Maintenance Record -->
+<div class="modal-overlay" id="m-maint">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔧 Add Maintenance Record</div>
+      <button class="modal-close" onclick="closeM('m-maint')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af">Device: <span id="maint-name">—</span></div>
+        <div style="font-size:12px;color:#3b5bdb;margin-top:2px;font-family:var(--mono)">SN: <span id="maint-sn">—</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Check Date *</label><input class="form-ctrl" id="maint-date" type="date"/></div>
+        <div class="form-grp"><label>Technician</label><input class="form-ctrl" id="maint-tech" placeholder="Technician name"/></div>
+      </div>
+      <div class="form-grp"><label>Condition</label>
+        <select class="form-ctrl" id="maint-cond">
+          <option value="GOOD">✅ GOOD — Fully functional</option>
+          <option value="NEEDS REPAIR">🔴 NEEDS REPAIR — Issue found</option>
+        </select>
+      </div>
+      <div class="form-grp"><label>Remarks / Findings</label>
+        <textarea class="form-ctrl" id="maint-remarks" rows="3" placeholder="Describe condition, issues, actions taken..."></textarea>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-maint')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveMaintenance()">💾 Save Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Laptop User -->
+<div class="modal-overlay" id="m-assign">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd">
+      <div class="modal-title">👤 Assign User</div>
+      <button class="modal-close" onclick="closeM('m-assign')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--green-50);border:1.5px solid var(--green-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#166534">Laptop: <span id="assign-lp-name">—</span></div>
+      </div>
+      <div class="form-grp"><label>Assign To *</label><input class="form-ctrl" id="assign-user" placeholder="Full name"/></div>
+      <div class="form-grp"><label>Department</label>
+        <select class="form-ctrl" id="assign-dept">
+          <option>IT Department</option><option>Finance</option><option>HR</option>
+          <option>Operations</option><option>Executive</option><option>Marketing</option>
+        </select>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-assign')">Cancel</button>
+        <button class="btn btn-green" onclick="doAssign()">✅ Assign</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Vehicle -->
+<div class="modal-overlay" id="m-add-veh">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🚗 Add Vehicle</div>
+      <button class="modal-close" onclick="closeM('m-add-veh')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Vehicle Name *</label><input class="form-ctrl" id="veh-f-name" placeholder="e.g. Toyota Vios 2022"/></div>
+        <div class="form-grp"><label>Type</label>
+          <select class="form-ctrl" id="veh-f-type">
+            <option>Car</option><option>Motorcycle</option><option>Van</option><option>Truck</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Plate Number</label><input class="form-ctrl" id="veh-f-plate" placeholder="AAA 1234"/></div>
+        <div class="form-grp"><label>Assigned To</label><input class="form-ctrl" id="veh-f-assigned" placeholder="Driver name"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Status</label>
+          <select class="form-ctrl" id="veh-f-status">
+            <option>Active</option><option>For Maintenance</option><option>Out of Service</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Next Maintenance Date</label><input class="form-ctrl" id="veh-f-maint" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Year Model</label><input class="form-ctrl" id="veh-f-year" type="number" placeholder="2023"/></div>
+        <div class="form-grp"><label>OR/CR Expiry</label><input class="form-ctrl" id="veh-f-orcr" type="date"/></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-veh')">Cancel</button>
+        <button class="btn btn-green" onclick="saveVehicle()">✅ Add Vehicle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Vehicle Maintenance Record -->
+<div class="modal-overlay" id="m-veh-maint">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔧 Vehicle Maintenance Record</div>
+      <button class="modal-close" onclick="closeM('m-veh-maint')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af">Vehicle: <span id="veh-maint-name">—</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Service Date *</label><input class="form-ctrl" id="vm-date" type="date"/></div>
+        <div class="form-grp"><label>Odometer (km)</label><input class="form-ctrl" id="vm-odo" type="number" placeholder="0"/></div>
+      </div>
+      <div class="form-grp"><label>Service Type</label>
+        <select class="form-ctrl" id="vm-type">
+          <option>Oil Change</option><option>Tire Rotation</option><option>Brake Service</option>
+          <option>Battery Replacement</option><option>General Checkup</option><option>Repair</option>
+        </select>
+      </div>
+      <div class="form-grp"><label>Cost (₱)</label><input class="form-ctrl" id="vm-cost" type="number" placeholder="0.00"/></div>
+      <div class="form-grp"><label>Next Maintenance Date</label><input class="form-ctrl" id="vm-next" type="date"/></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-veh-maint')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveVehicleMaint()">💾 Save Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Globe Mobile Plan Modal -->
+<div class="modal-overlay" id="m-add-globe">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📱 Add Mobile Plan</div>
+      <button class="modal-close" onclick="closeM('m-add-globe')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Employee Name *</label><input class="form-ctrl" id="globe-f-name" placeholder="Full name"/></div>
+        <div class="form-grp"><label>Mobile Number</label><input class="form-ctrl" id="globe-f-num" placeholder="09XX-XXX-XXXX"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Account Number</label><input class="form-ctrl" id="globe-f-acct" placeholder="Account no."/></div>
+        <div class="form-grp"><label>Plan Name</label><input class="form-ctrl" id="globe-f-plan" placeholder="e.g. Globe Postpaid Plan 999"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Monthly Cost (₱)</label><input class="form-ctrl" id="globe-f-cost" type="number" placeholder="0"/></div>
+        <div class="form-grp"><label>Data Allocation</label><input class="form-ctrl" id="globe-f-data" placeholder="e.g. 50GB"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Renewal Date</label><input class="form-ctrl" id="globe-f-renew" type="date"/></div>
+        <div class="form-grp"><label>Credit Limit (₱)</label><input class="form-ctrl" id="globe-f-credit" type="number" placeholder="0"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="globe-f-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-globe')">Cancel</button>
+        <button class="btn btn-green" onclick="saveGlobe()">✅ Add Plan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- M365 License Modal -->
+<div class="modal-overlay" id="m-add-m365">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">💼 Add M365 License</div>
+      <button class="modal-close" onclick="closeM('m-add-m365')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp"><label>Assigned Email *</label><input class="form-ctrl" id="m365-f-email" type="email" placeholder="user@company.com"/></div>
+        <div class="form-grp"><label>License Type</label>
+          <select class="form-ctrl" id="m365-f-type">
+            <option>Microsoft 365 Business Basic</option>
+            <option>Microsoft 365 Business Standard</option>
+            <option>Microsoft 365 Business Premium</option>
+            <option>Microsoft 365 Apps</option>
+            <option>Office 2021 (Perpetual)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Category</label>
+          <select class="form-ctrl" id="m365-f-cat">
+            <option>Subscription</option><option>Perpetual</option><option>Trial</option>
+          </select>
+        </div>
+        <div class="form-grp"><label>Expiry Date</label><input class="form-ctrl" id="m365-f-expiry" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Monthly Cost (₱)</label><input class="form-ctrl" id="m365-f-cost" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="m365-f-supplier" placeholder="e.g. Microsoft, CDRKing"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="m365-f-remarks" rows="2"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-m365')">Cancel</button>
+        <button class="btn btn-green" onclick="saveM365()">✅ Add License</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   ASSET MANAGEMENT SYSTEM — COMPLETE JAVASCRIPT
+   Version 2.0 | Pure JS | No Backend
+══════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────
+   SESSION / AUTH
+────────────────────────────────────────────────────────────── */
+let currentUser = null; // { name, role, initials }
+
+const USERS = {
+  admin: { name:'Maria Alonzo',   role:'admin',    initials:'MA', title:'Administrator' },
+  emp1:  { name:'Juan Reyes',     role:'employee', initials:'JR', title:'IT Technician' },
+  emp2:  { name:'Ana Cruz',       role:'employee', initials:'AC', title:'Finance Officer' },
+  emp3:  { name:'Carlos Santos',  role:'employee', initials:'CS', title:'Operations Staff' },
+};
+
+function doLogin() {
+  const userKey = document.getElementById('login-user-select').value;
+  const roleKey = document.getElementById('login-role-select').value;
+  const userData = USERS[userKey];
+  currentUser = { ...userData, role: roleKey };
+  if (roleKey === 'admin') currentUser.title = 'Administrator';
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  // Set UI elements
+  ['sb-avatar','tb-avatar'].forEach(id => document.getElementById(id).textContent = currentUser.initials);
+  document.getElementById('sb-uname').textContent = currentUser.name;
+  document.getElementById('tb-uname').textContent = currentUser.name;
+  document.getElementById('tb-urole').textContent = currentUser.title;
+
+  const roleTag = document.getElementById('sb-role-tag');
+  const rolePill = document.getElementById('tb-role-pill');
+  if (currentUser.role === 'admin') {
+    roleTag.textContent = 'Admin'; roleTag.className = 'sb-role-tag admin';
+    rolePill.textContent = 'Admin'; rolePill.className = 'tb-role-pill admin';
+  } else {
+    roleTag.textContent = 'Employee'; roleTag.className = 'sb-role-tag employee';
+    rolePill.textContent = 'Staff'; rolePill.className = 'tb-role-pill employee';
+  }
+
+  buildSidebar();
+  initAllModules();
+  addLog('LOGIN', 'Auth', `${currentUser.name} signed in as ${currentUser.title}`, 'System');
+}
+
+function doLogout() {
+  if (!confirm('Sign out of AssetCore?')) return;
+  addLog('LOGOUT', 'Auth', `${currentUser.name} signed out`, 'System');
+  location.reload();
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SIDEBAR
+────────────────────────────────────────────────────────────── */
+const ADMIN_NAV = [
+  { id:'dashboard',   icon:'🏠', label:'Dashboard',            badge:null },
+  { id:'inventory',   icon:'📦', label:'Inventory Management', badge:'inv' },
+  { id:'furniture',   icon:'🪑', label:'Office Furniture',     badge:null },
+  { id:'itsupplies',  icon:'🖨️', label:'IT Supplies',          badge:'it' },
+  { id:'laptops',     icon:'💻', label:'Laptops',              badge:null },
+  { id:'orders',      icon:'🛒', label:'Purchase Orders',      badge:'po' },
+  { id:'vehicles',    icon:'🚗', label:'Vehicle Management',   badge:null },
+  { id:'globe',       icon:'📱', label:'Globe Mobile Plans',   badge:null, admin:true },
+  { id:'m365',        icon:'💼', label:'M365 Licenses',        badge:null, admin:true },
+  { id:'logs',        icon:'📜', label:'System Logs',          badge:null, admin:true },
+];
+
+const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','orders'];
+
+function buildSidebar() {
+  const nav = document.getElementById('sb-nav');
+  nav.innerHTML = '';
+  const items = currentUser.role === 'admin' ? ADMIN_NAV : ADMIN_NAV.filter(n => EMP_NAV.includes(n.id));
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'nav-item' + (item.id === 'dashboard' ? ' active' : '');
+    div.id = 'nav-' + item.id;
+    div.onclick = () => navigate(item.id, div);
+
+    let extras = '';
+    if (item.badge) extras = `<span class="nav-badge" id="nb-${item.badge}" style="display:none">0</span>`;
+    if (item.admin) extras += `<span class="nav-admin-tag">Admin</span>`;
+
+    div.innerHTML = `<span class="nav-icon">${item.icon}</span> ${item.label} ${extras}`;
+    nav.appendChild(div);
+  });
+}
+
+/* ──────────────────────────────────────────────────────────────
+   NAVIGATION
+────────────────────────────────────────────────────────────── */
+const PAGE_META = {
+  dashboard:  { title:'Dashboard',         parent:'AssetCore' },
+  inventory:  { title:'Inventory Management', parent:'AssetCore' },
+  furniture:  { title:'Office Furniture',  parent:'AssetCore' },
+  itsupplies: { title:'IT Supplies',       parent:'AssetCore' },
+  laptops:    { title:'Laptop Management', parent:'AssetCore' },
+  orders:     { title:'Purchase Orders',   parent:'AssetCore' },
+  vehicles:   { title:'Vehicle Management',parent:'AssetCore' },
+  globe:      { title:'Globe Mobile Plans',parent:'AssetCore' },
+  m365:       { title:'M365 Licenses',     parent:'AssetCore' },
+  logs:       { title:'System Logs',       parent:'AssetCore' },
+};
+
+let currentPage = 'dashboard';
+
+function navigate(page, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) return;
+  pageEl.classList.add('active');
+  if (navEl) navEl.classList.add('active');
+
+  const meta = PAGE_META[page] || {};
+  document.getElementById('tb-parent').textContent  = meta.parent || 'AssetCore';
+  document.getElementById('tb-current').textContent = meta.title || page;
+
+  currentPage = page;
+  closeDP();
+
+  // Refresh specific page actions based on role
+  refreshPageActions(page);
+}
+
+function refreshPageActions(page) {
+  const isAdmin = currentUser.role === 'admin';
+
+  const actions = {
+    inventory:  () => {
+      const el = document.getElementById('inv-actions');
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-inv')">➕ Add Item</button><button class="btn btn-outline btn-sm" onclick="showToast('Exported!','t-success')">📥 Export</button>`;
+      else el.innerHTML = '';
+    },
+    furniture:  () => {
+      const el = document.getElementById('fur-actions');
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-fur')">➕ Add Furniture</button>`;
+      else el.innerHTML = '';
+    },
+    itsupplies: () => {
+      const el = document.getElementById('it-actions');
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-it')">➕ Add IT Supply</button>`;
+      else el.innerHTML = '';
+    },
+    laptops:    () => {
+      const el = document.getElementById('lp-actions');
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-lp')">➕ Add Laptop</button>`;
+      else el.innerHTML = '';
+    },
+    orders:     () => {
+      const el = document.getElementById('po-actions');
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-po')">📦 New Order</button>`;
+      else el.innerHTML = '';
+    },
+    vehicles:   () => {
+      const el = document.getElementById('veh-actions');
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')">➕ Add Vehicle</button>`;
+      else el.innerHTML = '';
+    },
+    globe:      () => {
+      const el = document.getElementById('globe-actions');
+      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-globe')">➕ Add Plan</button>`;
+    },
+    m365:       () => {
+      const el = document.getElementById('m365-actions');
+      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-m365')">➕ Add License</button>`;
+    },
+  };
+
+  if (actions[page]) actions[page]();
+}
+
+/* ──────────────────────────────────────────────────────────────
+   DETAIL PANEL ENGINE
+────────────────────────────────────────────────────────────── */
+let dpOpen = false;
+let dpSelectedRow = null;
+let dpCurrentType = null;
+let dpCurrentId   = null;
+
+function openDP(type, id, row) {
+  if (dpSelectedRow) dpSelectedRow.classList.remove('selected');
+  dpSelectedRow = row;
+  dpCurrentType = type;
+  dpCurrentId   = id;
+  if (row) row.classList.add('selected');
+
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('app-body').classList.add('panel-open');
+  dpOpen = true;
+
+  const renderers = {
+    inventory: dpInventory,
+    furniture: dpFurniture,
+    itsupply:  dpITSupply,
+    laptop:    dpLaptop,
+    order:     dpOrder,
+    vehicle:   dpVehicle,
+    globe:     dpGlobe,
+    m365:      dpM365,
+    log:       dpLog,
+  };
+  if (renderers[type]) renderers[type](id);
+}
+
+function closeDP() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('app-body').classList.remove('panel-open');
+  if (dpSelectedRow) { dpSelectedRow.classList.remove('selected'); dpSelectedRow = null; }
+  dpOpen = false; dpCurrentType = null; dpCurrentId = null;
+}
+
+function setDPHeader(icon, iconBg, title, sub) {
+  const el = document.getElementById('dp-icon');
+  el.textContent = icon; el.style.background = iconBg;
+  document.getElementById('dp-title').textContent    = title;
+  document.getElementById('dp-subtitle').textContent = sub;
+}
+
+// Helpers for DP content
+function dpField(label, value, cls='') {
+  const valHTML = value
+    ? `<div class="dp-value ${cls}">${value}</div>`
+    : `<div class="dp-value muted">—</div>`;
+  return `<div class="dp-field"><div class="dp-label">${label}</div>${valHTML}</div>`;
+}
+function dpFieldFull(label, value, cls='') {
+  const valHTML = value
+    ? `<div class="dp-value ${cls}">${value}</div>`
+    : `<div class="dp-value muted">—</div>`;
+  return `<div class="dp-field full"><div class="dp-label">${label}</div>${valHTML}</div>`;
+}
+function dpSection(title, icon='') {
+  return `<div class="dp-section-hd">${icon ? icon+' ' : ''}${title}</div>`;
+}
+function badge(text, cls) { return `<span class="badge ${cls}">${text}</span>`; }
+
+/* ──────────────────────────────────────────────────────────────
+   INVENTORY DATA
+────────────────────────────────────────────────────────────── */
+let invItems = [
+  { id:1,  name:'Bond Paper (Short)',    cat:'Office Supplies',        qty:5,   unit:'Ream',   reorder:10,  price:280,   loc:'Storage Room A',       supplier:'PaperWorld Inc.',  contact:'orders@paperworld.ph',  remarks:'Near depletion.' },
+  { id:2,  name:'Blue Ballpens',         cat:'Office Supplies',        qty:25,  unit:'Pack',   reorder:5,   price:85,    loc:'Supply Cabinet',       supplier:'National Book Store',contact:'nbsorders@nbs.ph',     remarks:'' },
+  { id:3,  name:'Sticky Notes (3x3)',    cat:'Office Supplies',        qty:30,  unit:'Pack',   reorder:10,  price:60,    loc:'Supply Cabinet',       supplier:'National Book Store',contact:'nbsorders@nbs.ph',     remarks:'' },
+  { id:4,  name:'Folders (Long)',        cat:'Finance Documents',       qty:80,  unit:'Piece',  reorder:20,  price:12,    loc:'Finance Room',         supplier:'PaperWorld Inc.',  contact:'orders@paperworld.ph',  remarks:'' },
+  { id:5,  name:'Mineral Water (500mL)', cat:'Pantry Supplies',         qty:48,  unit:'Bottle', reorder:24,  price:20,    loc:'Pantry',               supplier:'Selecta Distributor',contact:'dist@selecta.ph',     remarks:'Restock weekly.' },
+  { id:6,  name:'Coffee (3-in-1)',       cat:'Pantry Supplies',         qty:3,   unit:'Box',    reorder:5,   price:350,   loc:'Pantry',               supplier:'Nestle Distributor', contact:'orders@nestle.ph',    remarks:'Critical stock.' },
+  { id:7,  name:'Tissue Boxes',          cat:'Pantry Supplies',         qty:12,  unit:'Box',    reorder:6,   price:90,    loc:'Pantry',               supplier:'SM Hypermarket',   contact:'bulk@sm.ph',           remarks:'' },
+  { id:8,  name:'Red Ribbon (Birthday)', cat:'Company Event Supplies',  qty:2,   unit:'Pack',   reorder:3,   price:120,   loc:'Events Cabinet',       supplier:'Party Supplies PH',contact:'events@partysupplies.ph',remarks:'For events only.' },
+  { id:9,  name:'Red Wine (Merlot)',     cat:'Wine',                   qty:6,   unit:'Bottle', reorder:4,   price:850,   loc:'Executive Bar Cabinet',supplier:'Rustan\'s',        contact:'wine@rustans.ph',      remarks:'For executive meetings.' },
+  { id:10, name:'Bandage Rolls',         cat:'First Aid Kit',           qty:2,   unit:'Roll',   reorder:5,   price:40,    loc:'First Aid Cabinet',    supplier:'Mercury Drug',     contact:'orders@mercurydrug.ph',remarks:'Restock ASAP.' },
+  { id:11, name:'Paracetamol 500mg',     cat:'Medicine Kit',            qty:20,  unit:'Piece',  reorder:10,  price:8,     loc:'First Aid Cabinet',    supplier:'Mercury Drug',     contact:'orders@mercurydrug.ph',remarks:'' },
+  { id:12, name:'Hand Sanitizer',        cat:'First Aid Kit',           qty:4,   unit:'Bottle', reorder:3,   price:150,   loc:'Reception',            supplier:'Guardian',         contact:'orders@guardian.ph',   remarks:'' },
+];
+let invId = 13;
+let invFilter = 'all';
+let invEditId = null;
+
+function filterInventory(cat, btn) {
+  invFilter = cat;
+  document.querySelectorAll('.cat-filter').forEach(b => { b.className = b.className.replace(' btn-primary','').replace('btn-outline','').trim(); b.className += ' btn-outline'; });
+  btn.className = btn.className.replace('btn-outline','btn-primary');
+  renderInventory();
+}
+
+function renderInventory() {
+  const isAdmin = currentUser.role === 'admin';
+  const tbody = document.getElementById('inv-tbody');
+  tbody.innerHTML = '';
+  let low = 0, total = 0;
+
+  const items = invFilter === 'all' ? invItems : invItems.filter(i => i.cat === invFilter);
+  total = items.length;
+
+  items.forEach(item => {
+    const isLow = item.qty <= item.reorder;
+    if (isLow) low++;
+    const statusBadge = isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green');
+
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable' + (isLow ? ' tr-warn' : '');
+    tr.innerHTML = `
+      <td class="td-strong">${item.name}</td>
+      <td>${badge(item.cat,'b-slate b-none')}</td>
+      <td><strong>${item.qty}</strong> <span class="td-muted">${item.unit}</span></td>
+      <td class="td-muted">${item.unit}</td>
+      <td class="td-muted">${item.loc}</td>
+      <td>${statusBadge}</td>
+      <td>
+        <div class="flex-gap">
+          ${isAdmin ? `<button class="btn btn-xs btn-warning" onclick="event.stopPropagation();openWithdraw(${item.id})">➖</button>` : ''}
+          ${isAdmin ? `<button class="btn btn-xs btn-supplier" onclick="event.stopPropagation();openDP('inventory',${item.id},this.closest('tr'))">🔗</button>` : ''}
+          ${isAdmin ? `<button class="btn btn-xs btn-primary" onclick="event.stopPropagation();openCreateOrder(${item.id})">📦</button>` : ''}
+        </div>
+      </td>`;
+    tr.addEventListener('click', () => openDP('inventory', item.id, tr));
+    tbody.appendChild(tr);
+  });
+
+  // Update counts
+  document.getElementById('inv-total-ct').textContent = `${total} items`;
+  document.getElementById('inv-low-ct').textContent   = `${low} low stock`;
+  const nb = document.getElementById('nb-inv');
+  if (nb) { nb.textContent = low; nb.style.display = low ? '' : 'none'; }
+  refreshDashboard();
+}
+
+function dpInventory(id) {
+  const item = invItems.find(i => i.id === id);
+  if (!item) return;
+  const isAdmin = currentUser.role === 'admin';
+  const isLow = item.qty <= item.reorder;
+  setDPHeader('📦','#eff6ff', item.name, item.cat);
+
+  const progress = Math.min(100, Math.round((item.qty / Math.max(item.reorder*2,1))*100));
+  const barColor = isLow ? '#ef4444' : '#22c55e';
+
+  let html = `
+    ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Stock is below reorder level. Create a purchase order.</span></div>` : ''}
+    <div class="dp-status-row">${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}<span class="dp-status-label">Current: <strong>${item.qty} ${item.unit}</strong> / Reorder at: <strong>${item.reorder}</strong></span></div>
+    <div class="prog-bar-wrap">
+      <div class="prog-bar-labels"><span>Stock Level</span><span>${item.qty} ${item.unit}</span></div>
+      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${barColor}"></div></div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">📋 Item Details</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Item Name', `<strong>${item.name}</strong>`)}
+        ${dpField('Category', item.cat)}
+        ${dpField('Unit', item.unit)}
+        ${dpField('Location', item.loc)}
+        ${dpField('Price / Unit', item.price ? '₱'+item.price.toLocaleString() : null)}
+        ${dpField('Total Value', item.price ? '₱'+(item.price*item.qty).toLocaleString() : null)}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">🏪 Supplier</div>
+      <div class="supplier-card">
+        <div class="sc-name">🏢 ${item.supplier||'Not specified'}</div>
+        <div class="sc-note">Contact supplier directly to place a replenishment order</div>
+        <span class="sc-link" onclick="showToast('Opening supplier portal for '+${JSON.stringify(item.supplier)},'t-info')">🔗 Contact Supplier</span>
+      </div>
+      <div class="dp-grid" style="margin-top:9px">
+        ${dpField('Contact', item.contact)}
+      </div>
+    </div>
+
+    ${item.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', item.remarks)}</div></div>` : ''}`;
+
+  if (isAdmin) {
+    html += `
+    <div class="dp-section">
+      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-action-row">
+        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.id})">➖ Withdraw</button>
+        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.id})">📦 Create Order</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditInv(${item.id})">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteInv(${item.id})">🗑️ Delete</button>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+let withdrawItemId = null;
+function openWithdraw(id) {
+  const item = invItems.find(i => i.id === id);
+  if (!item) return;
+  withdrawItemId = id;
+  document.getElementById('wd-item-name').textContent = item.name;
+  document.getElementById('wd-current').textContent   = `${item.qty} ${item.unit}`;
+  document.getElementById('wd-qty').value     = '';
+  document.getElementById('wd-by').value      = currentUser.name;
+  document.getElementById('wd-remarks').value = '';
+  openM('m-withdraw');
+}
+
+function doWithdraw() {
+  const item = invItems.find(i => i.id === withdrawItemId);
+  if (!item) return;
+  const qty = parseInt(document.getElementById('wd-qty').value) || 0;
+  const by  = document.getElementById('wd-by').value.trim() || currentUser.name;
+  const rem = document.getElementById('wd-remarks').value.trim();
+  if (qty <= 0) { showToast('Enter a valid quantity','t-error'); return; }
+  if (qty > item.qty) { showToast('Insufficient stock!','t-error'); return; }
+  item.qty -= qty;
+  closeM('m-withdraw');
+  renderInventory();
+  addLog('WITHDRAW', 'Inventory', `${by} withdrew ${qty} ${item.unit} of "${item.name}". ${rem ? 'Reason: '+rem : ''}`, 'Manual');
+  showToast(`Withdrew ${qty} ${item.unit} of ${item.name}`, 't-success');
+  if (dpOpen && dpCurrentType === 'inventory' && dpCurrentId === withdrawItemId) dpInventory(withdrawItemId);
+}
+
+function openCreateOrder(id) {
+  const item = invItems.find(i => i.id === id);
+  if (item) {
+    document.getElementById('po-f-item').value     = item.name;
+    document.getElementById('po-f-supplier').value = item.supplier || '';
+    document.getElementById('po-f-cat').value      = item.cat;
+    document.getElementById('po-f-unit').value     = item.unit;
+    document.getElementById('po-f-price').value    = item.price || '';
+    document.getElementById('po-f-date').value     = todayStr();
+  }
+  openM('m-add-po');
+}
+
+function openEditInv(id) {
+  const item = invItems.find(i => i.id === id);
+  if (!item) return;
+  invEditId = id;
+  document.getElementById('m-add-inv-title').textContent = '✏️ Edit Inventory Item';
+  document.getElementById('inv-f-name').value     = item.name;
+  document.getElementById('inv-f-cat').value      = item.cat;
+  document.getElementById('inv-f-qty').value      = item.qty;
+  document.getElementById('inv-f-unit').value     = item.unit;
+  document.getElementById('inv-f-reorder').value  = item.reorder;
+  document.getElementById('inv-f-price').value    = item.price||'';
+  document.getElementById('inv-f-loc').value      = item.loc;
+  document.getElementById('inv-f-supplier').value = item.supplier||'';
+  document.getElementById('inv-f-contact').value  = item.contact||'';
+  document.getElementById('inv-f-remarks').value  = item.remarks||'';
+  openM('m-add-inv');
+}
+
+function saveInvItem() {
+  const name     = document.getElementById('inv-f-name').value.trim();
+  const cat      = document.getElementById('inv-f-cat').value;
+  const qty      = parseInt(document.getElementById('inv-f-qty').value)||0;
+  const unit     = document.getElementById('inv-f-unit').value;
+  const reorder  = parseInt(document.getElementById('inv-f-reorder').value)||5;
+  const price    = parseFloat(document.getElementById('inv-f-price').value)||0;
+  const loc      = document.getElementById('inv-f-loc').value.trim();
+  const supplier = document.getElementById('inv-f-supplier').value.trim();
+  const contact  = document.getElementById('inv-f-contact').value.trim();
+  const remarks  = document.getElementById('inv-f-remarks').value.trim();
+  if (!name) { showToast('Item name is required','t-error'); return; }
+
+  if (invEditId) {
+    const item = invItems.find(i => i.id === invEditId);
+    if (item) { Object.assign(item, { name,cat,qty,unit,reorder,price,loc,supplier,contact,remarks }); }
+    addLog('UPDATE', 'Inventory', `Updated inventory item: "${name}"`, `INV-${invEditId}`);
+    invEditId = null;
+  } else {
+    invItems.push({ id:invId++, name,cat,qty,unit,reorder,price,loc,supplier,contact,remarks });
+    addLog('CREATE', 'Inventory', `Added new inventory item: "${name}" (${qty} ${unit})`, `INV-${invId-1}`);
+  }
+  closeM('m-add-inv');
+  document.getElementById('m-add-inv-title').textContent = '➕ Add Inventory Item';
+  clearForm(['inv-f-name','inv-f-qty','inv-f-reorder','inv-f-price','inv-f-loc','inv-f-supplier','inv-f-contact','inv-f-remarks']);
+  renderInventory();
+  showToast(`Inventory item saved!`,'t-success');
+}
+
+function deleteInv(id) {
+  const item = invItems.find(i => i.id === id);
+  if (!item || !confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+  invItems = invItems.filter(i => i.id !== id);
+  addLog('DELETE','Inventory',`Deleted inventory item: "${item.name}"`,`INV-${id}`);
+  closeDP(); renderInventory();
+  showToast('Item deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   OFFICE FURNITURE
+────────────────────────────────────────────────────────────── */
+let furItems = [
+  { id:1, name:'Executive Office Chair',   qty:10, date:'2024-01-15', supplier:'OfficePro PH',  contact:'sales@officepro.ph',  price:4500,  loc:'3F Executive Wing',  condition:'Good',   remarks:'Leather upholstery, lumbar support.' },
+  { id:2, name:'Steel Filing Cabinet 4D',  qty:6,  date:'2024-03-20', supplier:'StoreAll Inc.', contact:'orders@storeall.ph',  price:6800,  loc:'Storage Room A',     condition:'Good',   remarks:'' },
+  { id:3, name:'Conference Table (8-pax)', qty:2,  date:'2023-11-05', supplier:'Furni Corp PH', contact:'furni@furnicorp.ph',  price:28000, loc:'2F Conference Room', condition:'Good',   remarks:'Solid wood, foldable legs.' },
+  { id:4, name:'Standing Desk (ErgoLift)', qty:5,  date:'2025-02-10', supplier:'ErgoDesk PH',   contact:'info@ergodesk.ph',   price:12500, loc:'IT Department',      condition:'New',    remarks:'Height adjustable 72–120cm.' },
+  { id:5, name:'Visitor Chair (Padded)',   qty:20, date:'2024-06-01', supplier:'OfficePro PH',  contact:'sales@officepro.ph',  price:1800,  loc:'Reception & Lobby',  condition:'Fair',   remarks:'2 units need reupholstering.' },
+];
+let furId = 6;
+
+function renderFurniture() {
+  const isAdmin = currentUser.role === 'admin';
+  const tbody = document.getElementById('fur-tbody');
+  tbody.innerHTML = '';
+  furItems.forEach(f => {
+    const condCls = {New:'b-blue',Good:'b-green',Fair:'b-amber','For Repair':'b-red'}[f.condition]||'b-slate';
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable';
+    tr.innerHTML = `
+      <td class="td-strong">${f.name}</td>
+      <td>${f.qty}</td>
+      <td class="td-mono">${f.date}</td>
+      <td>${f.supplier}</td>
+      <td>₱${f.price.toLocaleString()}</td>
+      <td class="td-muted">${f.loc}</td>
+      <td>${badge(f.condition, condCls)}</td>
+      <td>
+        ${isAdmin ? `<div class="flex-gap"><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editFur(${f.id})">✏️</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteFur(${f.id})">🗑️</button></div>` : '<span class="td-muted">View only</span>'}
+      </td>`;
+    tr.addEventListener('click', () => openDP('furniture', f.id, tr));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('fur-ct').textContent = `${furItems.length} items`;
+}
+
+function dpFurniture(id) {
+  const f = furItems.find(x => x.id === id);
+  if (!f) return;
+  const isAdmin = currentUser.role === 'admin';
+  const condCls = {New:'b-blue',Good:'b-green',Fair:'b-amber','For Repair':'b-red'}[f.condition]||'b-slate';
+  setDPHeader('🪑','#fffbeb', f.name, 'Office Furniture');
+  let html = `
+    <div class="dp-status-row">${badge(f.condition,condCls)}<span class="dp-status-label">Condition status</span></div>
+    <div class="dp-section">
+      <div class="dp-section-hd">📦 Asset Information</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Asset Name',`<strong>${f.name}</strong>`)}
+        ${dpField('Quantity', f.qty)}
+        ${dpField('Location', f.loc)}
+        ${dpField('Date Purchased', f.date, 'mono')}
+        ${dpField('Price / Unit', '₱'+f.price.toLocaleString())}
+        ${dpField('Total Value', '₱'+(f.price*f.qty).toLocaleString())}
+      </div>
+    </div>
+    <div class="dp-section">
+      <div class="dp-section-hd">🏪 Supplier</div>
+      <div class="supplier-card">
+        <div class="sc-name">🏢 ${f.supplier||'—'}</div>
+        <div class="sc-note">Contact supplier for additional units or maintenance support</div>
+        <span class="sc-link" onclick="showToast('Contacting ${f.supplier}…','t-info')">🔗 View Supplier</span>
+      </div>
+      <div class="dp-grid" style="margin-top:9px">${dpField('Contact',f.contact)}</div>
+    </div>
+    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes',f.remarks)}</div></div>` : ''}`;
+
+  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-primary btn-sm" onclick="editFur(${f.id})">✏️ Edit</button><button class="btn btn-red btn-sm" onclick="deleteFur(${f.id})">🗑️ Delete</button></div></div>`;
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function saveFurniture() {
+  const name     = document.getElementById('fur-f-name').value.trim();
+  const qty      = parseInt(document.getElementById('fur-f-qty').value)||1;
+  const date     = document.getElementById('fur-f-date').value||todayStr();
+  const supplier = document.getElementById('fur-f-supplier').value.trim()||'N/A';
+  const price    = parseFloat(document.getElementById('fur-f-price').value)||0;
+  const loc      = document.getElementById('fur-f-loc').value.trim();
+  const condition= document.getElementById('fur-f-cond').value;
+  const contact  = document.getElementById('fur-f-contact').value.trim();
+  const remarks  = document.getElementById('fur-f-remarks').value.trim();
+  if (!name) { showToast('Asset name required','t-error'); return; }
+  furItems.push({ id:furId++, name,qty,date,supplier,contact,price,loc,condition,remarks });
+  closeM('m-add-fur');
+  clearForm(['fur-f-name','fur-f-qty','fur-f-date','fur-f-supplier','fur-f-price','fur-f-loc','fur-f-contact','fur-f-remarks']);
+  addLog('CREATE','Furniture',`Added furniture: "${name}" (x${qty}) at ${loc}`,`FUR-${furId-1}`);
+  renderFurniture(); showToast(`"${name}" added`,'t-success');
+}
+
+function editFur(id) {
+  const f = furItems.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('fur-f-name').value     = f.name;
+  document.getElementById('fur-f-qty').value      = f.qty;
+  document.getElementById('fur-f-date').value     = f.date;
+  document.getElementById('fur-f-supplier').value = f.supplier;
+  document.getElementById('fur-f-price').value    = f.price;
+  document.getElementById('fur-f-loc').value      = f.loc;
+  document.getElementById('fur-f-cond').value     = f.condition;
+  document.getElementById('fur-f-contact').value  = f.contact||'';
+  document.getElementById('fur-f-remarks').value  = f.remarks||'';
+  // simple overwrite approach
+  furItems = furItems.filter(x => x.id !== id);
+  openM('m-add-fur');
+}
+
+function deleteFur(id) {
+  const f = furItems.find(x => x.id === id);
+  if (!f || !confirm(`Delete "${f.name}"?`)) return;
+  furItems = furItems.filter(x => x.id !== id);
+  addLog('DELETE','Furniture',`Deleted: "${f.name}"`,`FUR-${id}`);
+  closeDP(); renderFurniture(); showToast('Furniture deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   IT SUPPLIES
+────────────────────────────────────────────────────────────── */
+let itItems = [
+  { id:1, name:'HP Toner CF280A',      serial:'TON-HP-280A',    qty:1,  reorder:3,  warranty:'2027-06-01', supplier:'HP Philippines',   contact:'hp-ph@support.com',  website:'https://hp.com',   remarks:'For HP LaserJet Pro 400.' },
+  { id:2, name:'Thermal Paper Rolls',  serial:'TPR-80MM-STD',   qty:2,  reorder:10, warranty:'N/A',        supplier:'PrintMart PH',     contact:'sales@printmart.ph', website:'',                 remarks:'POS receipt paper.' },
+  { id:3, name:'USB-C Cables 2m',      serial:'USB-C-2M-BLK',   qty:3,  reorder:5,  warranty:'N/A',        supplier:'TechHub Supplies',  contact:'orders@techhub.ph',  website:'',                 remarks:'' },
+  { id:4, name:'Network Switch 8-Port',serial:'TP-LINK-TL-SG108',qty:2,  reorder:1,  warranty:'2028-01-15', supplier:'TP-Link Philippines',contact:'ph@tp-link.com',    website:'https://tp-link.com',remarks:'Unmanaged gigabit switch.' },
+  { id:5, name:'Wireless Mouse M185',  serial:'LOG-M185-GRY',   qty:8,  reorder:3,  warranty:'2026-12-01', supplier:'Logitech PH',      contact:'ph@logitech.com',    website:'https://logitech.com',remarks:'USB nano receiver included.' },
+  { id:6, name:'HDMI Cable 3m',        serial:'HDMI-3M-BLK',    qty:12, reorder:5,  warranty:'N/A',        supplier:'CablePro Supplies', contact:'info@cablepro.ph',   website:'',                 remarks:'' },
+];
+let itId = 7;
+
+function renderITSupplies() {
+  const isAdmin = currentUser.role === 'admin';
+  const tbody = document.getElementById('it-tbody');
+  tbody.innerHTML = '';
+  let low = 0;
+  itItems.forEach(s => {
+    const isLow = s.qty <= s.reorder;
+    if (isLow) low++;
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable' + (isLow ? ' tr-warn' : '');
+    tr.innerHTML = `
+      <td class="td-strong">${s.name}</td>
+      <td class="td-mono">${s.serial}</td>
+      <td>${s.qty}</td>
+      <td>${s.reorder}</td>
+      <td class="td-mono">${s.warranty}</td>
+      <td>${s.supplier}</td>
+      <td>${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}</td>
+      <td>
+        ${isAdmin ? `<div class="flex-gap"><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editIT(${s.id})">✏️</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteIT(${s.id})">🗑️</button></div>` : '<span class="td-muted">View only</span>'}
+      </td>`;
+    tr.addEventListener('click', () => openDP('itsupply', s.id, tr));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('it-total-ct').textContent = `${itItems.length} items`;
+  document.getElementById('it-low-ct').textContent   = `${low} low stock`;
+  const nb = document.getElementById('nb-it');
+  if (nb) { nb.textContent = low; nb.style.display = low ? '' : 'none'; }
+}
+
+function dpITSupply(id) {
+  const s = itItems.find(x => x.id === id);
+  if (!s) return;
+  const isAdmin = currentUser.role === 'admin';
+  const isLow = s.qty <= s.reorder;
+  const progress = Math.min(100, Math.round((s.qty/Math.max(s.reorder*2,1))*100));
+  setDPHeader('🖨️', isLow ? '#fef2f2':'#eff6ff', s.name, 'IT Supply');
+  let html = `
+    ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Below reorder level. Contact supplier to replenish.</span></div>` : ''}
+    <div class="dp-status-row">${isLow?badge('LOW STOCK','b-red'):badge('OK','b-green')}<span class="dp-status-label">Qty: <strong>${s.qty}</strong> / Reorder at: <strong>${s.reorder}</strong></span></div>
+    <div class="prog-bar-wrap">
+      <div class="prog-bar-labels"><span>Stock Level</span><span>${s.qty} units</span></div>
+      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${isLow?'#ef4444':'#22c55e'}"></div></div>
+    </div>
+    <div class="dp-section">
+      <div class="dp-section-hd">💻 Asset Details</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Asset Name',`<strong>${s.name}</strong>`)}
+        ${dpField('Serial / Model', s.serial, 'mono')}
+        ${dpField('Warranty Expiry', s.warranty, 'mono')}
+        ${dpField('Quantity', s.qty)}
+        ${dpField('Reorder Level', s.reorder)}
+      </div>
+    </div>
+    <div class="dp-section">
+      <div class="dp-section-hd">🏪 Supplier Information</div>
+      <div class="supplier-card">
+        <div class="sc-name">🏢 ${s.supplier}</div>
+        <div class="sc-note">Contact supplier to place replenishment order</div>
+        <span class="sc-link" onclick="showToast('Contacting ${s.supplier}…','t-info')">🔗 Visit Supplier</span>
+      </div>
+      <div class="dp-grid" style="margin-top:9px">
+        ${dpField('Contact', s.contact)}
+        ${dpField('Website', s.website || null)}
+      </div>
+      <div class="dp-alert info" style="margin-top:10px">📋 <span class="dp-alert-text">To restock: Contact supplier above, then create a Purchase Order in the PO module.</span></div>
+    </div>
+    ${s.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes',s.remarks)}</div></div>` : ''}`;
+
+  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-supplier btn-sm" onclick="showToast('Contacting ${s.supplier}…','t-info')">🔗 Supplier</button><button class="btn btn-primary btn-sm" onclick="openCreatePOForIT(${s.id})">📦 Create PO</button><button class="btn btn-outline btn-sm" onclick="editIT(${s.id})">✏️ Edit</button><button class="btn btn-red btn-sm" onclick="deleteIT(${s.id})">🗑️ Delete</button></div></div>`;
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function openCreatePOForIT(id) {
+  const s = itItems.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('po-f-item').value     = s.name;
+  document.getElementById('po-f-supplier').value = s.supplier||'';
+  document.getElementById('po-f-cat').value      = 'IT Supplies';
+  document.getElementById('po-f-date').value     = todayStr();
+  openM('m-add-po');
+}
+
+function saveITSupply() {
+  const name     = document.getElementById('it-f-name').value.trim();
+  const serial   = document.getElementById('it-f-serial').value.trim()||'N/A';
+  const qty      = parseInt(document.getElementById('it-f-qty').value)||0;
+  const reorder  = parseInt(document.getElementById('it-f-reorder').value)||5;
+  const warranty = document.getElementById('it-f-warranty').value||'N/A';
+  const supplier = document.getElementById('it-f-supplier').value.trim()||'N/A';
+  const contact  = document.getElementById('it-f-contact').value.trim();
+  const website  = document.getElementById('it-f-website').value.trim();
+  const remarks  = document.getElementById('it-f-remarks').value.trim();
+  if (!name) { showToast('Asset name required','t-error'); return; }
+  itItems.push({ id:itId++, name,serial,qty,reorder,warranty,supplier,contact,website,remarks });
+  closeM('m-add-it');
+  clearForm(['it-f-name','it-f-serial','it-f-qty','it-f-reorder','it-f-warranty','it-f-supplier','it-f-contact','it-f-website','it-f-remarks']);
+  addLog('CREATE','IT Supplies',`Added IT supply: "${name}" (SN: ${serial})`,`IT-${itId-1}`);
+  renderITSupplies(); showToast(`"${name}" added`,'t-success');
+}
+
+function editIT(id) {
+  const s = itItems.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('it-f-name').value     = s.name;
+  document.getElementById('it-f-serial').value   = s.serial;
+  document.getElementById('it-f-qty').value      = s.qty;
+  document.getElementById('it-f-reorder').value  = s.reorder;
+  document.getElementById('it-f-warranty').value = s.warranty !== 'N/A' ? s.warranty : '';
+  document.getElementById('it-f-supplier').value = s.supplier;
+  document.getElementById('it-f-contact').value  = s.contact||'';
+  document.getElementById('it-f-website').value  = s.website||'';
+  document.getElementById('it-f-remarks').value  = s.remarks||'';
+  itItems = itItems.filter(x => x.id !== id);
+  openM('m-add-it');
+}
+
+function deleteIT(id) {
+  const s = itItems.find(x => x.id === id);
+  if (!s || !confirm(`Delete "${s.name}"?`)) return;
+  itItems = itItems.filter(x => x.id !== id);
+  addLog('DELETE','IT Supplies',`Deleted: "${s.name}"`,`IT-${id}`);
+  closeDP(); renderITSupplies(); showToast('IT supply deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   LAPTOPS
+────────────────────────────────────────────────────────────── */
+let laptops = [
+  { id:1, assetNo:'LPT-2024-001', desc:'Dell Latitude 5510',   serial:'DL5510-0023', brand:'Dell',   user:'Juan Reyes',    dept:'IT Department', status:'Active',    warranty:'2025-12-31', price:65000,  bought:'2022-01-15', maint:'NEEDS REPAIR', maintHistory:[{date:'2026-05-10',cond:'NEEDS REPAIR',tech:'IT Team',remarks:'Keyboard W,A,S,D unresponsive. For replacement.'},{date:'2026-03-01',cond:'GOOD',tech:'IT Team',remarks:'Thermal paste replaced. Fan cleaned.'}] },
+  { id:2, assetNo:'LPT-2024-002', desc:'HP ProBook 450 G8',    serial:'HP450-0008',  brand:'HP',     user:'Ana Cruz',      dept:'Finance',       status:'For Repair', warranty:'2026-06-30', price:58000,  bought:'2022-03-20', maint:'NEEDS REPAIR', maintHistory:[{date:'2026-05-15',cond:'NEEDS REPAIR',tech:'IT Team',remarks:'Battery bloated, replacement needed.'}] },
+  { id:3, assetNo:'LPT-2025-003', desc:'Lenovo ThinkPad E15',  serial:'LEN-E15-0031',brand:'Lenovo', user:'Unassigned',    dept:'IT Department', status:'Active',    warranty:'2027-03-15', price:52000,  bought:'2023-01-10', maint:'For Check',    maintHistory:[] },
+  { id:4, assetNo:'LPT-2025-004', desc:'MacBook Air M2 (2023)',serial:'MBA-M2-0012', brand:'Apple',  user:'Carlos Santos', dept:'Executive',     status:'Active',    warranty:'2027-09-01', price:85000,  bought:'2023-08-15', maint:'GOOD',         maintHistory:[{date:'2026-04-20',cond:'GOOD',tech:'IT Team',remarks:'Routine checkup. All systems functional.'}] },
+  { id:5, assetNo:'LPT-2023-005', desc:'Acer Aspire 5',        serial:'ACER-A5-0007',brand:'Acer',   user:'Rosa Flores',   dept:'HR',            status:'Active',    warranty:'2024-08-15', price:34000,  bought:'2021-06-01', maint:'GOOD',         maintHistory:[{date:'2026-02-14',cond:'GOOD',tech:'IT Team',remarks:'SSD upgraded to 512GB.'}] },
+  { id:6, assetNo:'LPT-2022-006', desc:'ASUS VivoBook 14',     serial:'ASUS-VB14-003',brand:'ASUS',  user:'—',             dept:'—',             status:'Disposed',  warranty:'2023-01-01', price:38000,  bought:'2020-05-15', maint:'—',            maintHistory:[{date:'2023-12-01',cond:'NEEDS REPAIR',tech:'IT Team',remarks:'Motherboard failure. Economically unviable to repair. Disposed.'}] },
+];
+let lpId = 7;
+let currentLpId = null;
+
+function renderLaptops() {
+  const isAdmin = currentUser.role === 'admin';
+  const tbody = document.getElementById('lp-tbody');
+  tbody.innerHTML = '';
+  let active = 0;
+  laptops.forEach(lp => {
+    if (lp.status === 'Active') active++;
+    const sCls = {Active:'b-green','For Repair':'b-red',Disposed:'b-slate'}[lp.status]||'b-slate';
+    const mCls = lp.maint==='GOOD'?'b-green':lp.maint==='NEEDS REPAIR'?'b-red':'b-amber';
+    const isRepair = lp.status === 'For Repair';
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable' + (isRepair ? ' tr-warn' : '');
+    tr.innerHTML = `
+      <td class="td-mono">${lp.assetNo}</td>
+      <td class="td-strong">${lp.desc}</td>
+      <td>${lp.user}</td>
+      <td>${badge(lp.status, sCls)}</td>
+      <td class="td-mono">${lp.warranty}</td>
+      <td>${lp.maint !== '—' ? badge(lp.maint, mCls) : '<span class="td-muted">—</span>'}</td>
+      <td>
+        ${isAdmin ? `<div class="flex-gap">
+          <button class="btn btn-xs btn-primary" title="Assign User" onclick="event.stopPropagation();openAssign(${lp.id})">👤</button>
+          <button class="btn btn-xs btn-outline" title="Maintenance" onclick="event.stopPropagation();openMaint(${lp.id})">🔧</button>
+          <button class="btn btn-xs btn-red" title="Delete" onclick="event.stopPropagation();deleteLaptop(${lp.id})">🗑️</button>
+        </div>` : '<span class="td-muted">View only</span>'}
+      </td>`;
+    tr.addEventListener('click', () => openDP('laptop', lp.id, tr));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('lp-ct').textContent    = `${laptops.length} units`;
+  document.getElementById('dc-laptops').textContent = active;
+  document.getElementById('dc-laptops-d').textContent = `${active} currently active`;
+}
+
+function dpLaptop(id) {
+  const lp = laptops.find(x => x.id === id);
+  if (!lp) return;
+  const isAdmin = currentUser.role === 'admin';
+  const statusColor = {Active:'#f0fdf4','For Repair':'#fef2f2',Disposed:'#f8fafc'}[lp.status]||'#f8fafc';
+  const sCls = {Active:'b-green','For Repair':'b-red',Disposed:'b-slate'}[lp.status]||'b-slate';
+  const mCls = lp.maint==='GOOD'?'b-green':lp.maint==='NEEDS REPAIR'?'b-red':'b-amber';
+
+  // Lifecycle analysis
+  const boughtDate = new Date(lp.bought);
+  const ageYears   = Math.floor((new Date() - boughtDate) / (365.25*24*3600*1000));
+  const isMac      = lp.brand === 'Apple' && lp.price >= 70000;
+  const maxYears   = isMac ? 5 : 3;
+  const needsReplace = ageYears >= maxYears;
+
+  setDPHeader('💻', statusColor, lp.desc, lp.assetNo);
+
+  let histHTML = '';
+  if (lp.maintHistory && lp.maintHistory.length) {
+    histHTML = '<ul class="mh-list">' + lp.maintHistory.slice().reverse().map(m =>
+      `<li class="mh-item"><div class="mh-dot ${m.cond==='GOOD'?'good':'repair'}"></div><div><div class="mh-cond ${m.cond==='GOOD'?'good':'repair'}">${m.cond}</div><div class="mh-date">${m.date} · ${m.tech||'IT Team'}</div><div class="mh-remarks">${m.remarks||'—'}</div></div></li>`
+    ).join('') + '</ul>';
+  } else {
+    histHTML = '<div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">No maintenance records yet.</div>';
+  }
+
+  let html = `
+    ${lp.status==='For Repair' ? `<div class="dp-alert danger">🔴 <span class="dp-alert-text">Unit is FOR REPAIR. Check maintenance history below.</span></div>` : ''}
+    ${needsReplace ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Laptop is ${ageYears} years old — exceeds ${maxYears}-year replacement threshold${isMac?' (Mac >₱70k policy)':''}.</span></div>` : ''}
+    <div class="dp-status-row">${badge(lp.status,sCls)}<span class="dp-status-label">${ageYears} years old · ${isMac?'Mac lifecycle (5yr)':'Standard lifecycle (3yr)'}</span></div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">💻 Device Information</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Description',`<strong>${lp.desc}</strong>`)}
+        ${dpField('Asset Number', lp.assetNo, 'mono')}
+        ${dpField('Serial Number', lp.serial, 'mono')}
+        ${dpField('Brand', lp.brand)}
+        ${dpField('Purchase Price', '₱'+lp.price.toLocaleString())}
+        ${dpField('Date Purchased', lp.bought, 'mono')}
+        ${dpField('Warranty Expiry', lp.warranty, 'mono')}
+        ${dpField('Age', ageYears+' year'+(ageYears!==1?'s':''))}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">👤 Assignment</div>
+      <div class="dp-grid">
+        ${dpField('Assigned To', lp.user)}
+        ${dpField('Department', lp.dept)}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">🔧 Maintenance · ${badge(lp.maint!=='—'?lp.maint:'No Record', lp.maint!=='—'?mCls:'b-slate')}</div>
+      <p style="font-size:11.5px;color:var(--slate-400);margin-bottom:10px">Maintenance scheduled every <strong>June & December</strong></p>
+      ${histHTML}
+    </div>`;
+
+  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-green btn-sm" onclick="openAssign(${lp.id})">👤 Assign User</button><button class="btn btn-primary btn-sm" onclick="openMaint(${lp.id})">🔧 Add Maintenance</button><button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.id})">🗑️ Delete</button></div></div>`;
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function saveLaptop() {
+  const assetNo = document.getElementById('lp-f-asset').value.trim() || `LPT-${new Date().getFullYear()}-${String(lpId).padStart(3,'0')}`;
+  const desc    = document.getElementById('lp-f-desc').value.trim();
+  const serial  = document.getElementById('lp-f-serial').value.trim()||'N/A';
+  const brand   = document.getElementById('lp-f-brand').value;
+  const user    = document.getElementById('lp-f-user').value.trim()||'Unassigned';
+  const dept    = document.getElementById('lp-f-dept').value;
+  const status  = document.getElementById('lp-f-status').value;
+  const warranty= document.getElementById('lp-f-warranty').value||'N/A';
+  const price   = parseFloat(document.getElementById('lp-f-price').value)||0;
+  const bought  = document.getElementById('lp-f-bought').value||todayStr();
+  if (!desc) { showToast('Description required','t-error'); return; }
+  laptops.push({ id:lpId++, assetNo,desc,serial,brand,user,dept,status,warranty,price,bought,maint:'For Check',maintHistory:[] });
+  closeM('m-add-lp');
+  clearForm(['lp-f-asset','lp-f-desc','lp-f-serial','lp-f-user','lp-f-warranty','lp-f-price','lp-f-bought']);
+  addLog('CREATE','Laptops',`Added laptop: "${desc}" (SN: ${serial}) → ${user}`,assetNo);
+  renderLaptops(); showToast(`"${desc}" added`,'t-success');
+}
+
+function openAssign(id) {
+  const lp = laptops.find(x => x.id === id);
+  if (!lp) return;
+  currentLpId = id;
+  document.getElementById('assign-lp-name').textContent = lp.desc;
+  document.getElementById('assign-user').value = '';
+  openM('m-assign');
+}
+
+function doAssign() {
+  const lp = laptops.find(x => x.id === currentLpId);
+  if (!lp) return;
+  const name = document.getElementById('assign-user').value.trim();
+  const dept = document.getElementById('assign-dept').value;
+  if (!name) { showToast('Enter a name','t-error'); return; }
+  const old = lp.user;
+  lp.user = name; lp.dept = dept;
+  closeM('m-assign');
+  addLog('UPDATE','Laptops',`Reassigned "${lp.desc}" from ${old} to ${name} (${dept})`,lp.assetNo);
+  renderLaptops();
+  if (dpOpen && dpCurrentType==='laptop' && dpCurrentId===lp.id) dpLaptop(lp.id);
+  showToast(`Assigned to ${name}`,'t-success');
+}
+
+function openMaint(id) {
+  const lp = laptops.find(x => x.id === id);
+  if (!lp) return;
+  currentLpId = id;
+  document.getElementById('maint-name').textContent = lp.desc;
+  document.getElementById('maint-sn').textContent   = lp.serial;
+  document.getElementById('maint-date').value       = todayStr();
+  document.getElementById('maint-tech').value       = currentUser.name;
+  document.getElementById('maint-cond').value       = 'GOOD';
+  document.getElementById('maint-remarks').value    = '';
+  openM('m-maint');
+}
+
+function saveMaintenance() {
+  const lp = laptops.find(x => x.id === currentLpId);
+  if (!lp) return;
+  const cond    = document.getElementById('maint-cond').value;
+  const date    = document.getElementById('maint-date').value;
+  const tech    = document.getElementById('maint-tech').value.trim();
+  const remarks = document.getElementById('maint-remarks').value.trim();
+  if (!lp.maintHistory) lp.maintHistory = [];
+  lp.maintHistory.push({ date, cond, tech, remarks });
+  lp.maint  = cond;
+  lp.status = cond==='GOOD' ? 'Active' : 'For Repair';
+  closeM('m-maint');
+  addLog('UPDATE','Laptops',`Maintenance record: "${lp.desc}" → ${cond}. ${remarks}`,lp.assetNo);
+  renderLaptops();
+  if (dpOpen && dpCurrentType==='laptop' && dpCurrentId===lp.id) dpLaptop(lp.id);
+  showToast(`Maintenance saved: ${cond}`, cond==='GOOD'?'t-success':'t-warning');
+}
+
+function deleteLaptop(id) {
+  const lp = laptops.find(x => x.id === id);
+  if (!lp || !confirm(`Delete "${lp.desc}"?`)) return;
+  laptops = laptops.filter(x => x.id !== id);
+  addLog('DELETE','Laptops',`Deleted laptop: "${lp.desc}" (${lp.assetNo})`,lp.assetNo);
+  closeDP(); renderLaptops(); showToast('Laptop deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PURCHASE ORDERS
+────────────────────────────────────────────────────────────── */
+let poItems = [
+  { id:1, poNum:'PO-2026-0001', item:'Bond Paper (Short)',       cat:'Office Supplies', qty:20, unit:'Ream',   supplier:'PaperWorld Inc.',    price:280,  orderDate:'2026-05-14', eta:'2026-05-22', status:'IN TRANSIT', notes:'Urgent. Deliver to storage room A.',    delivered:null },
+  { id:2, poNum:'PO-2026-0002', item:'Office Chairs (Mesh)',     cat:'Furniture',       qty:5,  unit:'Piece',  supplier:'OfficePro PH',       price:4200, orderDate:'2026-04-28', eta:'2026-05-10', status:'ORDERED',    notes:'Replacement for worn chairs.',          delivered:null },
+  { id:3, poNum:'PO-2026-0003', item:'HP Toner CF280A',         cat:'IT Supplies',     qty:6,  unit:'Piece',  supplier:'HP Philippines',     price:3500, orderDate:'2026-05-16', eta:'2026-05-25', status:'ORDERED',    notes:'Request official receipt.',             delivered:null },
+  { id:4, poNum:'PO-2026-0004', item:'Coffee 3-in-1 Sachet',    cat:'Pantry Supplies', qty:10, unit:'Box',    supplier:'Nestle Distributor', price:350,  orderDate:'2026-04-25', eta:'2026-05-01', status:'ORDERED',    notes:'',                                     delivered:null },
+  { id:5, poNum:'PO-2026-0005', item:'Bandage Rolls',           cat:'First Aid Kit',   qty:20, unit:'Roll',   supplier:'Mercury Drug',       price:40,   orderDate:'2026-05-17', eta:'2026-05-30', status:'ORDERED',    notes:'Emergency restock.',                   delivered:null },
+  { id:6, poNum:'PO-2026-0006', item:'USB-C Cables 2m',         cat:'IT Supplies',     qty:15, unit:'Piece',  supplier:'TechHub Supplies',   price:280,  orderDate:'2026-04-10', eta:'2026-04-20', status:'DELIVERED',  notes:'',                                     delivered:'2026-04-19' },
+  { id:7, poNum:'PO-2026-0007', item:'Mineral Water 500mL',     cat:'Pantry Supplies', qty:100,unit:'Bottle', supplier:'Selecta Distributor',price:20,   orderDate:'2026-05-01', eta:'2026-05-05', status:'DELIVERED',  notes:'Weekly restock.',                       delivered:'2026-05-04' },
+];
+let poId = 8;
+
+function renderOrders() {
+  const isAdmin = currentUser.role === 'admin';
+  const now = new Date(); now.setHours(0,0,0,0);
+  const tbody = document.getElementById('po-tbody');
+  tbody.innerHTML = '';
+  let delayed = 0, pending = 0;
+
+  poItems.forEach(o => {
+    let status = o.status;
+    const etaDate = o.eta ? new Date(o.eta) : null;
+    if (status !== 'DELIVERED' && etaDate && etaDate < now) status = 'DELAYED';
+    if (status === 'DELAYED') delayed++;
+    if (['ORDERED','IN TRANSIT','DELAYED'].includes(status)) pending++;
+
+    const sCls = {ORDERED:'b-amber','IN TRANSIT':'b-blue',DELIVERED:'b-green',DELAYED:'b-red'}[status]||'b-slate';
+    const sIcon = {ORDERED:'📋','IN TRANSIT':'🚚',DELIVERED:'✅',DELAYED:'⏰'}[status]||'';
+
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable' + (status==='DELAYED'?' tr-warn':'') + (status==='DELIVERED'?' ':'');
+    tr.innerHTML = `
+      <td class="td-mono">${o.poNum}</td>
+      <td class="td-strong">${o.item}</td>
+      <td>${badge(o.cat,'b-slate b-none')}</td>
+      <td>${o.qty} ${o.unit}</td>
+      <td class="td-mono">${o.orderDate}</td>
+      <td class="td-mono">${o.eta||'—'}</td>
+      <td>${badge(sIcon+' '+status, sCls)}</td>
+      <td>
+        ${isAdmin && status!=='DELIVERED' ? `<button class="btn btn-xs btn-green" title="Mark Delivered" onclick="event.stopPropagation();markDelivered(${o.id})">✅</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-xs btn-red" onclick="event.stopPropagation();deletePO(${o.id})">🗑️</button>` : ''}
+      </td>`;
+    tr.addEventListener('click', () => openDP('order', o.id, tr));
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('po-total-ct').textContent = `${poItems.length} orders`;
+  document.getElementById('po-delay-ct').textContent  = `${delayed} delayed`;
+  const nb = document.getElementById('nb-po');
+  if (nb) { nb.textContent = pending; nb.style.display = pending ? '' : 'none'; }
+  refreshDashboard();
+}
+
+function dpOrder(id) {
+  const o = poItems.find(x => x.id === id);
+  if (!o) return;
+  const isAdmin = currentUser.role === 'admin';
+  const now = new Date(); now.setHours(0,0,0,0);
+  const etaDate = o.eta ? new Date(o.eta) : null;
+  let status = o.status;
+  if (status!=='DELIVERED' && etaDate && etaDate < now) status = 'DELAYED';
+  const isDelayed = status === 'DELAYED';
+  const daysLate = isDelayed && etaDate ? Math.floor((now-etaDate)/86400000) : 0;
+  const sCls = {ORDERED:'b-amber','IN TRANSIT':'b-blue',DELIVERED:'b-green',DELAYED:'b-red'}[status]||'b-slate';
+  setDPHeader('🛒',isDelayed?'#fef2f2':status==='DELIVERED'?'#f0fdf4':'#eff6ff', o.item, o.poNum);
+
+  let html = `
+    ${isDelayed ? `<div class="dp-alert danger">⏰ <span class="dp-alert-text">Delivery is ${daysLate} day${daysLate!==1?'s':''} overdue. Follow up with supplier.</span></div>` : ''}
+    <div class="dp-status-row">${badge(status, sCls)}<span class="dp-status-label">Order status</span></div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">📦 Order Information</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Item Name',`<strong>${o.item}</strong>`)}
+        ${dpField('PO Number', o.poNum, 'mono')}
+        ${dpField('Category', o.cat)}
+        ${dpField('Quantity', o.qty+' '+o.unit)}
+        ${dpField('Unit Price', o.price?'₱'+o.price.toLocaleString():null)}
+        ${dpField('Total Cost', o.price?'₱'+(o.price*o.qty).toLocaleString():null)}
+        ${dpField('Order Date', o.orderDate, 'mono')}
+        ${dpField('Expected Delivery', o.eta||'—', 'mono')}
+        ${dpField('Actual Delivery', o.delivered||'Pending', 'mono')}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">🏪 Supplier</div>
+      <div class="supplier-card">
+        <div class="sc-name">🏢 ${o.supplier||'Not specified'}</div>
+        <div class="sc-note">Contact supplier to follow up on delivery</div>
+        <span class="sc-link" onclick="showToast('Contacting ${o.supplier}…','t-info')">🔗 Contact Supplier</span>
+      </div>
+    </div>
+
+    ${o.notes ? `<div class="dp-section"><div class="dp-section-hd">📝 Notes</div><div class="dp-grid">${dpFieldFull('Order Notes',o.notes)}</div></div>` : ''}`;
+
+  if (isAdmin && status!=='DELIVERED') {
+    html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-green btn-sm" onclick="markDelivered(${o.id})">✅ Mark Delivered</button><button class="btn btn-red btn-sm" onclick="deletePO(${o.id})">🗑️ Delete</button></div></div>`;
+  } else if (isAdmin) {
+    html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-red btn-sm" onclick="deletePO(${o.id})">🗑️ Delete</button></div></div>`;
+  }
+
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function savePO() {
+  const item     = document.getElementById('po-f-item').value.trim();
+  const cat      = document.getElementById('po-f-cat').value;
+  const qty      = parseInt(document.getElementById('po-f-qty').value)||1;
+  const unit     = document.getElementById('po-f-unit').value;
+  const supplier = document.getElementById('po-f-supplier').value.trim()||'Not specified';
+  const price    = parseFloat(document.getElementById('po-f-price').value)||0;
+  const date     = document.getElementById('po-f-date').value||todayStr();
+  const eta      = document.getElementById('po-f-eta').value||'';
+  const notes    = document.getElementById('po-f-notes').value.trim();
+  if (!item) { showToast('Item name required','t-error'); return; }
+  const poNum = 'PO-'+new Date().getFullYear()+'-'+String(poId).padStart(4,'0');
+  poItems.push({ id:poId++, poNum, item,cat,qty,unit,supplier,price,orderDate:date,eta,status:'ORDERED',notes,delivered:null });
+  closeM('m-add-po');
+  clearForm(['po-f-item','po-f-qty','po-f-supplier','po-f-price','po-f-date','po-f-eta','po-f-notes']);
+  addLog('CREATE','Purchase Orders',`Created PO: "${item}" x${qty} from ${supplier}`,poNum);
+  renderOrders(); showToast(`PO created: ${poNum}`,'t-success');
+}
+
+function markDelivered(id) {
+  const o = poItems.find(x => x.id === id);
+  if (!o) return;
+  o.status    = 'DELIVERED';
+  o.delivered = todayStr();
+
+  // Auto-update inventory if item matches
+  const invMatch = invItems.find(i => i.name.toLowerCase() === o.item.toLowerCase() && i.cat === o.cat);
+  let invMsg = '';
+  if (invMatch) {
+    invMatch.qty += o.qty;
+    invMsg = ` Inventory updated: "${invMatch.name}" +${o.qty} ${o.unit} (now ${invMatch.qty}).`;
+    renderInventory();
+  }
+
+  addLog('DELIVER','Purchase Orders',`PO Delivered: "${o.item}" x${o.qty} from ${o.supplier}.${invMsg}`,o.poNum);
+  renderOrders();
+  if (dpOpen && dpCurrentType==='order' && dpCurrentId===o.id) dpOrder(o.id);
+  showToast(`Delivered: ${o.item}! ${invMsg}`,'t-success');
+}
+
+function deletePO(id) {
+  const o = poItems.find(x => x.id === id);
+  if (!o || !confirm(`Delete ${o.poNum}?`)) return;
+  poItems = poItems.filter(x => x.id !== id);
+  addLog('DELETE','Purchase Orders',`Deleted PO: ${o.poNum} — "${o.item}"`,o.poNum);
+  closeDP(); renderOrders(); showToast('PO deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   VEHICLES
+────────────────────────────────────────────────────────────── */
+let vehicles = [
+  { id:1, name:'Toyota Vios 2022',       type:'Car',        plate:'ABC 1234', assigned:'Pedro Cruz',     status:'Active',        nextMaint:'2026-06-15', year:2022, orcr:'2027-03-01', maintHistory:[{date:'2026-01-10',type:'Oil Change',odo:15000,cost:2500,next:'2026-06-15',remarks:'Castrol GTX 10W-40'}] },
+  { id:2, name:'Honda Click 125i 2023',  type:'Motorcycle', plate:'XYZ 5678', assigned:'Marco Bautista', status:'Active',        nextMaint:'2026-07-01', year:2023, orcr:'2027-06-15', maintHistory:[{date:'2026-02-20',type:'General Checkup',odo:8500,cost:1200,next:'2026-07-01',remarks:'All good. Chain lubricated.'}] },
+  { id:3, name:'Toyota Hiace 2020',      type:'Van',        plate:'DEF 9012', assigned:'Company Pool',   status:'For Maintenance',nextMaint:'2026-05-20', year:2020, orcr:'2026-08-30', maintHistory:[{date:'2025-11-15',type:'Brake Service',odo:72000,cost:8500,next:'2026-05-20',remarks:'Front pads replaced. Rear adjusted.'}] },
+];
+let vehId = 4;
+let currentVehId = null;
+
+function renderVehicles() {
+  const isAdmin = currentUser.role === 'admin';
+  const tbody = document.getElementById('veh-tbody');
+  tbody.innerHTML = '';
+  vehicles.forEach(v => {
+    const sCls = {Active:'b-green','For Maintenance':'b-amber','Out of Service':'b-red'}[v.status]||'b-slate';
+    const typeIcon = {Car:'🚗',Motorcycle:'🏍️',Van:'🚐',Truck:'🚛'}[v.type]||'🚗';
+    const now = new Date(); now.setHours(0,0,0,0);
+    const maintDue = v.nextMaint && new Date(v.nextMaint) <= now;
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable' + (maintDue ? ' tr-warn' : '');
+    tr.innerHTML = `
+      <td class="td-strong">${typeIcon} ${v.name}</td>
+      <td>${v.type}</td>
+      <td class="td-mono">${v.plate}</td>
+      <td>${v.assigned}</td>
+      <td>${badge(v.status, sCls)}</td>
+      <td class="td-mono ${maintDue?'text-red-600':''}">${v.nextMaint||'—'}</td>
+      <td>
+        ${isAdmin ? `<div class="flex-gap"><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();openVehMaint(${v.id})">🔧</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteVeh(${v.id})">🗑️</button></div>` : '<span class="td-muted">View only</span>'}
+      </td>`;
+    tr.addEventListener('click', () => openDP('vehicle', v.id, tr));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('veh-ct').textContent = `${vehicles.length} vehicles`;
+}
+
+function dpVehicle(id) {
+  const v = vehicles.find(x => x.id === id);
+  if (!v) return;
+  const isAdmin = currentUser.role === 'admin';
+  const sCls = {Active:'b-green','For Maintenance':'b-amber','Out of Service':'b-red'}[v.status]||'b-slate';
+  const typeIcon = {Car:'🚗',Motorcycle:'🏍️',Van:'🚐',Truck:'🚛'}[v.type]||'🚗';
+  const now = new Date(); now.setHours(0,0,0,0);
+  const maintDue = v.nextMaint && new Date(v.nextMaint) <= now;
+  setDPHeader(typeIcon,'#f0fdf4', v.name, v.plate);
+
+  let histHTML = '';
+  if (v.maintHistory && v.maintHistory.length) {
+    histHTML = '<ul class="mh-list">' + v.maintHistory.slice().reverse().map(m =>
+      `<li class="mh-item"><div class="mh-dot good"></div><div><div class="mh-cond good">${m.type}</div><div class="mh-date">${m.date} · ₱${m.cost?.toLocaleString()||'0'} · ${m.odo?.toLocaleString()||'0'} km</div><div class="mh-remarks">${m.remarks||'—'}</div></div></li>`
+    ).join('') + '</ul>';
+  } else {
+    histHTML = '<div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">No maintenance records.</div>';
+  }
+
+  let html = `
+    ${maintDue ? `<div class="dp-alert warning">🔧 <span class="dp-alert-text">Maintenance is due! Last scheduled: ${v.nextMaint}</span></div>` : ''}
+    <div class="dp-status-row">${badge(v.status,sCls)}<span class="dp-status-label">Vehicle status</span></div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">🚗 Vehicle Information</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Vehicle Name',`<strong>${typeIcon} ${v.name}</strong>`)}
+        ${dpField('Type', v.type)}
+        ${dpField('Plate Number', v.plate, 'mono')}
+        ${dpField('Year Model', v.year)}
+        ${dpField('Assigned To', v.assigned)}
+        ${dpField('OR/CR Expiry', v.orcr, 'mono')}
+        ${dpField('Next Maintenance', v.nextMaint||'—', 'mono')}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">🔧 Service History</div>
+      ${histHTML}
+    </div>`;
+
+  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-primary btn-sm" onclick="openVehMaint(${v.id})">🔧 Add Maintenance Record</button><button class="btn btn-red btn-sm" onclick="deleteVeh(${v.id})">🗑️ Delete</button></div></div>`;
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function saveVehicle() {
+  const name   = document.getElementById('veh-f-name').value.trim();
+  const type   = document.getElementById('veh-f-type').value;
+  const plate  = document.getElementById('veh-f-plate').value.trim()||'—';
+  const assigned = document.getElementById('veh-f-assigned').value.trim()||'Unassigned';
+  const status = document.getElementById('veh-f-status').value;
+  const nextMaint = document.getElementById('veh-f-maint').value||'';
+  const year   = parseInt(document.getElementById('veh-f-year').value)||new Date().getFullYear();
+  const orcr   = document.getElementById('veh-f-orcr').value||'—';
+  if (!name) { showToast('Vehicle name required','t-error'); return; }
+  vehicles.push({ id:vehId++, name,type,plate,assigned,status,nextMaint,year,orcr,maintHistory:[] });
+  closeM('m-add-veh');
+  clearForm(['veh-f-name','veh-f-plate','veh-f-assigned','veh-f-maint','veh-f-year','veh-f-orcr']);
+  addLog('CREATE','Vehicles',`Added vehicle: "${name}" (${plate})`,plate);
+  renderVehicles(); showToast(`"${name}" added`,'t-success');
+}
+
+function openVehMaint(id) {
+  const v = vehicles.find(x => x.id === id);
+  if (!v) return;
+  currentVehId = id;
+  document.getElementById('veh-maint-name').textContent = v.name;
+  document.getElementById('vm-date').value = todayStr();
+  document.getElementById('vm-odo').value  = '';
+  document.getElementById('vm-cost').value = '';
+  document.getElementById('vm-next').value = '';
+  document.getElementById('vm-remarks').value = '';
+  openM('m-veh-maint');
+}
+
+function saveVehicleMaint() {
+  const v = vehicles.find(x => x.id === currentVehId);
+  if (!v) return;
+  const date    = document.getElementById('vm-date').value;
+  const odo     = parseInt(document.getElementById('vm-odo').value)||0;
+  const type    = document.getElementById('vm-type').value;
+  const cost    = parseFloat(document.getElementById('vm-cost').value)||0;
+  const next    = document.getElementById('vm-next').value;
+  const remarks = document.getElementById('vm-remarks').value.trim();
+  if (!v.maintHistory) v.maintHistory = [];
+  v.maintHistory.push({ date,odo,type,cost,next,remarks });
+  if (next) v.nextMaint = next;
+  if (v.status === 'For Maintenance') v.status = 'Active';
+  closeM('m-veh-maint');
+  addLog('UPDATE','Vehicles',`Maintenance: "${v.name}" — ${type}. Next: ${next||'TBD'}`,v.plate);
+  renderVehicles();
+  if (dpOpen && dpCurrentType==='vehicle' && dpCurrentId===v.id) dpVehicle(v.id);
+  showToast(`Maintenance saved for ${v.name}`,'t-success');
+}
+
+function deleteVeh(id) {
+  const v = vehicles.find(x => x.id === id);
+  if (!v || !confirm(`Delete "${v.name}"?`)) return;
+  vehicles = vehicles.filter(x => x.id !== id);
+  addLog('DELETE','Vehicles',`Deleted vehicle: "${v.name}" (${v.plate})`,v.plate);
+  closeDP(); renderVehicles(); showToast('Vehicle deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   GLOBE MOBILE PLANS
+────────────────────────────────────────────────────────────── */
+let globePlans = [
+  { id:1, name:'Maria Alonzo',   num:'0917-123-4567', acct:'GLOBE-ACC-001', plan:'Globe Postpaid Plan 999', cost:999,  data:'50GB',  credit:1500, renew:'2026-06-01', status:'Active',   remarks:'Admin line.' },
+  { id:2, name:'Juan Reyes',     num:'0917-234-5678', acct:'GLOBE-ACC-002', plan:'Globe Postpaid Plan 799', cost:799,  data:'30GB',  credit:1000, renew:'2026-06-01', status:'Active',   remarks:'' },
+  { id:3, name:'Ana Cruz',       num:'0917-345-6789', acct:'GLOBE-ACC-003', plan:'Globe Postpaid Plan 599', cost:599,  data:'20GB',  credit:800,  renew:'2026-05-25', status:'Active',   remarks:'Renewal in 3 days.' },
+  { id:4, name:'Carlos Santos',  num:'0918-456-7890', acct:'GLOBE-ACC-004', plan:'Globe Postpaid Plan 999', cost:999,  data:'50GB',  credit:1500, renew:'2026-07-01', status:'Active',   remarks:'' },
+  { id:5, name:'Rosa Flores',    num:'0917-567-8901', acct:'GLOBE-ACC-005', plan:'Globe Postpaid Plan 399', cost:399,  data:'10GB',  credit:500,  renew:'2025-12-01', status:'For Renewal',remarks:'Lapsed. Contact Globe.' },
+];
+let globeId = 6;
+
+function renderGlobe() {
+  const tbody = document.getElementById('globe-tbody');
+  tbody.innerHTML = '';
+  let renewSoon = 0;
+  const now = new Date(); now.setHours(0,0,0,0);
+  globePlans.forEach(g => {
+    const renewDate = new Date(g.renew);
+    const daysLeft  = Math.ceil((renewDate - now) / 86400000);
+    if (daysLeft <= 30 && g.status !== 'Inactive') renewSoon++;
+    const sCls = g.status==='Active'?'b-green':g.status==='For Renewal'?'b-red':'b-slate';
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable';
+    tr.innerHTML = `
+      <td class="td-strong">${g.name}</td>
+      <td class="td-mono">${g.num}</td>
+      <td>${g.plan}</td>
+      <td>₱${g.cost.toLocaleString()}/mo</td>
+      <td class="td-mono">${g.renew}</td>
+      <td>${badge(g.status, sCls)}</td>
+      <td>
+        <div class="flex-gap">
+          <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editGlobe(${g.id})">✏️</button>
+          <button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteGlobe(${g.id})">🗑️</button>
+        </div>
+      </td>`;
+    tr.addEventListener('click', () => openDP('globe', g.id, tr));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('globe-ct').textContent        = `${globePlans.length} plans`;
+  document.getElementById('globe-renew-ct').textContent  = `${renewSoon} renewing soon`;
+}
+
+function dpGlobe(id) {
+  const g = globePlans.find(x => x.id === id);
+  if (!g) return;
+  const sCls = g.status==='Active'?'b-green':g.status==='For Renewal'?'b-red':'b-slate';
+  setDPHeader('📱','#f0fdf4', g.name, 'Globe Mobile Plan');
+  const html = `
+    <div class="dp-status-row">${badge(g.status, sCls)}<span class="dp-status-label">Plan status</span></div>
+    <div class="dp-section">
+      <div class="dp-section-hd">👤 Subscriber Information</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Employee Name',`<strong>${g.name}</strong>`)}
+        ${dpField('Mobile Number', g.num, 'mono')}
+        ${dpField('Account Number', g.acct, 'mono')}
+      </div>
+    </div>
+    <div class="dp-section">
+      <div class="dp-section-hd">📱 Plan Details</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Plan Name', g.plan)}
+        ${dpField('Monthly Cost', '₱'+g.cost.toLocaleString())}
+        ${dpField('Data Allocation', g.data)}
+        ${dpField('Credit Limit', '₱'+g.credit.toLocaleString())}
+        ${dpField('Renewal Date', g.renew, 'mono')}
+      </div>
+    </div>
+    ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes',g.remarks)}</div></div>` : ''}
+    <div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-primary btn-sm" onclick="editGlobe(${g.id})">✏️ Edit</button><button class="btn btn-red btn-sm" onclick="deleteGlobe(${g.id})">🗑️ Delete</button></div></div>`;
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function saveGlobe() {
+  const name   = document.getElementById('globe-f-name').value.trim();
+  const num    = document.getElementById('globe-f-num').value.trim()||'—';
+  const acct   = document.getElementById('globe-f-acct').value.trim()||'—';
+  const plan   = document.getElementById('globe-f-plan').value.trim()||'—';
+  const cost   = parseFloat(document.getElementById('globe-f-cost').value)||0;
+  const data   = document.getElementById('globe-f-data').value.trim()||'—';
+  const renew  = document.getElementById('globe-f-renew').value||'—';
+  const credit = parseFloat(document.getElementById('globe-f-credit').value)||0;
+  const remarks= document.getElementById('globe-f-remarks').value.trim();
+  if (!name) { showToast('Employee name required','t-error'); return; }
+  globePlans.push({ id:globeId++, name,num,acct,plan,cost,data,renew,credit,status:'Active',remarks });
+  closeM('m-add-globe');
+  clearForm(['globe-f-name','globe-f-num','globe-f-acct','globe-f-plan','globe-f-cost','globe-f-data','globe-f-renew','globe-f-credit','globe-f-remarks']);
+  addLog('CREATE','Globe Mobile Plans',`Added mobile plan for ${name}: ${plan}`,acct);
+  renderGlobe(); showToast(`Plan added for ${name}`,'t-success');
+}
+
+function editGlobe(id) {
+  const g = globePlans.find(x => x.id === id);
+  if (!g) return;
+  document.getElementById('globe-f-name').value    = g.name;
+  document.getElementById('globe-f-num').value     = g.num;
+  document.getElementById('globe-f-acct').value    = g.acct;
+  document.getElementById('globe-f-plan').value    = g.plan;
+  document.getElementById('globe-f-cost').value    = g.cost;
+  document.getElementById('globe-f-data').value    = g.data;
+  document.getElementById('globe-f-renew').value   = g.renew;
+  document.getElementById('globe-f-credit').value  = g.credit;
+  document.getElementById('globe-f-remarks').value = g.remarks||'';
+  globePlans = globePlans.filter(x => x.id !== id);
+  openM('m-add-globe');
+}
+
+function deleteGlobe(id) {
+  const g = globePlans.find(x => x.id === id);
+  if (!g || !confirm(`Delete plan for "${g.name}"?`)) return;
+  globePlans = globePlans.filter(x => x.id !== id);
+  addLog('DELETE','Globe Mobile Plans',`Deleted plan for ${g.name}`,g.acct);
+  closeDP(); renderGlobe(); showToast('Plan deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   M365 LICENSES
+────────────────────────────────────────────────────────────── */
+let m365Items = [
+  { id:1, email:'maria.alonzo@company.ph',  type:'Microsoft 365 Business Premium', cat:'Subscription', expiry:'2027-01-01', cost:1850, supplier:'Microsoft Direct', status:'Active',      remarks:'Admin account with full suite.' },
+  { id:2, email:'juan.reyes@company.ph',    type:'Microsoft 365 Business Standard', cat:'Subscription', expiry:'2027-01-01', cost:1200, supplier:'Microsoft Direct', status:'Active',      remarks:'' },
+  { id:3, email:'ana.cruz@company.ph',      type:'Microsoft 365 Business Basic',   cat:'Subscription', expiry:'2025-06-01', cost:550,  supplier:'CDRKing',         status:'Expired',     remarks:'Needs renewal.' },
+  { id:4, email:'carlos.santos@company.ph', type:'Microsoft 365 Apps',             cat:'Subscription', expiry:'2026-12-01', cost:950,  supplier:'Microsoft Direct', status:'Active',      remarks:'' },
+  { id:5, email:'rosa.flores@company.ph',   type:'Office 2021 (Perpetual)',        cat:'Perpetual',    expiry:'N/A',        cost:8000, supplier:'PC Express',      status:'Active',      remarks:'One-time purchase. No renewal.' },
+  { id:6, email:'temp.account@company.ph',  type:'Microsoft 365 Business Basic',   cat:'Trial',        expiry:'2026-03-01', cost:0,    supplier:'Microsoft Direct', status:'Not Renewed', remarks:'Trial expired.' },
+];
+let m365Id = 7;
+
+function renderM365() {
+  const tbody = document.getElementById('m365-tbody');
+  tbody.innerHTML = '';
+  let expired = 0;
+  m365Items.forEach(m => {
+    const sCls = {Active:'b-green',Expired:'b-red','Not Renewed':'b-amber','No License':'b-slate'}[m.status]||'b-slate';
+    if (m.status==='Expired') expired++;
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable' + (m.status==='Expired'?' tr-danger':'');
+    tr.innerHTML = `
+      <td class="td-mono">${m.email}</td>
+      <td>${m.type}</td>
+      <td>${badge(m.cat,'b-slate b-none')}</td>
+      <td class="td-mono">${m.expiry}</td>
+      <td>${m.cost?'₱'+m.cost.toLocaleString()+'/mo':'One-time'}</td>
+      <td>${badge(m.status, sCls)}</td>
+      <td>
+        <div class="flex-gap">
+          <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editM365(${m.id})">✏️</button>
+          <button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteM365(${m.id})">🗑️</button>
+        </div>
+      </td>`;
+    tr.addEventListener('click', () => openDP('m365', m.id, tr));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('m365-ct').textContent    = `${m365Items.length} licenses`;
+  document.getElementById('m365-exp-ct').textContent = `${expired} expired`;
+}
+
+function dpM365(id) {
+  const m = m365Items.find(x => x.id === id);
+  if (!m) return;
+  const sCls = {Active:'b-green',Expired:'b-red','Not Renewed':'b-amber','No License':'b-slate'}[m.status]||'b-slate';
+  setDPHeader('💼',m.status==='Expired'?'#fef2f2':'#f0fdf4', m.email, 'M365 License');
+  const html = `
+    ${m.status==='Expired'?`<div class="dp-alert danger">⚠️ <span class="dp-alert-text">License expired! Renew to restore access.</span></div>`:''}
+    <div class="dp-status-row">${badge(m.status, sCls)}<span class="dp-status-label">License status</span></div>
+    <div class="dp-section">
+      <div class="dp-section-hd">📧 License Details</div>
+      <div class="dp-grid">
+        ${dpFieldFull('Assigned Email',`<strong>${m.email}</strong>`)}
+        ${dpFieldFull('License Type', m.type)}
+        ${dpField('Category', m.cat)}
+        ${dpField('Expiry Date', m.expiry, 'mono')}
+        ${dpField('Monthly Cost', m.cost?'₱'+m.cost.toLocaleString()+'/mo':'One-time ₱'+m.cost?.toLocaleString())}
+        ${dpField('Supplier', m.supplier)}
+      </div>
+    </div>
+    ${m.remarks?`<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes',m.remarks)}</div></div>`:''}
+    <div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-primary btn-sm" onclick="editM365(${m.id})">✏️ Edit</button><button class="btn btn-red btn-sm" onclick="deleteM365(${m.id})">🗑️ Delete</button></div></div>`;
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function saveM365() {
+  const email    = document.getElementById('m365-f-email').value.trim();
+  const type     = document.getElementById('m365-f-type').value;
+  const cat      = document.getElementById('m365-f-cat').value;
+  const expiry   = document.getElementById('m365-f-expiry').value||'N/A';
+  const cost     = parseFloat(document.getElementById('m365-f-cost').value)||0;
+  const supplier = document.getElementById('m365-f-supplier').value.trim()||'Microsoft';
+  const remarks  = document.getElementById('m365-f-remarks').value.trim();
+  if (!email) { showToast('Email required','t-error'); return; }
+  m365Items.push({ id:m365Id++, email,type,cat,expiry,cost,supplier,status:'Active',remarks });
+  closeM('m-add-m365');
+  clearForm(['m365-f-email','m365-f-expiry','m365-f-cost','m365-f-supplier','m365-f-remarks']);
+  addLog('CREATE','M365 Licenses',`Added M365 license for ${email}: ${type}`,email);
+  renderM365(); showToast(`License added for ${email}`,'t-success');
+}
+
+function editM365(id) {
+  const m = m365Items.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('m365-f-email').value    = m.email;
+  document.getElementById('m365-f-type').value     = m.type;
+  document.getElementById('m365-f-cat').value      = m.cat;
+  document.getElementById('m365-f-expiry').value   = m.expiry!=='N/A'?m.expiry:'';
+  document.getElementById('m365-f-cost').value     = m.cost;
+  document.getElementById('m365-f-supplier').value = m.supplier;
+  document.getElementById('m365-f-remarks').value  = m.remarks||'';
+  m365Items = m365Items.filter(x => x.id !== id);
+  openM('m-add-m365');
+}
+
+function deleteM365(id) {
+  const m = m365Items.find(x => x.id === id);
+  if (!m || !confirm(`Delete license for "${m.email}"?`)) return;
+  m365Items = m365Items.filter(x => x.id !== id);
+  addLog('DELETE','M365 Licenses',`Deleted license: ${m.email}`,m.email);
+  closeDP(); renderM365(); showToast('License deleted','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   SYSTEM LOGS
+────────────────────────────────────────────────────────────── */
+let logs = [];
+let logId = 1;
+
+const LOG_ICONS = { LOGIN:'🔐',LOGOUT:'🚪',CREATE:'✅',UPDATE:'✏️',DELETE:'🗑️',DELIVER:'📦',WITHDRAW:'➖',SYSTEM:'⚙️' };
+
+function addLog(action, module, desc, ref='—') {
+  logs.unshift({
+    id: logId++,
+    ts: new Date().toLocaleString('en-PH',{hour12:true}),
+    user: currentUser ? currentUser.name : 'System',
+    action, module, desc, ref,
+  });
+  renderLogs();
+}
+
+function renderLogs() {
+  const tbody = document.getElementById('log-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  logs.forEach(l => {
+    const clsMap = {CREATE:'la-create',UPDATE:'la-update',DELETE:'la-delete',DELIVER:'la-deliver',WITHDRAW:'la-withdraw',LOGIN:'la-system',LOGOUT:'la-system',SYSTEM:'la-system'};
+    const cls = clsMap[l.action]||'la-system';
+    const tr = document.createElement('tr');
+    tr.className = 'tr-clickable';
+    tr.innerHTML = `
+      <td class="td-mono" style="font-size:11px">${l.ts}</td>
+      <td>${l.user}</td>
+      <td><span class="log-action-badge ${cls}">${LOG_ICONS[l.action]||'📝'} ${l.action}</span></td>
+      <td><span class="badge b-slate b-none">${l.module}</span></td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px">${l.desc}</td>
+      <td class="td-mono">${l.ref}</td>`;
+    tr.addEventListener('click', () => openDP('log', l.id, tr));
+    tbody.appendChild(tr);
+  });
+  document.getElementById('log-ct').textContent = `${logs.length} entries`;
+}
+
+function dpLog(id) {
+  const l = logs.find(x => x.id === id);
+  if (!l) return;
+  const clsMap = {CREATE:'la-create',UPDATE:'la-update',DELETE:'la-delete',DELIVER:'la-deliver',WITHDRAW:'la-withdraw',LOGIN:'la-system',LOGOUT:'la-system',SYSTEM:'la-system'};
+  setDPHeader(LOG_ICONS[l.action]||'📝','#f8fafc', `Log #${l.id}`, l.module);
+  document.getElementById('dp-body').innerHTML = `
+    <div class="dp-section">
+      <div class="dp-section-hd">📜 Log Entry</div>
+      <div class="dp-grid">
+        ${dpField('Log ID', `#${l.id}`, 'mono')}
+        ${dpField('Timestamp', l.ts, 'mono')}
+        ${dpField('User', l.user)}
+        ${dpField('Action', `<span class="log-action-badge ${clsMap[l.action]||'la-system'}">${LOG_ICONS[l.action]||'📝'} ${l.action}</span>`)}
+        ${dpField('Module', l.module)}
+        ${dpField('Reference', l.ref, 'mono')}
+        ${dpFieldFull('Description', l.desc)}
+      </div>
+    </div>`;
+  document.getElementById('dp-footer').style.display = 'none';
+}
+
+function clearLogs() {
+  if (!confirm('Clear all system logs? This cannot be undone.')) return;
+  logs = [];
+  logId = 1;
+  renderLogs();
+  showToast('Logs cleared','t-warning');
+}
+
+/* ──────────────────────────────────────────────────────────────
+   DASHBOARD REFRESH
+────────────────────────────────────────────────────────────── */
+function refreshDashboard() {
+  // Stats
+  const lowInv = invItems.filter(i => i.qty <= i.reorder).length;
+  const activeLaptops = laptops.filter(l => l.status === 'Active').length;
+  const now = new Date(); now.setHours(0,0,0,0);
+  let pending = 0;
+  poItems.forEach(o => {
+    let s = o.status;
+    if (s!=='DELIVERED' && o.eta && new Date(o.eta)<now) s='DELAYED';
+    if (['ORDERED','IN TRANSIT','DELAYED'].includes(s)) pending++;
+  });
+
+  document.getElementById('dc-total').textContent   = invItems.length;
+  document.getElementById('dc-total-d').textContent = `${invItems.length} tracked items`;
+  document.getElementById('dc-low').textContent     = lowInv;
+  document.getElementById('dc-low-d').textContent   = lowInv ? `${lowInv} items need restocking` : 'All stocks OK';
+  document.getElementById('dc-laptops').textContent = activeLaptops;
+  document.getElementById('dc-laptops-d').textContent = `${activeLaptops} of ${laptops.length} active`;
+  document.getElementById('dc-orders').textContent  = pending;
+  document.getElementById('dc-orders-d').textContent = pending ? `${pending} pending` : 'No pending orders';
+
+  // Low stock list
+  const lowItems = invItems.filter(i => i.qty <= i.reorder).slice(0,5);
+  document.getElementById('dash-low-list').innerHTML = lowItems.length
+    ? lowItems.map(i => `<div class="panel-row"><div class="pr-dot ${i.qty===0?'red':'amber'}"></div><div><div class="pr-name">${i.name}</div><div class="pr-meta">${i.cat} · Qty: ${i.qty} / Reorder: ${i.reorder}</div></div>${badge(i.qty===0?'Critical':'Low Stock',i.qty===0?'b-red':'b-amber')}</div>`).join('')
+    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ All inventory levels are OK</div>`;
+  document.getElementById('dash-low-ct').textContent = lowItems.length+' items';
+
+  // Pending orders
+  const pendOrd = poItems.filter(o => {
+    let s=o.status;
+    if(s!=='DELIVERED'&&o.eta&&new Date(o.eta)<now)s='DELAYED';
+    return ['ORDERED','IN TRANSIT','DELAYED'].includes(s);
+  }).slice(0,5);
+  document.getElementById('dash-order-list').innerHTML = pendOrd.length
+    ? pendOrd.map(o => {
+        let s=o.status; if(s!=='DELIVERED'&&o.eta&&new Date(o.eta)<now)s='DELAYED';
+        const dotCls = s==='DELAYED'?'red':s==='IN TRANSIT'?'blue':'amber';
+        return `<div class="panel-row"><div class="pr-dot ${dotCls}"></div><div><div class="pr-name">${o.item}</div><div class="pr-meta">${o.poNum} · ETA: ${o.eta||'—'}</div></div>${badge(s,s==='DELAYED'?'b-red':s==='IN TRANSIT'?'b-blue':'b-amber')}</div>`;
+      }).join('')
+    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">📦 No pending orders</div>`;
+  document.getElementById('dash-order-ct').textContent = pendOrd.length+' orders';
+
+  // Laptops needing maintenance
+  const maintLp = laptops.filter(l => l.maint==='NEEDS REPAIR'||l.status==='For Repair');
+  document.getElementById('dash-maint-list').innerHTML = maintLp.length
+    ? maintLp.slice(0,4).map(l => `<div class="panel-row"><div class="pr-dot red"></div><div><div class="pr-name">${l.desc}</div><div class="pr-meta">${l.assetNo} · ${l.user}</div></div>${badge('Needs Repair','b-red')}</div>`).join('')
+    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ No laptops need maintenance</div>`;
+  document.getElementById('dash-maint-ct').textContent = maintLp.length+' units';
+
+  // Vehicle alerts
+  const vehAlerts = vehicles.filter(v => {
+    const nd = v.nextMaint ? new Date(v.nextMaint) : null;
+    return nd && nd <= now || v.status==='For Maintenance';
+  });
+  document.getElementById('dash-veh-list').innerHTML = vehAlerts.length
+    ? vehAlerts.slice(0,4).map(v => `<div class="panel-row"><div class="pr-dot amber"></div><div><div class="pr-name">${v.name}</div><div class="pr-meta">${v.plate} · ${v.assigned}</div></div>${badge('Maintenance Due','b-amber')}</div>`).join('')
+    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ All vehicles on schedule</div>`;
+  document.getElementById('dash-veh-ct').textContent = vehAlerts.length+' alerts';
+
+  // Date
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+/* ──────────────────────────────────────────────────────────────
+   MODAL HELPERS
+────────────────────────────────────────────────────────────── */
+function openM(id)  { document.getElementById(id).classList.add('open'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+/* ──────────────────────────────────────────────────────────────
+   TOAST
+────────────────────────────────────────────────────────────── */
+function showToast(msg, type='t-success') {
+  const icons = { 't-success':'✅','t-error':'❌','t-warning':'⚠️','t-info':'ℹ️' };
+  const wrap = document.getElementById('toast-wrap');
+  const el   = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'all .3s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(20px)';
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   UTILITIES
+────────────────────────────────────────────────────────────── */
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function clearForm(ids) { ids.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; }); }
+
+/* ──────────────────────────────────────────────────────────────
+   INIT
+────────────────────────────────────────────────────────────── */
+function initAllModules() {
+  renderInventory();
+  renderFurniture();
+  renderITSupplies();
+  renderLaptops();
+  renderOrders();
+  renderVehicles();
+  renderGlobe();
+  renderM365();
+  renderLogs();
+  refreshDashboard();
+  refreshPageActions('dashboard');
+
+  // Default date fields
+  ['fur-f-date','it-f-warranty','lp-f-warranty','lp-f-bought','po-f-date','po-f-eta',
+   'maint-date','vm-date','vm-next','veh-f-maint','veh-f-orcr','globe-f-renew','m365-f-expiry'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.type==='date') el.value = todayStr();
+  });
+
+  // Keyboard: Escape closes panels/modals
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+      if (dpOpen) closeDP();
+    }
+  });
+}
+</script>
+</body>
+</html>

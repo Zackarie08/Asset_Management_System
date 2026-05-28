@@ -1,0 +1,23 @@
+<h1>Dashboard</h1>
+<p id="userInfo"></p>
+
+<button onclick="logout()">Logout</button>
+
+<script>
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  // ✅ PROTECT PAGE
+  if (!user) {
+    window.location.href = "../index.html";
+  }
+
+  document.getElementById("userInfo").innerText =
+    "Welcome " + user.name + " (" + user.role + ")";
+
+  // ✅ LOGOUT FUNCTION
+  function logout() {
+    localStorage.removeItem("user");
+    window.location.href = "../index.html";
+  }
+</script>
+``
