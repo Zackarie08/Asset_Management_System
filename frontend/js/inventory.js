@@ -1,5 +1,5 @@
 async function renderInventory() {
-  const res = await fetch("http://localhost:3000/api/inventory");
+  const res = await fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory");
   const items = await res.json();
 
   const tbody = document.getElementById("inv-tbody");
@@ -47,7 +47,7 @@ function saveInvItem() {
   const category = document.getElementById("inv-f-cat").value;
   const limit = document.getElementById("inv-f-reorder").value;
 
-  fetch("http://localhost:3000/api/inventory", {
+  fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -66,7 +66,7 @@ function saveInvItem() {
 }
 
 function withdrawItem(id, qty) {
-  fetch("http://localhost:3000/api/inventory/withdraw", {
+  fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory/withdraw", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -79,7 +79,7 @@ function withdrawItem(id, qty) {
 }
 
 function deleteItem(id) {
-  fetch(`http://localhost:3000/api/inventory/${id}`, {
+  fetch(`https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory/${id}`, {
     method: "DELETE"
   })
   .then(() => {
@@ -89,7 +89,7 @@ function deleteItem(id) {
 
 let withdrawItemId = null;
 async function openWithdraw(id) {
-  const res = await fetch("http://localhost:3000/api/inventory");
+  const res = await fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory");
   const items = await res.json();
   const item = items.find(i => i.id === id);
   if (!item) return;
@@ -110,7 +110,7 @@ function doWithdraw() {
     return;
   }
 
-  fetch("http://localhost:3000/api/inventory/withdraw", {
+  fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory/withdraw", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -131,7 +131,7 @@ function doWithdraw() {
 
 async function dpInventory(id) {
 
-  const res = await fetch("http://localhost:3000/api/inventory");
+  const res = await fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory");
   const items = await res.json();
 
   const item = items.find(i => i.id === id);
@@ -197,7 +197,7 @@ async function dpInventory(id) {
 
 async function openCreateOrder(id) {
     
-  const res = await fetch("http://localhost:3000/api/inventory");
+  const res = await fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory");
   const items = await res.json();
 
   const item = items.find(i => i.id === id);
@@ -213,7 +213,7 @@ async function openCreateOrder(id) {
 }
 
 async function openEditInv(id) {
-  const res = await fetch("http://localhost:3000/api/inventory");
+  const res = await fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory");
   const items = await res.json();
   const item = items.find(i => i.id === id);
   if (!item) return;
@@ -233,7 +233,7 @@ async function openEditInv(id) {
 }
 
 async function deleteInv(id) {
-  const res = await fetch("http://localhost:3000/api/inventory");
+  const res = await fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/inventory");
   const items = await res.json();
   const item = items.find(i => i.id === id);
   if (!item || !confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
