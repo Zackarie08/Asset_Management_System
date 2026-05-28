@@ -688,7 +688,7 @@ async function markDelivered(id) {
   if (!o) return;
   o.status    = 'DELIVERED';
   o.delivered = todayStr();
-  const res = await fetch("${API_URL}/api/inventory");
+  const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
   // Auto-update inventory if item matches
   const invMatch = items.find(i => i.name.toLowerCase() === o.item.toLowerCase() && i.cat === o.cat);
@@ -1150,7 +1150,7 @@ function clearLogs() {
 ────────────────────────────────────────────────────────────── */
 async function refreshDashboard() {
   // Stats
-  const res = await fetch("${API_URL}/api/inventory");
+  const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
   const lowInv = items.filter(i => i.qty <= i.reorder).length;
   const activeLaptops = laptops.filter(l => l.status === 'Active').length;
