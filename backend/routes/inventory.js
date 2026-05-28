@@ -14,53 +14,66 @@ let items = [
 ];
 
 // ✅ GET ALL ITEMS
-router.get("/", (req, res) => {
-  res.json(items);
+router.get("/", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM inventory_gen");
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
+``
 
-// ✅ ADD NEW ITEM (only create — NOT increase stock)
-router.post("/", (req, res) => {
-  const { name, qty, category, quantity_limit } = req.body;
+router.post("/", async (req, res) => {
+  try {
+    const { name, qty, category, quantity_limit } = req.body;
 
-  const newItem = {
-    id: items.length + 1,
-    name,
-    qty,
-    category,
-    quantity_limit
-  };
+    await pool.query(
+      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level) VALUES ($1, $2, $3, $4)",
+      [name, qty, category, quantity_limit]
+    );
 
-  items.push(newItem);
-
-  res.json(newItem);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error adding item");
+  }
 });
 
 // ✅ WITHDRAW STOCK ONLY
-router.post("/withdraw", (req, res) => {
-  const { id, qty } = req.body;
+router.post("/withdraw", async (req, res) => {
+  try {
+    const { id, qty } = req.body;
 
-  const item = items.find(i => i.id == id);
+    await pool.query(
+      "UPDATE inventory_gen SET current_quantity = current_quantity - $1 WHERE inventory_gen_id = $2",
+      [qty, id]
+    );
 
-  if (!item) {
-    return res.status(404).json({ message: "Item not found" });
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error withdrawing item");
   }
-
-  if (qty > item.qty) {
-    return res.status(400).json({ message: "Not enough stock" });
-  }
-
-  item.qty -= qty;
-
-  res.json(item);
 });
+``
 
 // ✅ DELETE ITEM
-router.delete("/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  items = items.filter(item => item.id !== id);
+router.delete("/:id", async (req, res) => {
+  try {
+    await pool.query(
+      "DELETE FROM inventory_gen WHERE inventory_gen_id = $1",
+      [req.params.id]
+    );
 
-  res.json({ message: "Deleted" });
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error deleting item");
+  }
 });
+
 
 module.exports = router;
 ``
