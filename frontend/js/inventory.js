@@ -46,8 +46,8 @@ function saveInvItem() {
   const qty = document.getElementById("inv-f-qty").value;
   const category = document.getElementById("inv-f-cat").value;
   const limit = document.getElementById("inv-f-reorder").value;
-  const limit = document.getElementById("inv-f-price").value;
-  const limit = document.getElementById("inv-f-unit").value;
+  const price = document.getElementById("inv-f-price").value;
+  const unit = document.getElementById("inv-f-unit").value;
 
   fetch(`${API_URL}/api/inventory`, {
     method: "POST",
