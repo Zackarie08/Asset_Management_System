@@ -8,7 +8,7 @@ async function renderInventory() {
   let low = 0;
 
   items.forEach(item => {
-    const isLow = item.current_quantity <= item.quantity_limit;
+    const isLow = item.current_quantity <= item.reorder_level;
 
     if (isLow) low++;
 
@@ -97,7 +97,7 @@ let withdrawItemId = null;
 async function openWithdraw(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
-  const item = items.find(i => i.inventory_gen_i === id);
+  const item = items.find(i => i.inventory_gen_id === id);
   if (!item) return;
   withdrawItemId = id;
   document.getElementById('wd-item-name').textContent = item.item_name;
@@ -140,18 +140,18 @@ async function dpInventory(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
 
-  const item = items.find(i => i.inventory_gen_i === id);
+  const item = items.find(i => i.inventory_gen_id === id);
   if (!item) return;
   const isAdmin = currentUser.role === 'admin';
-  const isLow = item.current_quantity <= item.quantity_limit;
-  setDPHeader('📦','#eff6ff', item.item_name, item.cat);
+  const isLow = item.current_quantity <= item.reorder_level;
+  setDPHeader('📦','#eff6ff', item.item_name, item.category);
 
   const progress = Math.min(100, Math.round((item.current_quantity / Math.max(item.quantity_limit*2,1))*100));
   const barColor = isLow ? '#ef4444' : '#22c55e';
 
   let html = `
     ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Stock is below reorder level. Create a purchase order.</span></div>` : ''}
-    <div class="dp-status-row">${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}<span class="dp-status-label">Current: <strong>${item.current_quantity} ${item.unit}</strong> / Reorder at: <strong>${item.reorder}</strong></span></div>
+    <div class="dp-status-row">${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}<span class="dp-status-label">Current: <strong>${item.current_quantity} ${item.unit}</strong> / Reorder at: <strong>${item.reorder_level}</strong></span></div>
     <div class="prog-bar-wrap">
       <div class="prog-bar-labels"><span>Stock Level</span><span>${item.current_quantity} ${item.unit}</span></div>
       <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${barColor}"></div></div>
@@ -161,23 +161,11 @@ async function dpInventory(id) {
       <div class="dp-section-hd">📋 Item Details</div>
       <div class="dp-grid">
         ${dpFieldFull('Item Name', `<strong>${item.item_name}</strong>`)}
-        ${dpField('Category', item.cat)}
+        ${dpField('Category', item.category)}
         ${dpField('Unit', item.unit)}
-        ${dpField('Location', item.loc)}
+        ${dpField('Location', item.location_id)}
         ${dpField('Price / Unit', item.price ? '₱'+item.price.toLocaleString() : null)}
         ${dpField('Total Value', item.price ? '₱'+(item.price*item.current_quantity).toLocaleString() : null)}
-      </div>
-    </div>
-
-    <div class="dp-section">
-      <div class="dp-section-hd">🏪 Supplier</div>
-      <div class="supplier-card">
-        <div class="sc-name">🏢 ${item.supplier||'Not specified'}</div>
-        <div class="sc-note">Contact supplier directly to place a replenishment order</div>
-        <span class="sc-link" onclick="showToast('Opening supplier portal for '+${JSON.stringify(item.supplier)},'t-info')">🔗 Contact Supplier</span>
-      </div>
-      <div class="dp-grid" style="margin-top:9px">
-        ${dpField('Contact', item.contact)}
       </div>
     </div>
 
@@ -206,11 +194,11 @@ async function openCreateOrder(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
 
-  const item = items.find(i => i.inventory_gen_i === id);
+  const item = items.find(i => i.inventory_gen_id === id);
   if (item) {
     document.getElementById('po-f-item').value     = item.item_name;
     document.getElementById('po-f-supplier').value = item.supplier || '';
-    document.getElementById('po-f-cat').value      = item.cat;
+    document.getElementById('po-f-cat').value      = item.category;
     document.getElementById('po-f-unit').value     = item.unit;
     document.getElementById('po-f-price').value    = item.price || '';
     document.getElementById('po-f-date').value     = todayStr();
@@ -221,17 +209,17 @@ async function openCreateOrder(id) {
 async function openEditInv(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
-  const item = items.find(i => i.inventory_gen_i === id);
+  const item = items.find(i => i.inventory_gen_id === id);
   if (!item) return;
   invEditId = id;
   document.getElementById('m-add-inv-title').textContent = '✏️ Edit Inventory Item';
   document.getElementById('inv-f-name').value     = item.item_name;
-  document.getElementById('inv-f-cat').value      = item.cat;
+  document.getElementById('inv-f-cat').value      = item.category;
   document.getElementById('inv-f-qty').value      = item.current_quantity;
   document.getElementById('inv-f-unit').value     = item.unit;
-  document.getElementById('inv-f-reorder').value  = item.reorder;
+  document.getElementById('inv-f-reorder').value  = item.reorder_level;
   document.getElementById('inv-f-price').value    = item.price||'';
-  document.getElementById('inv-f-loc').value      = item.loc;
+  document.getElementById('inv-f-loc').value      = item.location_id;
   document.getElementById('inv-f-supplier').value = item.supplier||'';
   document.getElementById('inv-f-contact').value  = item.contact||'';
   document.getElementById('inv-f-remarks').value  = item.remarks||'';
@@ -239,15 +227,17 @@ async function openEditInv(id) {
 }
 
 async function deleteInv(id) {
-  const res = await fetch(`${API_URL}/api/inventory`);
-  const items = await res.json();
-  const item = items.find(i => i.inventory_gen_i === id);
-  if (!item || !confirm(`Delete "${item.item_name}"? This cannot be undone.`)) return;
-  items = items.filter(i => i.inventory_gen_i !== id);
-  addLog('DELETE','Inventory',`Deleted inventory item: "${item.item_name}"`,`INV-${id}`);
-  closeDP(); renderInventory();
+  if (!confirm("Delete this item?")) return;
+
+  await fetch(`${API_URL}/api/inventory/${id}`, {
+    method: "DELETE"
+  });
+
+  closeDP();
+  renderInventory();
   showToast('Item deleted','t-warning');
 }
+``
 
 
 let invId = 13;
