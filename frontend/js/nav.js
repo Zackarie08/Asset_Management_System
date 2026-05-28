@@ -5,9 +5,9 @@ function buildSidebar() {
 
   items.forEach(item => {
     const div = document.createElement('div');
-    div.className = 'nav-item' + (item.id === 'dashboard' ? ' active' : '');
-    div.id = 'nav-' + item.id;
-    div.onclick = () => navigate(item.id, div);
+    div.className = 'nav-item' + (item.inventory_gen_id === 'dashboard' ? ' active' : '');
+    div.id = 'nav-' + item.inventory_gen_id;
+    div.onclick = () => navigate(item.inventory_gen_id, div);
 
     let extras = '';
     if (item.badge) extras = `<span class="nav-badge" id="nb-${item.badge}" style="display:none">0</span>`;

@@ -1794,9 +1794,9 @@ function buildSidebar() {
 
   items.forEach(item => {
     const div = document.createElement('div');
-    div.className = 'nav-item' + (item.id === 'dashboard' ? ' active' : '');
-    div.id = 'nav-' + item.id;
-    div.onclick = () => navigate(item.id, div);
+    div.className = 'nav-item' + (item.inventory_gen_id === 'dashboard' ? ' active' : '');
+    div.id = 'nav-' + item.inventory_gen_id;
+    div.onclick = () => navigate(item.inventory_gen_id, div);
 
     let extras = '';
     if (item.badge) extras = `<span class="nav-badge" id="nb-${item.badge}" style="display:none">0</span>`;
@@ -2010,12 +2010,12 @@ function renderInventory() {
       <td>${statusBadge}</td>
       <td>
         <div class="flex-gap">
-          ${isAdmin ? `<button class="btn btn-xs btn-warning" onclick="event.stopPropagation();openWithdraw(${item.id})">➖</button>` : ''}
-          ${isAdmin ? `<button class="btn btn-xs btn-supplier" onclick="event.stopPropagation();openDP('inventory',${item.id},this.closest('tr'))">🔗</button>` : ''}
-          ${isAdmin ? `<button class="btn btn-xs btn-primary" onclick="event.stopPropagation();openCreateOrder(${item.id})">📦</button>` : ''}
+          ${isAdmin ? `<button class="btn btn-xs btn-warning" onclick="event.stopPropagation();openWithdraw(${item.inventory_gen_id})">➖</button>` : ''}
+          ${isAdmin ? `<button class="btn btn-xs btn-supplier" onclick="event.stopPropagation();openDP('inventory',${item.inventory_gen_id},this.closest('tr'))">🔗</button>` : ''}
+          ${isAdmin ? `<button class="btn btn-xs btn-primary" onclick="event.stopPropagation();openCreateOrder(${item.inventory_gen_id})">📦</button>` : ''}
         </div>
       </td>`;
-    tr.addEventListener('click', () => openDP('inventory', item.id, tr));
+    tr.addEventListener('click', () => openDP('inventory', item.inventory_gen_id, tr));
     tbody.appendChild(tr);
   });
 
@@ -2028,7 +2028,7 @@ function renderInventory() {
 }
 
 function dpInventory(id) {
-  const item = invItems.find(i => i.id === id);
+  const item = invItems.find(i => i.inventory_gen_i === id);
   if (!item) return;
   const isAdmin = currentUser.role === 'admin';
   const isLow = item.current_quantity <= item.reorder;
@@ -2076,10 +2076,10 @@ function dpInventory(id) {
     <div class="dp-section">
       <div class="dp-section-hd">⚡ Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.id})">➖ Withdraw</button>
-        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.id})">📦 Create Order</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditInv(${item.id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteInv(${item.id})">🗑️ Delete</button>
+        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
+        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteInv(${item.inventory_gen_id})">🗑️ Delete</button>
       </div>
     </div>`;
   }
@@ -2090,7 +2090,7 @@ function dpInventory(id) {
 
 let withdrawItemId = null;
 function openWithdraw(id) {
-  const item = invItems.find(i => i.id === id);
+  const item = invItems.find(i => i.inventory_gen_i === id);
   if (!item) return;
   withdrawItemId = id;
   document.getElementById('wd-item-name').textContent = item.item_name;
@@ -2102,7 +2102,7 @@ function openWithdraw(id) {
 }
 
 function doWithdraw() {
-  const item = invItems.find(i => i.id === withdrawItemId);
+  const item = invItems.find(i => i.inventory_gen_i === withdrawItemId);
   if (!item) return;
   const qty = parseInt(document.getElementById('wd-qty').value) || 0;
   const by  = document.getElementById('wd-by').value.trim() || currentUser.name;
@@ -2118,7 +2118,7 @@ function doWithdraw() {
 }
 
 function openCreateOrder(id) {
-  const item = invItems.find(i => i.id === id);
+  const item = invItems.find(i => i.inventory_gen_i === id);
   if (item) {
     document.getElementById('po-f-item').value     = item.item_name;
     document.getElementById('po-f-supplier').value = item.supplier || '';
@@ -2131,7 +2131,7 @@ function openCreateOrder(id) {
 }
 
 function openEditInv(id) {
-  const item = invItems.find(i => i.id === id);
+  const item = invItems.find(i => i.inventory_gen_i === id);
   if (!item) return;
   invEditId = id;
   document.getElementById('m-add-inv-title').textContent = '✏️ Edit Inventory Item';
@@ -2162,7 +2162,7 @@ function saveInvItem() {
   if (!name) { showToast('Item name is required','t-error'); return; }
 
   if (invEditId) {
-    const item = invItems.find(i => i.id === invEditId);
+    const item = invItems.find(i => i.inventory_gen_i === invEditId);
     if (item) { Object.assign(item, { name,cat,qty,unit,reorder,price,loc,supplier,contact,remarks }); }
     addLog('UPDATE', 'Inventory', `Updated inventory item: "${name}"`, `INV-${invEditId}`);
     invEditId = null;
@@ -2178,9 +2178,9 @@ function saveInvItem() {
 }
 
 function deleteInv(id) {
-  const item = invItems.find(i => i.id === id);
+  const item = invItems.find(i => i.inventory_gen_i === id);
   if (!item || !confirm(`Delete "${item.item_name}"? This cannot be undone.`)) return;
-  invItems = invItems.filter(i => i.id !== id);
+  invItems = invItems.filter(i => i.inventory_gen_i !== id);
   addLog('DELETE','Inventory',`Deleted inventory item: "${item.item_name}"`,`INV-${id}`);
   closeDP(); renderInventory();
   showToast('Item deleted','t-warning');

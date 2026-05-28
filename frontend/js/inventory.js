@@ -12,12 +12,14 @@ async function renderInventory() {
 
     if (isLow) low++;
 
+
     const tr = document.createElement("tr");
     tr.className = 'tr-clickable';
 
     tr.addEventListener('click', () => {
-      openDP('inventory', item.id, tr);
+      openDP('inventory', item.inventory_gen_id, tr);
     });
+
 
     tr.innerHTML = `
       <td>${item.item_name}</td>
@@ -25,13 +27,12 @@ async function renderInventory() {
       <td>${item.current_quantity}</td>
       <td>${isLow ? "⚠️ LOW" : "OK"}</td>
       <td>
-        <button onclick="event.stopPropagation(); openWithdraw(${item.id})">➖</button>
-        <button onclick="event.stopPropagation(); deleteItem(${item.id})">🗑️</button>
+        <button onclick="event.stopPropagation(); openWithdraw(${item.inventory_gen_id})">➖</button>
+        <button onclick="event.stopPropagation(); deleteItem(${item.inventory_gen_id})">🗑️</button>
       </td>
     `;
     
     tr.className = 'tr-clickable';
-    tr.addEventListener('click', () => openDP('inventory', item.id, tr));
 
     tbody.appendChild(tr);
   });
@@ -39,7 +40,6 @@ async function renderInventory() {
   document.getElementById("inv-low-ct").innerText =
     low + " low stock";
 }
-``
 
 function saveInvItem() {
   const name = document.getElementById("inv-f-name").value;
@@ -97,7 +97,7 @@ let withdrawItemId = null;
 async function openWithdraw(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
-  const item = items.find(i => i.id === id);
+  const item = items.find(i => i.inventory_gen_i === id);
   if (!item) return;
   withdrawItemId = id;
   document.getElementById('wd-item-name').textContent = item.item_name;
@@ -140,7 +140,7 @@ async function dpInventory(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
 
-  const item = items.find(i => i.id === id);
+  const item = items.find(i => i.inventory_gen_i === id);
   if (!item) return;
   const isAdmin = currentUser.role === 'admin';
   const isLow = item.current_quantity <= item.quantity_limit;
@@ -188,10 +188,10 @@ async function dpInventory(id) {
     <div class="dp-section">
       <div class="dp-section-hd">⚡ Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.id})">➖ Withdraw</button>
-        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.id})">📦 Create Order</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditInv(${item.id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteInv(${item.id})">🗑️ Delete</button>
+        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
+        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteInv(${item.inventory_gen_id})">🗑️ Delete</button>
       </div>
     </div>`;
   }
@@ -206,7 +206,7 @@ async function openCreateOrder(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
 
-  const item = items.find(i => i.id === id);
+  const item = items.find(i => i.inventory_gen_i === id);
   if (item) {
     document.getElementById('po-f-item').value     = item.item_name;
     document.getElementById('po-f-supplier').value = item.supplier || '';
@@ -221,7 +221,7 @@ async function openCreateOrder(id) {
 async function openEditInv(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
-  const item = items.find(i => i.id === id);
+  const item = items.find(i => i.inventory_gen_i === id);
   if (!item) return;
   invEditId = id;
   document.getElementById('m-add-inv-title').textContent = '✏️ Edit Inventory Item';
@@ -241,9 +241,9 @@ async function openEditInv(id) {
 async function deleteInv(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
-  const item = items.find(i => i.id === id);
+  const item = items.find(i => i.inventory_gen_i === id);
   if (!item || !confirm(`Delete "${item.item_name}"? This cannot be undone.`)) return;
-  items = items.filter(i => i.id !== id);
+  items = items.filter(i => i.inventory_gen_i !== id);
   addLog('DELETE','Inventory',`Deleted inventory item: "${item.item_name}"`,`INV-${id}`);
   closeDP(); renderInventory();
   showToast('Item deleted','t-warning');
