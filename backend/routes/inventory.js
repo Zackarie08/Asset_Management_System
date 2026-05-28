@@ -27,11 +27,11 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { name, qty, category, quantity_limit, price, unit } = req.body;
+    const { name, qty, category, quantity_limit, price, unit, remarks} = req.body;
 
     await pool.query(
-      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit) VALUES ($1, $2, $3, $4, $5, $6)",
-      [name, qty, category, quantity_limit, price, unit]
+      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks) VALUES ($1, $2, $3, $4, $5, $6, %7)",
+      [name, qty, category, quantity_limit, price, unit, remarks]
     );
 
     res.sendStatus(200);
