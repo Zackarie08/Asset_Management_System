@@ -8,7 +8,7 @@ async function renderInventory() {
   let low = 0;
 
   items.forEach(item => {
-    const isLow = item.qty <= item.quantity_limit;
+    const isLow = item.current_quantity <= item.quantity_limit;
 
     if (isLow) low++;
 
@@ -20,9 +20,9 @@ async function renderInventory() {
     });
 
     tr.innerHTML = `
-      <td>${item.name}</td>
+      <td>${item.item_name}</td>
       <td>${item.category}</td>
-      <td>${item.qty}</td>
+      <td>${item.current_quantity}</td>
       <td>${isLow ? "⚠️ LOW" : "OK"}</td>
       <td>
         <button onclick="event.stopPropagation(); openWithdraw(${item.id})">➖</button>
@@ -94,8 +94,8 @@ async function openWithdraw(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   withdrawItemId = id;
-  document.getElementById('wd-item-name').textContent = item.name;
-  document.getElementById('wd-current').textContent   = `${item.qty} ${item.unit}`;
+  document.getElementById('wd-item-name').textContent = item.item_name;
+  document.getElementById('wd-current').textContent   = `${item.current_quantity} ${item.unit}`;
   document.getElementById('wd-qty').value     = '';
   document.getElementById('wd-by').value      = currentUser.name;
   document.getElementById('wd-remarks').value = '';
@@ -137,29 +137,29 @@ async function dpInventory(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   const isAdmin = currentUser.role === 'admin';
-  const isLow = item.qty <= item.quantity_limit;
-  setDPHeader('📦','#eff6ff', item.name, item.cat);
+  const isLow = item.current_quantity <= item.quantity_limit;
+  setDPHeader('📦','#eff6ff', item.item_name, item.cat);
 
-  const progress = Math.min(100, Math.round((item.qty / Math.max(item.quantity_limit*2,1))*100));
+  const progress = Math.min(100, Math.round((item.current_quantity / Math.max(item.quantity_limit*2,1))*100));
   const barColor = isLow ? '#ef4444' : '#22c55e';
 
   let html = `
     ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Stock is below reorder level. Create a purchase order.</span></div>` : ''}
-    <div class="dp-status-row">${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}<span class="dp-status-label">Current: <strong>${item.qty} ${item.unit}</strong> / Reorder at: <strong>${item.reorder}</strong></span></div>
+    <div class="dp-status-row">${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}<span class="dp-status-label">Current: <strong>${item.current_quantity} ${item.unit}</strong> / Reorder at: <strong>${item.reorder}</strong></span></div>
     <div class="prog-bar-wrap">
-      <div class="prog-bar-labels"><span>Stock Level</span><span>${item.qty} ${item.unit}</span></div>
+      <div class="prog-bar-labels"><span>Stock Level</span><span>${item.current_quantity} ${item.unit}</span></div>
       <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${barColor}"></div></div>
     </div>
 
     <div class="dp-section">
       <div class="dp-section-hd">📋 Item Details</div>
       <div class="dp-grid">
-        ${dpFieldFull('Item Name', `<strong>${item.name}</strong>`)}
+        ${dpFieldFull('Item Name', `<strong>${item.item_name}</strong>`)}
         ${dpField('Category', item.cat)}
         ${dpField('Unit', item.unit)}
         ${dpField('Location', item.loc)}
         ${dpField('Price / Unit', item.price ? '₱'+item.price.toLocaleString() : null)}
-        ${dpField('Total Value', item.price ? '₱'+(item.price*item.qty).toLocaleString() : null)}
+        ${dpField('Total Value', item.price ? '₱'+(item.price*item.current_quantity).toLocaleString() : null)}
       </div>
     </div>
 
@@ -202,7 +202,7 @@ async function openCreateOrder(id) {
 
   const item = items.find(i => i.id === id);
   if (item) {
-    document.getElementById('po-f-item').value     = item.name;
+    document.getElementById('po-f-item').value     = item.item_name;
     document.getElementById('po-f-supplier').value = item.supplier || '';
     document.getElementById('po-f-cat').value      = item.cat;
     document.getElementById('po-f-unit').value     = item.unit;
@@ -219,9 +219,9 @@ async function openEditInv(id) {
   if (!item) return;
   invEditId = id;
   document.getElementById('m-add-inv-title').textContent = '✏️ Edit Inventory Item';
-  document.getElementById('inv-f-name').value     = item.name;
+  document.getElementById('inv-f-name').value     = item.item_name;
   document.getElementById('inv-f-cat').value      = item.cat;
-  document.getElementById('inv-f-qty').value      = item.qty;
+  document.getElementById('inv-f-qty').value      = item.current_quantity;
   document.getElementById('inv-f-unit').value     = item.unit;
   document.getElementById('inv-f-reorder').value  = item.reorder;
   document.getElementById('inv-f-price').value    = item.price||'';
@@ -236,9 +236,9 @@ async function deleteInv(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
   const item = items.find(i => i.id === id);
-  if (!item || !confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+  if (!item || !confirm(`Delete "${item.item_name}"? This cannot be undone.`)) return;
   items = items.filter(i => i.id !== id);
-  addLog('DELETE','Inventory',`Deleted inventory item: "${item.name}"`,`INV-${id}`);
+  addLog('DELETE','Inventory',`Deleted inventory item: "${item.item_name}"`,`INV-${id}`);
   closeDP(); renderInventory();
   showToast('Item deleted','t-warning');
 }
