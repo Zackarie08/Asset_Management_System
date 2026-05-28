@@ -83,4 +83,7 @@ function refreshPageActions(page) {
   };
 
   if (actions[page]) actions[page]();
+  if (page === "logs") {
+    renderLogs();
+  }
 }

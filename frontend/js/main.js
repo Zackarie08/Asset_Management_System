@@ -1248,3 +1248,33 @@ function initAllModules() {
   });
 }
 
+
+
+
+// Logs
+
+async function renderLogs() {
+  const res = await fetch(`${API_URL}/api/logs`);
+  const logs = await res.json();
+
+  const tbody = document.getElementById("log-tbody");
+  tbody.innerHTML = "";
+
+  logs.forEach(log => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${new Date(log.date_time).toLocaleString()}</td>
+      <td>${log.user_id || "User"}</td>
+      <td>${log.action_type}</td>
+      <td>${log.module}</td>
+      <td>${log.description}</td>
+      <td>${log.reference_type || "-"}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("log-ct").innerText =
+    logs.length + " entries";
+}
