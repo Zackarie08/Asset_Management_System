@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const logAction = require("../utils/log");
 
 // TEMP DATA (simulate DB)
 let items = [
@@ -39,6 +40,17 @@ router.post("/", async (req, res) => {
     console.error(err);
     res.status(500).send("Error adding item");
   }
+
+  await logAction({
+    user_id: 1,
+    action_type: "ADD",
+    module: "INVENTORY",
+    description: `Added ${name}`,
+    quantity: qty,
+    movement_type: "ADD",
+    reference_type: "MANUAL"
+  });
+
 });
 
 // ✅ WITHDRAW STOCK ONLY
@@ -56,6 +68,16 @@ router.post("/withdraw", async (req, res) => {
     console.error(err);
     res.status(500).send("Error withdrawing item");
   }
+
+  await logAction({
+    user_id: 1,
+    action_type: "UPDATE",
+    module: "INVENTORY",
+    description: `Withdraw ${qty}`,
+    quantity: qty,
+    movement_type: "WITHDRAW",
+    reference_type: "MANUAL"
+  });
 });
 ``
 
@@ -72,6 +94,13 @@ router.delete("/:id", async (req, res) => {
     console.error(err);
     res.status(500).send("Error deleting item");
   }
+
+  await logAction({
+    user_id: 1,
+    action_type: "DELETE",
+    module: "INVENTORY",
+    description: `Deleted item ID ${req.params.id}`
+  });
 });
 
 
