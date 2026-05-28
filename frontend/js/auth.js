@@ -1,35 +1,3 @@
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  fetch(`${API_URL}/api/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ email, password })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.user) {
-      // ✅ Save user (simulate session)
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // ✅ Redirect based on role
-      if (data.user.role === "admin") {
-        window.location.href = "pages/dashboard.html";
-      } else {
-        window.location.href = "pages/dashboard.html";
-      }
-
-    } else {
-      document.getElementById("error").innerText = "Login failed";
-    }
-  });
-}
-``
-
-
 function doLogin() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;

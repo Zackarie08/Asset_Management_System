@@ -89,16 +89,6 @@ function withdrawItem(id, qty) {
   });
 }
 
-fetch(`${API_URL}/api/inventory/${id}`, {
-  method: "DELETE",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    user_id: currentUser.user_id // ✅ ADD THIS
-  })
-})
-
 let withdrawItemId = null;
 async function openWithdraw(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
@@ -129,7 +119,8 @@ function doWithdraw() {
     },
     body: JSON.stringify({
       id: withdrawItemId,
-      qty: qty
+      qty: qty,
+      user_id: currentUser.user_id
     })
   })
   .then(() => {
@@ -236,14 +227,19 @@ async function deleteInv(id) {
   if (!confirm("Delete this item?")) return;
 
   await fetch(`${API_URL}/api/inventory/${id}`, {
-    method: "DELETE"
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: currentUser.user_id
+    })
   });
 
   closeDP();
   renderInventory();
   showToast('Item deleted','t-warning');
 }
-``
 
 
 let invId = 13;
