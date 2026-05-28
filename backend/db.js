@@ -7,9 +7,7 @@ const pool = new Pool({
   }
 });
 
-module.exports = pool;
-``
-
+// ✅ TEST CONNECTION
 pool.query("SELECT NOW()", (err, res) => {
   if (err) {
     console.error("DB ERROR:", err);
@@ -17,3 +15,5 @@ pool.query("SELECT NOW()", (err, res) => {
     console.log("DB CONNECTED ✅", res.rows);
   }
 });
+
+module.exports = pool;
