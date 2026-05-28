@@ -75,13 +75,15 @@ router.post("/withdraw", async (req, res) => {
 // ✅ DELETE ITEM
 router.delete("/:id", async (req, res) => {
   try {
+    const { user_id } = req.body; // ✅ ADD THIS LINE
+
     await pool.query(
       "DELETE FROM inventory_gen WHERE inventory_gen_id = $1",
       [req.params.id]
     );
 
     await logAction({
-      user_id: user_id,
+      user_id: user_id || 1, // ✅ SAFE fallback
       action_type: "DELETE",
       module: "INVENTORY",
       description: `Deleted item ID ${req.params.id}`,
@@ -95,7 +97,6 @@ router.delete("/:id", async (req, res) => {
     res.status(500).send("Error deleting item");
   }
 });
-
 
 
 module.exports = router;

@@ -89,14 +89,15 @@ function withdrawItem(id, qty) {
   });
 }
 
-function deleteItem(id) {
-  fetch(`${API_URL}/api/inventory/${id}`, {
-    method: "DELETE"
+fetch(`${API_URL}/api/inventory/${id}`, {
+  method: "DELETE",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    user_id: currentUser.user_id // ✅ ADD THIS
   })
-  .then(() => {
-    renderInventory();
-  });
-}
+})
 
 let withdrawItemId = null;
 async function openWithdraw(id) {
