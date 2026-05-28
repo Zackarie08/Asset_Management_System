@@ -2,7 +2,7 @@ function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/auth/login", {
+  fetch("${API_URL}/api/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -34,7 +34,7 @@ function doLogin() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  fetch("https://assetmanagementsystem-production-0cb6.up.railway.app/api/auth/login", {
+  fetch("${API_URL}/api/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
