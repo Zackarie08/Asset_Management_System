@@ -25,12 +25,10 @@ async function renderInventory() {
       <td>${item.item_name}</td>
       <td>${item.category}</td>
       <td>${item.current_quantity}</td>
-      <td>${item.unit || "-"}</td>
-      <td>-</td>
       <td>${isLow ? "⚠️ LOW" : "OK"}</td>
       <td>
         <button onclick="event.stopPropagation(); openWithdraw(${item.inventory_gen_id})">➖</button>
-        <button onclick="event.stopPropagation(); deleteInv(${item.inventory_gen_id})">🗑️</button>
+        <button onclick="event.stopPropagation(); deleteItem(${item.inventory_gen_id})">🗑️</button>
       </td>
     `;
     
@@ -64,8 +62,7 @@ function saveInvItem() {
       quantity_limit: limit,
       price,
       unit, 
-      remarks,
-      user_id: currentUser.user_id
+      remarks
     })
   })
   .then(() => {
@@ -80,11 +77,16 @@ function withdrawItem(id, qty) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ 
-      id, 
-      qty,
-      user_id: currentUser.user_id
-    })
+    body: JSON.stringify({ id, qty })
+  })
+  .then(() => {
+    renderInventory();
+  });
+}
+
+function deleteItem(id) {
+  fetch(`${API_URL}/api/inventory/${id}`, {
+    method: "DELETE"
   })
   .then(() => {
     renderInventory();
@@ -121,8 +123,7 @@ function doWithdraw() {
     },
     body: JSON.stringify({
       id: withdrawItemId,
-      qty: qty,
-      user_id: currentUser.user_id
+      qty: qty
     })
   })
   .then(() => {
@@ -229,19 +230,14 @@ async function deleteInv(id) {
   if (!confirm("Delete this item?")) return;
 
   await fetch(`${API_URL}/api/inventory/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      user_id: currentUser.user_id
-    })
+    method: "DELETE"
   });
 
   closeDP();
   renderInventory();
   showToast('Item deleted','t-warning');
 }
+``
 
 
 let invId = 13;

@@ -1,33 +1,49 @@
 const express = require("express");
 const router = express.Router();
-const pool = require("../db");
 
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// TEMP USERS (same structure as your DB)
+let users = [
+  {
+    user_id: 1,
+    name: "Sean",
+    email: "admin@test.com",
+    password: "1234",
+    role: "admin",
+    department: "IT"
+  },
+  {
+    user_id: 2,
+    name: "Employee",
+    email: "user@test.com",
+    password: "1234",
+    role: "employee",
+    department: "Accounting"
+  }
+];
 
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1 AND password = $2",
-      [email, password]
-    );
+// ✅ LOGIN
+router.post("/login", (req, res) => {
+  const { email, password } = req.body;
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+  const user = users.find(
+    u => u.email === email && u.password === password
+  );
 
-    const user = result.rows[0];
+  if (!user) {
+    return res.status(401).json({
+      message: "Invalid credentials"
+    });
+  }
 
-    res.json({
+  res.json({
+    message: "Login successful",
+    user: {
       user_id: user.user_id,
       name: user.name,
       role: user.role,
-      department: user.department 
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Login error");
-  }
+      department: user.department
+    }
+  });
 });
 
 module.exports = router;

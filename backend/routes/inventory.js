@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { name, qty, category, quantity_limit, price, unit, remarks, user_id } = req.body;
+    const { name, qty, category, quantity_limit, price, unit, remarks } = req.body;
 
     await pool.query(
       "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks) VALUES ($1, $2, $3, $4, $5, $6, $7)",
@@ -27,7 +27,7 @@ router.post("/", async (req, res) => {
 
     // ✅ LOG INSIDE TRY
     await logAction({
-      user_id: user_id,
+      user_id: 1,
       action_type: "ADD",
       module: "INVENTORY",
       description: `Added ${name}`,
@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
 // ✅ WITHDRAW STOCK ONLY
 router.post("/withdraw", async (req, res) => {
   try {
-    const { id, qty, user_id } = req.body;
+    const { id, qty } = req.body;
 
     await pool.query(
       "UPDATE inventory_gen SET current_quantity = current_quantity - $1 WHERE inventory_gen_id = $2",
@@ -55,7 +55,7 @@ router.post("/withdraw", async (req, res) => {
     );
 
     await logAction({
-      user_id: user_id,
+      user_id: 1,
       action_type: "UPDATE",
       module: "INVENTORY",
       description: `Withdraw ${qty}`,
@@ -75,19 +75,16 @@ router.post("/withdraw", async (req, res) => {
 // ✅ DELETE ITEM
 router.delete("/:id", async (req, res) => {
   try {
-    const { user_id } = req.body; // ✅ ADD THIS LINE
-
     await pool.query(
       "DELETE FROM inventory_gen WHERE inventory_gen_id = $1",
       [req.params.id]
     );
 
     await logAction({
-      user_id: user_id || 1, // ✅ SAFE fallback
+      user_id: 1,
       action_type: "DELETE",
       module: "INVENTORY",
-      description: `Deleted item ID ${req.params.id}`,
-      reference_type: "MANUAL"
+      description: `Deleted item ID ${req.params.id}`
     });
 
     res.sendStatus(200);
@@ -97,6 +94,7 @@ router.delete("/:id", async (req, res) => {
     res.status(500).send("Error deleting item");
   }
 });
+
 
 
 module.exports = router;

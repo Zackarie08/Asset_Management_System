@@ -16,6 +16,27 @@ const USERS = {
 };
 
 
+
+/* ──────────────────────────────────────────────────────────────
+   SIDEBAR
+────────────────────────────────────────────────────────────── */
+const ADMIN_NAV = [
+  { id:'dashboard',   icon:'🏠', label:'Dashboard',            badge:null },
+  { id:'inventory',   icon:'📦', label:'Inventory Management', badge:'inv' },
+  { id:'furniture',   icon:'🪑', label:'Office Furniture',     badge:null },
+  { id:'itsupplies',  icon:'🖨️', label:'IT Supplies',          badge:'it' },
+  { id:'laptops',     icon:'💻', label:'Laptops',              badge:null },
+  { id:'orders',      icon:'🛒', label:'Purchase Orders',      badge:'po' },
+  { id:'vehicles',    icon:'🚗', label:'Vehicle Management',   badge:null },
+  { id:'globe',       icon:'📱', label:'Globe Mobile Plans',   badge:null, admin:true },
+  { id:'m365',        icon:'💼', label:'M365 Licenses',        badge:null, admin:true },
+  { id:'logs',        icon:'📜', label:'System Logs',          badge:null, admin:true },
+];
+
+const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','orders'];
+
+
+
 /* ──────────────────────────────────────────────────────────────
    NAVIGATION
 ────────────────────────────────────────────────────────────── */
@@ -1131,7 +1152,7 @@ async function refreshDashboard() {
   // Stats
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
-  const lowInv = items.filter(i => i.current_quantity <= i.reorder_level).length;
+  const lowInv = items.filter(i => i.qty <= i.reorder).length;
   const activeLaptops = laptops.filter(l => l.status === 'Active').length;
   const now = new Date(); now.setHours(0,0,0,0);
   let pending = 0;
@@ -1151,9 +1172,9 @@ async function refreshDashboard() {
   document.getElementById('dc-orders-d').textContent = pending ? `${pending} pending` : 'No pending orders';
 
   // Low stock list
-  const lowItems = items.filter(i => i.current_quantity <= i.reorder_level).slice(0,5);
+  const lowItems = items.filter(i => i.qty <= i.reorder).slice(0,5);
   document.getElementById('dash-low-list').innerHTML = lowItems.length
-    ? lowItems.map(i => `<div class="panel-row"><div class="pr-dot ${i.current_quantity===0?'red':'amber'}"></div><div><div class="pr-name">${i.item_name}</div><div class="pr-meta">${i.category} · Qty: ${i.current_quantity} / Reorder: ${i.reorder_level}</div></div>${badge(i.current_quantity===0?'Critical':'Low Stock',i.current_quantity===0?'b-red':'b-amber')}</div>`).join('')
+    ? lowItems.map(i => `<div class="panel-row"><div class="pr-dot ${i.qty===0?'red':'amber'}"></div><div><div class="pr-name">${i.name}</div><div class="pr-meta">${i.cat} · Qty: ${i.qty} / Reorder: ${i.reorder}</div></div>${badge(i.qty===0?'Critical':'Low Stock',i.qty===0?'b-red':'b-amber')}</div>`).join('')
     : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ All inventory levels are OK</div>`;
   document.getElementById('dash-low-ct').textContent = lowItems.length+' items';
 
@@ -1227,37 +1248,12 @@ function initAllModules() {
   });
 }
 
-function updateUserUI() {
-  const initials = currentUser.initials || (currentUser.name || '').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-  const roleTitle = currentUser.role === 'admin' ? 'Administrator' : currentUser.department || 'Employee';
-  ['sb-avatar','tb-avatar'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = initials;
-  });
-  ['sb-uname','tb-uname'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = currentUser.name || '';
-  });
-  const roleTag = document.getElementById('sb-role-tag');
-  const rolePill = document.getElementById('tb-role-pill');
-  if (roleTag) roleTag.textContent = currentUser.role === 'admin' ? 'Admin' : 'Employee';
-  if (rolePill) rolePill.textContent = roleTitle;
-}
-
-function initApp() {
-  updateUserUI();
-  buildSidebar();
-  navigate('dashboard', document.getElementById('nav-dashboard'));
-  initAllModules();
-  addLog('LOGIN', 'Auth', `${currentUser.name} signed in as ${currentUser.role}`, currentUser.user_id);
-}
 
 
 
+// Logs
 
-// Duplicate backend log renderer removed by renaming
-
-async function renderLogsApi() {
+async function renderLogs() {
   const res = await fetch(`${API_URL}/api/logs`);
   const logs = await res.json();
 

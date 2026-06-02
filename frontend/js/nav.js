@@ -1,27 +1,7 @@
-const ADMIN_NAV = [
-  { id: "dashboard", label: "Dashboard", icon: "📊" },
-  { id: "inventory", label: "Inventory", icon: "📦" },
-  { id: "logs", label: "System Logs", icon: "📜" },
-  { id: "orders", label: "Orders", icon: "🛒" },
-  { id: "vehicles", label: "Vehicles", icon: "🚗" }
-];
-
-const EMP_NAV = [
-  "dashboard",
-  "inventory",
-  "logs"
-];
-
-
-
 function buildSidebar() {
   const nav = document.getElementById('sb-nav');
   nav.innerHTML = '';
-  const isAdmin = currentUser.role.toLowerCase() === "admin";
-
-  const items = isAdmin
-    ? ADMIN_NAV
-    : ADMIN_NAV.filter(n => EMP_NAV.includes(n.id));
+  const items = currentUser.role === 'admin' ? ADMIN_NAV : ADMIN_NAV.filter(n => EMP_NAV.includes(n.id));
 
   items.forEach(item => {
     const div = document.createElement('div');
