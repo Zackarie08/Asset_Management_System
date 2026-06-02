@@ -1,4 +1,3 @@
-const savedUser = localStorage.getItem("user");
 
 if (savedUser) {
   const user = JSON.parse(savedUser);
@@ -1230,6 +1229,33 @@ async function refreshDashboard() {
 /* ──────────────────────────────────────────────────────────────
    INIT
 ────────────────────────────────────────────────────────────── */
+
+function autoLogin() {
+  const savedUser = localStorage.getItem("user");
+
+  if (!savedUser) return;
+
+  const user = JSON.parse(savedUser);
+
+  currentUser = {
+    name: user.name,
+    role: user.role,
+    initials: user.name.substring(0, 2).toUpperCase()
+  };
+
+  // SHOW APP
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  buildSidebar();
+  initAllModules();
+
+  // Update UI safely
+  if (typeof updateUserUI === "function") {
+    updateUserUI();
+  }
+}
+
 function initAllModules() {
   renderInventory();
   renderFurniture();
@@ -1290,3 +1316,7 @@ async function renderLogs() {
   document.getElementById("log-ct").innerText =
     logs.length + " entries";
 }
+
+window.onload = function () {
+  autoLogin();
+};
