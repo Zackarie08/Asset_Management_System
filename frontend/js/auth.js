@@ -17,16 +17,16 @@ function doLogin() {
   })
   .then(user => {
     currentUser = user;
-    console.log("USER:", currentUser);
 
-    try {
-      initApp();
-    } catch (e) {
-      console.error("INIT ERROR:", e);
-    }
+    console.log("Logged in user:", currentUser);
 
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app").style.display = "flex";
+
+    initApp();
+  })
+  .catch(() => {
+    showToast("Invalid login","t-error");
   });
 }
 

@@ -1,3 +1,19 @@
+const ADMIN_NAV = [
+  { id: "dashboard", label: "Dashboard", icon: "📊" },
+  { id: "inventory", label: "Inventory", icon: "📦" },
+  { id: "logs", label: "System Logs", icon: "📜" },
+  { id: "orders", label: "Orders", icon: "🛒" },
+  { id: "vehicles", label: "Vehicles", icon: "🚗" }
+];
+
+const EMP_NAV = [
+  "dashboard",
+  "inventory",
+  "logs"
+];
+
+
+
 function buildSidebar() {
   const nav = document.getElementById('sb-nav');
   nav.innerHTML = '';
