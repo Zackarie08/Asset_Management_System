@@ -16,27 +16,6 @@ const USERS = {
 };
 
 
-
-/* ──────────────────────────────────────────────────────────────
-   SIDEBAR
-────────────────────────────────────────────────────────────── */
-const ADMIN_NAV = [
-  { id:'dashboard',   icon:'🏠', label:'Dashboard',            badge:null },
-  { id:'inventory',   icon:'📦', label:'Inventory Management', badge:'inv' },
-  { id:'furniture',   icon:'🪑', label:'Office Furniture',     badge:null },
-  { id:'itsupplies',  icon:'🖨️', label:'IT Supplies',          badge:'it' },
-  { id:'laptops',     icon:'💻', label:'Laptops',              badge:null },
-  { id:'orders',      icon:'🛒', label:'Purchase Orders',      badge:'po' },
-  { id:'vehicles',    icon:'🚗', label:'Vehicle Management',   badge:null },
-  { id:'globe',       icon:'📱', label:'Globe Mobile Plans',   badge:null, admin:true },
-  { id:'m365',        icon:'💼', label:'M365 Licenses',        badge:null, admin:true },
-  { id:'logs',        icon:'📜', label:'System Logs',          badge:null, admin:true },
-];
-
-const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','orders'];
-
-
-
 /* ──────────────────────────────────────────────────────────────
    NAVIGATION
 ────────────────────────────────────────────────────────────── */
