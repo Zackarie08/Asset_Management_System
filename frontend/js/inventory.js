@@ -25,10 +25,12 @@ async function renderInventory() {
       <td>${item.item_name}</td>
       <td>${item.category}</td>
       <td>${item.current_quantity}</td>
+      <td>${item.unit || "-"}</td>
+      <td>-</td>
       <td>${isLow ? "⚠️ LOW" : "OK"}</td>
       <td>
         <button onclick="event.stopPropagation(); openWithdraw(${item.inventory_gen_id})">➖</button>
-        <button onclick="event.stopPropagation(); deleteItem(${item.inventory_gen_id})">🗑️</button>
+        <button onclick="event.stopPropagation(); deleteInv(${item.inventory_gen_id})">🗑️</button>
       </td>
     `;
     
