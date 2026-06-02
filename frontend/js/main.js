@@ -1,3 +1,28 @@
+const savedUser = localStorage.getItem("user");
+
+if (savedUser) {
+  const user = JSON.parse(savedUser);
+
+  currentUser = {
+    name: user.name,
+    role: user.role,
+    initials: user.name.substring(0, 2).toUpperCase()
+  };
+
+  // AUTO LOGIN UI
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  buildSidebar();
+  initAllModules();
+
+  // update UI
+  if (typeof updateUserUI === "function") {
+    updateUserUI();
+  }
+}
+
+
 /* ──────────────────────────────────────────────────────────────
    SESSION / AUTH
 ────────────────────────────────────────────────────────────── */
