@@ -1227,12 +1227,37 @@ function initAllModules() {
   });
 }
 
+function updateUserUI() {
+  const initials = currentUser.initials || (currentUser.name || '').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+  const roleTitle = currentUser.role === 'admin' ? 'Administrator' : currentUser.department || 'Employee';
+  ['sb-avatar','tb-avatar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = initials;
+  });
+  ['sb-uname','tb-uname'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = currentUser.name || '';
+  });
+  const roleTag = document.getElementById('sb-role-tag');
+  const rolePill = document.getElementById('tb-role-pill');
+  if (roleTag) roleTag.textContent = currentUser.role === 'admin' ? 'Admin' : 'Employee';
+  if (rolePill) rolePill.textContent = roleTitle;
+}
+
+function initApp() {
+  updateUserUI();
+  buildSidebar();
+  navigate('dashboard', document.getElementById('nav-dashboard'));
+  initAllModules();
+  addLog('LOGIN', 'Auth', `${currentUser.name} signed in as ${currentUser.role}`, currentUser.user_id);
+}
 
 
 
-// Logs
 
-async function renderLogs() {
+// Duplicate backend log renderer removed by renaming
+
+async function renderLogsApi() {
   const res = await fetch(`${API_URL}/api/logs`);
   const logs = await res.json();
 
