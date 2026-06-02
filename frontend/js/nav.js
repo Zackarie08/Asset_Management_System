@@ -17,7 +17,11 @@ const EMP_NAV = [
 function buildSidebar() {
   const nav = document.getElementById('sb-nav');
   nav.innerHTML = '';
-  const items = currentUser.role === 'admin' ? ADMIN_NAV : ADMIN_NAV.filter(n => EMP_NAV.includes(n.id));
+  const isAdmin = currentUser.role.toLowerCase() === "admin";
+
+  const items = isAdmin
+    ? ADMIN_NAV
+    : ADMIN_NAV.filter(n => EMP_NAV.includes(n.id));
 
   items.forEach(item => {
     const div = document.createElement('div');
