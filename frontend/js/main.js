@@ -1131,7 +1131,7 @@ async function refreshDashboard() {
   // Stats
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
-  const lowInv = items.filter(i => i.qty <= i.reorder).length;
+  const lowInv = items.filter(i => i.current_quantity <= i.reorder_level).length;
   const activeLaptops = laptops.filter(l => l.status === 'Active').length;
   const now = new Date(); now.setHours(0,0,0,0);
   let pending = 0;
@@ -1151,9 +1151,9 @@ async function refreshDashboard() {
   document.getElementById('dc-orders-d').textContent = pending ? `${pending} pending` : 'No pending orders';
 
   // Low stock list
-  const lowItems = items.filter(i => i.qty <= i.reorder).slice(0,5);
+  const lowItems = items.filter(i => i.current_quantity <= i.reorder_level).slice(0,5);
   document.getElementById('dash-low-list').innerHTML = lowItems.length
-    ? lowItems.map(i => `<div class="panel-row"><div class="pr-dot ${i.qty===0?'red':'amber'}"></div><div><div class="pr-name">${i.name}</div><div class="pr-meta">${i.cat} · Qty: ${i.qty} / Reorder: ${i.reorder}</div></div>${badge(i.qty===0?'Critical':'Low Stock',i.qty===0?'b-red':'b-amber')}</div>`).join('')
+    ? lowItems.map(i => `<div class="panel-row"><div class="pr-dot ${i.current_quantity===0?'red':'amber'}"></div><div><div class="pr-name">${i.item_name}</div><div class="pr-meta">${i.category} · Qty: ${i.current_quantity} / Reorder: ${i.reorder_level}</div></div>${badge(i.current_quantity===0?'Critical':'Low Stock',i.current_quantity===0?'b-red':'b-amber')}</div>`).join('')
     : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ All inventory levels are OK</div>`;
   document.getElementById('dash-low-ct').textContent = lowItems.length+' items';
 
