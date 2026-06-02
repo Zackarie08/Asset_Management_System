@@ -66,6 +66,7 @@ function doLogin() {
     // ✅ Load UI
     buildSidebar();
     initAllModules();
+    updateUserUI();
   })
   .catch(err => {
     console.error(err);
@@ -77,4 +78,23 @@ function doLogout() {
   localStorage.removeItem("user");
   location.reload();
 }
-``
+
+function updateUserUI() {
+  if (!currentUser) return;
+
+  // Sidebar
+  document.getElementById("sb-avatar").textContent = currentUser.initials;
+  document.getElementById("sb-uname").textContent = currentUser.name;
+  document.getElementById("sb-role-tag").textContent = currentUser.role;
+
+  // Topbar
+  document.getElementById("tb-avatar").textContent = currentUser.initials;
+  document.getElementById("tb-uname").textContent = currentUser.name;
+  document.getElementById("tb-urole").textContent = currentUser.role;
+
+  const rolePill = document.getElementById("tb-role-pill");
+  rolePill.textContent = currentUser.role;
+
+  // Reset classes to avoid "admin stuck"
+  rolePill.className = "tb-role-pill " + currentUser.role;
+}

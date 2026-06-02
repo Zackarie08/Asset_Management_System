@@ -1,20 +1,7 @@
-/* ══════════════════════════════════════════════════════════════
-   ASSET MANAGEMENT SYSTEM — COMPLETE JAVASCRIPT
-   Version 2.0 | Pure JS | No Backend
-══════════════════════════════════════════════════════════════ */
-
 /* ──────────────────────────────────────────────────────────────
    SESSION / AUTH
 ────────────────────────────────────────────────────────────── */
 let currentUser = null; // { name, role, initials }
-
-const USERS = {
-  admin: { name:'Maria Alonzo',   role:'admin',    initials:'MA', title:'Administrator' },
-  emp1:  { name:'Juan Reyes',     role:'employee', initials:'JR', title:'IT Technician' },
-  emp2:  { name:'Ana Cruz',       role:'employee', initials:'AC', title:'Finance Officer' },
-  emp3:  { name:'Carlos Santos',  role:'employee', initials:'CS', title:'Operations Staff' },
-};
-
 
 
 /* ──────────────────────────────────────────────────────────────
