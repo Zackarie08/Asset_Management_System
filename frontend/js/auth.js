@@ -1,5 +1,4 @@
 let currentUser = null;
-
 function doLogin() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -11,22 +10,24 @@ function doLogin() {
     },
     body: JSON.stringify({ email, password })
   })
-  .then(res => {
-    if (!res.ok) throw new Error("Invalid login");
-    return res.json();
-  })
+  .then(res => res.json())
   .then(user => {
-    currentUser = user;
+    if (!user.user_id) {
+      showToast("Invalid login", "t-error");
+      return;
+    }
 
-    console.log("Logged in user:", currentUser);
+    currentUser = user;
+    console.log("USER:", currentUser);
 
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app").style.display = "flex";
 
     initApp();
   })
-  .catch(() => {
-    showToast("Invalid login","t-error");
+  .catch(err => {
+    console.error(err);
+    showToast("Login error", "t-error");
   });
 }
 
