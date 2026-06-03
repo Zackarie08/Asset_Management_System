@@ -141,6 +141,12 @@ function doWithdraw() {
     renderInventory();
     showToast('Withdraw successful','t-success');
   });
+    console.log("WITHDRAW REQUEST:", {
+    id: withdrawItemId,
+    qty: qty,
+    user_id: currentUser.user_id,
+    performed_by: currentUser.name
+  });
 }
 
 
