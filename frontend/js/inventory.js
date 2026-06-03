@@ -80,7 +80,12 @@ function withdrawItem(id, qty) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ id, qty })
+    body: JSON.stringify({
+      id,
+      qty,
+      user_id: currentUser.user_id,         // ✅ ADD THIS
+      performed_by: currentUser.name        // ✅ ADD THIS
+    })
   })
   .then(() => {
     renderInventory();
@@ -126,7 +131,9 @@ function doWithdraw() {
     },
     body: JSON.stringify({
       id: withdrawItemId,
-      qty: qty
+      qty: qty,
+      user_id: currentUser.user_id,       // ✅ ADD
+      performed_by: currentUser.name      // ✅ ADD
     })
   })
   .then(() => {

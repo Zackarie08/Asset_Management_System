@@ -1089,28 +1089,6 @@ function addLog(action, module, desc, ref='—') {
   }).catch(err => console.error("Log error:", err));
 }
 
-function renderLogs() {
-  const tbody = document.getElementById('log-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  logs.forEach(l => {
-    const clsMap = {CREATE:'la-create',UPDATE:'la-update',DELETE:'la-delete',DELIVER:'la-deliver',WITHDRAW:'la-withdraw',LOGIN:'la-system',LOGOUT:'la-system',SYSTEM:'la-system'};
-    const cls = clsMap[l.action]||'la-system';
-    const tr = document.createElement('tr');
-    tr.className = 'tr-clickable';
-    tr.innerHTML = `
-      <td class="td-mono" style="font-size:11px">${l.ts}</td>
-      <td>${l.user}</td>
-      <td><span class="log-action-badge ${cls}">${LOG_ICONS[l.action]||'📝'} ${l.action}</span></td>
-      <td><span class="badge b-slate b-none">${l.module}</span></td>
-      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px">${l.desc}</td>
-      <td class="td-mono">${l.ref}</td>`;
-    tr.addEventListener('click', () => openDP('log', l.id, tr));
-    tbody.appendChild(tr);
-  });
-  document.getElementById('log-ct').textContent = `${logs.length} entries`;
-}
-
 function dpLog(id) {
   const l = logs.find(x => x.id === id);
   if (!l) return;
@@ -1297,7 +1275,7 @@ async function renderLogs() {
       <td>${log.action_type}</td>
       <td>${log.module}</td>
       <td>${log.description}</td>
-      <td>${log.reference_type || "-"}</td>
+      <td>${log.performed_by || "-"}</td>
     `;
 
     tbody.appendChild(tr);
