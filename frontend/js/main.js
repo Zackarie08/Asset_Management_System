@@ -1293,7 +1293,7 @@ async function renderLogs() {
 
     tr.innerHTML = `
       <td>${new Date(log.date_time).toLocaleString()}</td>
-      <td>${log.user_id || "User"}</td>
+      <td>${log.name || "Unknown"}</td>
       <td>${log.action_type}</td>
       <td>${log.module}</td>
       <td>${log.description}</td>

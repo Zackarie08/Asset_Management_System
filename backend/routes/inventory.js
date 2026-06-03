@@ -82,7 +82,9 @@ router.post("/withdraw", async (req, res) => {
 // ✅ DELETE ITEM
 router.delete("/:id", async (req, res) => {
   try {
-    const { user_id, performed_by } = req.body;  // ✅ NEW
+    const user_id = req.query.user_id;
+    const performed_by = req.query.performed_by;
+
 
     await pool.query(
       "DELETE FROM inventory_gen WHERE inventory_gen_id = $1",

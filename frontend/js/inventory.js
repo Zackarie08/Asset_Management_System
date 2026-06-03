@@ -62,7 +62,10 @@ function saveInvItem() {
       quantity_limit: limit,
       price,
       unit, 
-      remarks
+      remarks,
+      user_id: currentUser.user_id,   
+      performed_by: currentUser.nam
+
     })
   })
   .then(() => {
@@ -85,7 +88,7 @@ function withdrawItem(id, qty) {
 }
 
 function deleteItem(id) {
-  fetch(`${API_URL}/api/inventory/${id}`, {
+  fetch(`${API_URL}/api/inventory/${id}?user_id=${currentUser.user_id}&performed_by=${currentUser.name}`, {
     method: "DELETE"
   })
   .then(() => {
@@ -229,9 +232,10 @@ async function openEditInv(id) {
 async function deleteInv(id) {
   if (!confirm("Delete this item?")) return;
 
-  await fetch(`${API_URL}/api/inventory/${id}`, {
+  await fetch(`${API_URL}/api/inventory/${id}?user_id=${currentUser.user_id}&performed_by=${currentUser.name}`, {
     method: "DELETE"
-  });
+  })
+
 
   closeDP();
   renderInventory();

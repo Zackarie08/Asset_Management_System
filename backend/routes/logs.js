@@ -7,7 +7,7 @@ const logAction = require("../utils/log");
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM system_log ORDER BY date_time DESC"
+      "SELECT l.*, u.name FROM system_log lLEFT JOIN users u ON l.user_id = u.user_idORDER BY l.date_time DESC"
     );
 
     res.json(result.rows);
