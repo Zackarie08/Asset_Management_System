@@ -17,26 +17,36 @@ function buildSidebar() {
     nav.appendChild(div);
   });
 }
-
 function navigate(page, navEl) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // ✅ remove active first
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+
+  // ✅ auto highlight when refresh (no navEl)
+  if (!navEl) {
+    const autoNav = document.getElementById('nav-' + page);
+    if (autoNav) autoNav.classList.add('active');
+  }
 
   const pageEl = document.getElementById('page-' + page);
   if (!pageEl) return;
+
   pageEl.classList.add('active');
+
+  // ✅ normal click highlight
   if (navEl) navEl.classList.add('active');
 
   const meta = PAGE_META[page] || {};
-  document.getElementById('tb-parent').textContent  = meta.parent || 'AssetCore';
+  document.getElementById('tb-parent').textContent = meta.parent || 'AssetCore';
   document.getElementById('tb-current').textContent = meta.title || page;
 
   currentPage = page;
-  closeDP();
+  localStorage.setItem("currentPage", page);
 
-  // Refresh specific page actions based on role
+  closeDP();
   refreshPageActions(page);
 }
+
 
 function refreshPageActions(page) {
   const isAdmin = currentUser.role === 'admin';

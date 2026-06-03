@@ -1,27 +1,3 @@
-
-if (savedUser) {
-  const user = JSON.parse(savedUser);
-
-  currentUser = {
-    name: user.name,
-    role: user.role,
-    initials: user.name.substring(0, 2).toUpperCase()
-  };
-
-  // AUTO LOGIN UI
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').classList.add('visible');
-
-  buildSidebar();
-  initAllModules();
-
-  // update UI
-  if (typeof updateUserUI === "function") {
-    updateUserUI();
-  }
-}
-
-
 /* ──────────────────────────────────────────────────────────────
    SESSION / AUTH
 ────────────────────────────────────────────────────────────── */
@@ -1096,13 +1072,21 @@ let logId = 1;
 const LOG_ICONS = { LOGIN:'🔐',LOGOUT:'🚪',CREATE:'✅',UPDATE:'✏️',DELETE:'🗑️',DELIVER:'📦',WITHDRAW:'➖',SYSTEM:'⚙️' };
 
 function addLog(action, module, desc, ref='—') {
-  logs.unshift({
-    id: logId++,
-    ts: new Date().toLocaleString('en-PH',{hour12:true}),
-    user: currentUser ? currentUser.name : 'System',
-    action, module, desc, ref,
-  });
-  renderLogs();
+  if (!currentUser) return;
+
+  fetch(`${API_URL}/api/logs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: currentUser.user_id,
+      action_type: action,
+      module: module,
+      description: desc,
+      reference_type: ref
+    })
+  }).catch(err => console.error("Log error:", err));
 }
 
 function renderLogs() {
@@ -1238,6 +1222,7 @@ function autoLogin() {
   const user = JSON.parse(savedUser);
 
   currentUser = {
+    user_id: user.user_id,
     name: user.name,
     role: user.role,
     initials: user.name.substring(0, 2).toUpperCase()
@@ -1249,6 +1234,11 @@ function autoLogin() {
 
   buildSidebar();
   initAllModules();
+
+  const savedPage = localStorage.getItem("currentPage");
+  if (savedPage) {
+    navigate(savedPage);
+  }
 
   // Update UI safely
   if (typeof updateUserUI === "function") {

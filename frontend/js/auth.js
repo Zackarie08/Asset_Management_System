@@ -54,6 +54,7 @@ function doLogin() {
 
     // ✅ Set current user (for your UI system)
     currentUser = {
+      user_id: data.user.user_id,
       name: data.user.name,
       role: data.user.role,
       initials: data.user.name.substring(0,2).toUpperCase()
