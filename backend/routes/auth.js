@@ -33,3 +33,17 @@ router.post("/login", async (req, res) => {
 });
 
 module.exports = router;
+
+router.get("/users", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT user_id, name FROM users ORDER BY name ASC"
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching users");
+  }
+});
+

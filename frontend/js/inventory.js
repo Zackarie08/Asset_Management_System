@@ -84,7 +84,7 @@ function withdrawItem(id, qty) {
       id,
       qty,
       user_id: currentUser.user_id,         // ✅ ADD THIS
-      performed_by: currentUser.name        // ✅ ADD THIS
+      performed_by: document.getElementById("inv-f-performed").value      // ✅ ADD THIS
     })
   })
   .then(() => {
@@ -133,19 +133,13 @@ function doWithdraw() {
       id: withdrawItemId,
       qty: qty,
       user_id: currentUser.user_id,       // ✅ ADD
-      performed_by: currentUser.name      // ✅ ADD
+      performed_by: document.getElementById("inv-f-performed").value     // ✅ ADD
     })
   })
   .then(() => {
     closeM('m-withdraw');
     renderInventory();
     showToast('Withdraw successful','t-success');
-  });
-    console.log("WITHDRAW REQUEST:", {
-    id: withdrawItemId,
-    qty: qty,
-    user_id: currentUser.user_id,
-    performed_by: currentUser.name
   });
 }
 
@@ -213,7 +207,6 @@ async function openCreateOrder(id) {
   const item = items.find(i => i.inventory_gen_id === id);
   if (item) {
     document.getElementById('po-f-item').value     = item.item_name;
-    document.getElementById('po-f-supplier').value = item.supplier || '';
     document.getElementById('po-f-cat').value      = item.category;
     document.getElementById('po-f-unit').value     = item.unit;
     document.getElementById('po-f-price').value    = item.price || '';
@@ -236,10 +229,10 @@ async function openEditInv(id) {
   document.getElementById('inv-f-reorder').value  = item.reorder_level;
   document.getElementById('inv-f-price').value    = item.price||'';
   document.getElementById('inv-f-loc').value      = item.location_id;
-  document.getElementById('inv-f-supplier').value = item.supplier||'';
   document.getElementById('inv-f-contact').value  = item.contact||'';
   document.getElementById('inv-f-remarks').value  = item.remarks||'';
   openM('m-add-inv');
+  loadUsersDropdown();
 }
 
 async function deleteInv(id) {
@@ -266,4 +259,24 @@ function filterInventory(cat, btn) {
   document.querySelectorAll('.cat-filter').forEach(b => { b.className = b.className.replace(' btn-primary','').replace('btn-outline','').trim(); b.className += ' btn-outline'; });
   btn.className = btn.className.replace('btn-outline','btn-primary');
   renderInventory();
+}
+
+async function loadUsersDropdown() {
+  const res = await fetch(`${API_URL}/api/auth/users`);
+  const users = await res.json();
+
+  const select = document.getElementById("inv-f-performed");
+  if (!select) return;
+
+  select.innerHTML = "";
+
+  users.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.name;
+    opt.textContent = u.name;
+    select.appendChild(opt);
+  });
+
+  // ✅ default to current user
+  select.value = currentUser.name;
 }
