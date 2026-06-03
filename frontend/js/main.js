@@ -1114,7 +1114,7 @@ function clearLogs() {
   if (!confirm('Clear all system logs? This cannot be undone.')) return;
   logs = [];
   logId = 1;
-  renderLogs();
+  await renderLogs();
   showToast('Logs cleared','t-warning');
 }
 
@@ -1224,7 +1224,7 @@ function autoLogin() {
   }
 }
 
-function initAllModules() {
+async function initAllModules() {
   renderInventory();
   renderFurniture();
   renderITSupplies();
@@ -1233,7 +1233,7 @@ function initAllModules() {
   renderVehicles();
   renderGlobe();
   renderM365();
-  renderLogs();
+  await renderLogs();
   refreshDashboard();
   refreshPageActions('dashboard');
 
