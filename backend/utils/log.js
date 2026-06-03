@@ -7,7 +7,8 @@ async function logAction({
   description,
   quantity,
   movement_type,
-  reference_type
+  reference_type,
+  performed_by
 }) {
   try {
     await pool.query(
