@@ -74,6 +74,35 @@ function saveInvItem() {
     renderInventory();
     closeM('m-add-inv');
   });
+
+  if (invEditId) {
+    // ✅ UPDATE MODE
+    fetch(`${API_URL}/api/inventory/${invEditId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        category,
+        quantity_limit: limit,
+        price,
+        unit,
+        remarks,
+        location_id: location,
+
+        user_id: currentUser.user_id,
+        performed_by: document.getElementById("inv-f-performed").value
+      })
+    }).then(() => {
+      renderInventory();
+      closeM('m-add-inv');
+      invEditId = null;
+    });
+
+  } else {
+    // ✅ ADD MODE (existing code)
+  }
 }
 
 function withdrawItem(id, qty) {
@@ -228,6 +257,7 @@ async function openEditInv(id) {
   document.getElementById('inv-f-name').value     = item.item_name;
   document.getElementById('inv-f-cat').value      = item.category;
   document.getElementById('inv-f-qty').value      = item.current_quantity;
+  document.getElementById('inv-f-qty').disabled = true; 
   document.getElementById('inv-f-unit').value     = item.unit;
   document.getElementById('inv-f-reorder').value  = item.reorder_level;
   document.getElementById('inv-f-price').value    = item.price||'';
@@ -251,7 +281,7 @@ async function deleteInv(id) {
   renderInventory();
   showToast('Item deleted','t-warning');
 }
-``
+
 
 
 let invId = 13;
@@ -296,6 +326,7 @@ function openAddInventory() {
   openM('m-add-inv');
   loadUsersDropdown(); // ✅ important
   loadLocationDropdown();
+  document.getElementById('inv-f-qty').disabled = false;
 }
 
 async function loadLocationDropdown() {

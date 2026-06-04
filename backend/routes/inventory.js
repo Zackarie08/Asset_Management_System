@@ -107,4 +107,61 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// ✅ EDIT ITEM
+router.put("/:id", async (req, res) => {
+  try {
+    const {
+      name,
+      category,
+      quantity_limit,
+      price,
+      unit,
+      remarks,
+      location_id,
+      user_id,
+      performed_by
+    } = req.body;
+
+    await pool.query(
+      `UPDATE inventory_gen
+       SET item_name = $1,
+           category = $2,
+           reorder_level = $3,
+           price = $4,
+           unit = $5,
+           remarks = $6,
+           location_id = $7,
+           last_updated = NOW()
+       WHERE inventory_gen_id = $8`,
+      [
+        name,
+        category,
+        quantity_limit,
+        price,
+        unit,
+        remarks,
+        location_id,
+        req.params.id
+      ]
+    );
+
+    // ✅ LOG EDIT
+    await logAction({
+      user_id,
+      action_type: "UPDATE",
+      module: "INVENTORY",
+      description: `Updated item: ${name}`,
+      movement_type: null,
+      reference_type: "MANUAL",
+      performed_by
+    });
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error updating item");
+  }
+});
+
 module.exports = router;
