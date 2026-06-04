@@ -240,15 +240,18 @@ async function openCreateOrder(id) {
   const item = items.find(i => i.inventory_gen_id === id);
   if (!item) return;
 
-  currentOrderItemId = id; 
+  currentOrderItemId = id;
 
-  document.getElementById('po-f-item').value = item.item_name;
-  document.getElementById('po-f-cat').value = item.category;
-  document.getElementById('po-f-unit').value = item.unit;
-  document.getElementById('po-f-date').value = todayStr();
+  document.getElementById('po-f-item').value     = item.item_name;
+  document.getElementById('po-f-cat').value      = item.category;
+  document.getElementById('po-f-unit').value     = item.unit;
+  document.getElementById('po-f-price').value    = item.price || '';
+  document.getElementById('po-f-date').value     = todayStr();
 
   openM('m-add-po');
+  loadUsersDropdown(["po-f-performed"]);
 }
+
 
 window.openEditInv = async function(id) {
   console.log("EDIT CLICKED:", id);
@@ -314,6 +317,7 @@ async function loadUsersDropdown() {
   // ✅ target BOTH dropdowns
   const selects = [
     document.getElementById("inv-f-performed"),
+    document.getElementById("po-f-performed"),
     document.getElementById("wd-by")
   ];
 

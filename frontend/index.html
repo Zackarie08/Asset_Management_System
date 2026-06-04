@@ -559,12 +559,11 @@
     </div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="po-f-item" placeholder="Item to order"/></div>
+        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="po-f-item" placeholder="Item to order" readonly/></div>
         <div class="form-grp"><label>Category</label>
-          <select class="form-ctrl" id="po-f-cat">
+          <select class="form-ctrl" id="po-f-cat" disabled>
             <option>Office Supplies</option>
             <option>Pantry Supplies</option>
-            <option>Finance Documents</option>
             <option>Company Event Supplies</option>
             <option>Wine</option>
             <option>First Aid Kit</option>
@@ -576,9 +575,9 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="po-f-qty" type="number" min="1" placeholder="1"/></div>
+        <div class="form-grp"><label>Quantity Ordered*</label><input class="form-ctrl" id="po-f-qty" type="number" min="1" placeholder="1"/></div>
         <div class="form-grp"><label>Unit</label>
-          <select class="form-ctrl" id="po-f-unit">
+          <select class="form-ctrl" id="po-f-unit" disabled>
             <option>Piece</option>
             <option>Ream</option>
             <option>Pack</option>
@@ -590,14 +589,14 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-grp"><label>Supplier *</label><input class="form-ctrl" id="po-f-supplier" placeholder="Supplier name"/></div>
-        <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-f-price" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Performed by</label><select class="form-ctrl" id="po-f-performed"></select></div>
+        <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-f-price" type="number" placeholder="0.00" readonly/></div>
       </div>
       <div class="form-row">
         <div class="form-grp"><label>Order Date</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
         <div class="form-grp"><label>Expected Delivery</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
       </div>
-      <div class="form-grp"><label>Notes</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Special instructions..."></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Special instructions..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-po')">Cancel</button>
         <button class="btn btn-green" onclick="savePO()">📦 Create Order</button>

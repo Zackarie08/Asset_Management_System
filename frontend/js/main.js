@@ -545,7 +545,16 @@ function deleteLaptop(id) {
 /* ──────────────────────────────────────────────────────────────
    PURCHASE ORDERS
 ────────────────────────────────────────────────────────────── */
-
+let poItems = [
+  { id:1, poNum:'PO-2026-0001', item:'Bond Paper (Short)',       cat:'Office Supplies', qty:20, unit:'Ream',   supplier:'PaperWorld Inc.',    price:280,  orderDate:'2026-05-14', eta:'2026-05-22', status:'IN TRANSIT', notes:'Urgent. Deliver to storage room A.',    delivered:null },
+  { id:2, poNum:'PO-2026-0002', item:'Office Chairs (Mesh)',     cat:'Furniture',       qty:5,  unit:'Piece',  supplier:'OfficePro PH',       price:4200, orderDate:'2026-04-28', eta:'2026-05-10', status:'ORDERED',    notes:'Replacement for worn chairs.',          delivered:null },
+  { id:3, poNum:'PO-2026-0003', item:'HP Toner CF280A',         cat:'IT Supplies',     qty:6,  unit:'Piece',  supplier:'HP Philippines',     price:3500, orderDate:'2026-05-16', eta:'2026-05-25', status:'ORDERED',    notes:'Request official receipt.',             delivered:null },
+  { id:4, poNum:'PO-2026-0004', item:'Coffee 3-in-1 Sachet',    cat:'Pantry Supplies', qty:10, unit:'Box',    supplier:'Nestle Distributor', price:350,  orderDate:'2026-04-25', eta:'2026-05-01', status:'ORDERED',    notes:'',                                     delivered:null },
+  { id:5, poNum:'PO-2026-0005', item:'Bandage Rolls',           cat:'First Aid Kit',   qty:20, unit:'Roll',   supplier:'Mercury Drug',       price:40,   orderDate:'2026-05-17', eta:'2026-05-30', status:'ORDERED',    notes:'Emergency restock.',                   delivered:null },
+  { id:6, poNum:'PO-2026-0006', item:'USB-C Cables 2m',         cat:'IT Supplies',     qty:15, unit:'Piece',  supplier:'TechHub Supplies',   price:280,  orderDate:'2026-04-10', eta:'2026-04-20', status:'DELIVERED',  notes:'',                                     delivered:'2026-04-19' },
+  { id:7, poNum:'PO-2026-0007', item:'Mineral Water 500mL',     cat:'Pantry Supplies', qty:100,unit:'Bottle', supplier:'Selecta Distributor',price:20,   orderDate:'2026-05-01', eta:'2026-05-05', status:'DELIVERED',  notes:'Weekly restock.',                       delivered:'2026-05-04' },
+];
+let poId = 8;
 async function renderOrders() {
   const res = await fetch(`${API_URL}/api/po`);
   const data = await res.json();
@@ -558,7 +567,7 @@ async function renderOrders() {
 
     tr.innerHTML = `
       <td>${o.purchase_order_id}</td>
-      <td>${o.unit || '-'}</td>
+      <td>${o.item_id}</td>
       <td>${o.quantity_ordered}</td>
       <td>${o.order_date || ''}</td>
       <td>${o.expected_delivery_date || ''}</td>
@@ -568,6 +577,7 @@ async function renderOrders() {
     tbody.appendChild(tr);
   });
 }
+
 function dpOrder(id) {
   const o = poItems.find(x => x.id === id);
   if (!o) return;
@@ -634,7 +644,7 @@ function savePO() {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      item_id: currentOrderItemId,
+      item_id: currentOrderItemId, 
       quantity: qty,
       order_date: date,
       expected_delivery_date: eta,
@@ -642,15 +652,15 @@ function savePO() {
       unit,
 
       user_id: currentUser.user_id,
-      performed_by: currentUser.name
+      performed_by: currentUser.name 
     })
   })
   .then(() => {
     closeM('m-add-po');
-    renderOrders();
+    renderOrders(); 
+    showToast('PO created','t-success');
   });
 }
-
 
 async function markDelivered(id) {
   const o = poItems.find(x => x.id === id);

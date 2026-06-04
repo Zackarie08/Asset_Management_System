@@ -29,6 +29,7 @@ router.post("/", async (req, res) => {
       performed_by
     } = req.body;
 
+    // ✅ INSERT PO
     await pool.query(
       `INSERT INTO purchase_orders 
        (item_id, quantity_ordered, order_date, expected_delivery_date, status, remarks, unit)
@@ -36,13 +37,13 @@ router.post("/", async (req, res) => {
       [item_id, quantity, order_date, expected_delivery_date, remarks, unit]
     );
 
-    // ✅ LOG
+    // ✅ ADD LOG (THIS IS WHAT YOU WERE MISSING)
     await logAction({
       user_id,
-      action_type: "CREATE",
+      action_type: "CREATED PO",
       module: "ORDER",
-      description: `Created purchase order`,
-      quantity,
+      description: `Created PO for item ID ${item_id} (Qty: ${quantity})`,
+      quantity: quantity,
       movement_type: "ADD",
       reference_type: "ORDER",
       performed_by
@@ -55,4 +56,5 @@ router.post("/", async (req, res) => {
     res.status(500).send("Error saving PO");
   }
 });
+
 module.exports = router;
