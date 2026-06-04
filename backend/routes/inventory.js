@@ -20,12 +20,12 @@ router.post("/", async (req, res) => {
   try {
     const { 
       name, qty, category, quantity_limit, price, unit, remarks,
-      user_id, performed_by   // ✅ NEW
+      user_id, performed_by, location_id    // ✅ NEW
     } = req.body;
 
     await pool.query(
-      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [name, qty, category, quantity_limit, price, unit, remarks]
+      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      [name, qty, category, quantity_limit, price, unit, remarks, location_id]
     );
 
     // ✅ FIXED LOG
@@ -37,7 +37,7 @@ router.post("/", async (req, res) => {
       quantity: qty,
       movement_type: "ADD",
       reference_type: "MANUAL",
-      performed_by                 // ✅ REAL PERSON
+      performed_by             // ✅ REAL PERSON
     });
 
     res.sendStatus(200);
