@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
-const { logAction } = require("./logs"); 
+const logAction = require("../utils/log");
 
 // ✅ GET ALL PO
 router.get("/", async (req, res) => {
