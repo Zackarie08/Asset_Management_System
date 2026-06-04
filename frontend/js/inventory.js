@@ -51,32 +51,9 @@ function saveInvItem() {
   const remarks = document.getElementById("inv-f-remarks").value;
   const location = document.getElementById("inv-f-loc").value;
 
-  fetch(`${API_URL}/api/inventory`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      name,
-      qty,
-      category,
-      quantity_limit: limit,
-      price,
-      unit, 
-      remarks,
-      user_id: currentUser.user_id,   
-      performed_by: document.getElementById("inv-f-performed").value,
-      location_id: location
-
-    })
-  })
-  .then(() => {
-    renderInventory();
-    closeM('m-add-inv');
-  });
-
+  // ✅ CHECK MODE FIRST
   if (invEditId) {
-    // ✅ UPDATE MODE
+    // ✅ UPDATE MODE ONLY
     fetch(`${API_URL}/api/inventory/${invEditId}`, {
       method: "PUT",
       headers: {
@@ -97,13 +74,36 @@ function saveInvItem() {
     }).then(() => {
       renderInventory();
       closeM('m-add-inv');
-      invEditId = null;
+      invEditId = null; // ✅ reset mode
     });
 
   } else {
-    // ✅ ADD MODE (existing code)
+    // ✅ ADD MODE ONLY
+    fetch(`${API_URL}/api/inventory`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        qty,
+        category,
+        quantity_limit: limit,
+        price,
+        unit,
+        remarks,
+
+        user_id: currentUser.user_id,
+        performed_by: document.getElementById("inv-f-performed").value,
+        location_id: location
+      })
+    }).then(() => {
+      renderInventory();
+      closeM('m-add-inv');
+    });
   }
 }
+
 
 function withdrawItem(id, qty) {
   fetch(`${API_URL}/api/inventory/withdraw`, {
@@ -220,7 +220,7 @@ async function dpInventory(id) {
       <div class="dp-action-row">
         <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
         <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
+        <button class="btn btn-outline btn-sm"onclick="event.stopPropagation(); event.preventDefault(); openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
         <button class="btn btn-red btn-sm" onclick="deleteInv(${item.inventory_gen_id})">🗑️ Delete</button>
       </div>
     </div>`;
@@ -247,27 +247,36 @@ async function openCreateOrder(id) {
   openM('m-add-po');
 }
 
-async function openEditInv(id) {
+window.openEditInv = async function(id) {
+  console.log("EDIT CLICKED:", id);
+
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
   const item = items.find(i => i.inventory_gen_id === id);
   if (!item) return;
+
   invEditId = id;
+
+  closeDP();
+
   document.getElementById('m-add-inv-title').textContent = '✏️ Edit Inventory Item';
-  document.getElementById('inv-f-name').value     = item.item_name;
-  document.getElementById('inv-f-cat').value      = item.category;
-  document.getElementById('inv-f-qty').value      = item.current_quantity;
-  document.getElementById('inv-f-qty').disabled = true; 
-  document.getElementById('inv-f-unit').value     = item.unit;
-  document.getElementById('inv-f-reorder').value  = item.reorder_level;
-  document.getElementById('inv-f-price').value    = item.price||'';
-  document.getElementById('inv-f-loc').value      = item.location_id;
-  document.getElementById('inv-f-contact').value  = item.contact||'';
-  document.getElementById('inv-f-remarks').value  = item.remarks||'';
+
+  document.getElementById('inv-f-name').value = item.item_name;
+  document.getElementById('inv-f-cat').value = item.category;
+
+  document.getElementById('inv-f-qty').value = item.current_quantity;
+  document.getElementById('inv-f-qty').disabled = true;
+
+  document.getElementById('inv-f-unit').value = item.unit;
+  document.getElementById('inv-f-reorder').value = item.reorder_level;
+  document.getElementById('inv-f-price').value = item.price || '';
+  document.getElementById('inv-f-loc').value = item.location_id;
+  document.getElementById('inv-f-remarks').value = item.remarks || '';
+
   openM('m-add-inv');
   loadUsersDropdown();
   loadLocationDropdown();
-}
+};
 
 async function deleteInv(id) {
   if (!confirm("Delete this item?")) return;
