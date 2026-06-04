@@ -45,8 +45,8 @@ router.post("/", async (req, res) => {
       module: "ORDER",
       description: `Created PO for item ID ${item_id} (Qty: ${quantity})`,
       quantity: quantity,
-      movement_type: "ADD",
-      reference_type: "ORDER",
+      movement_type: null,
+      reference_type: "MANUAL",
       performed_by
     });
 
