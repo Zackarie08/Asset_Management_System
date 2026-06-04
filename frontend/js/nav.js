@@ -54,7 +54,7 @@ function refreshPageActions(page) {
   const actions = {
     inventory:  () => {
       const el = document.getElementById('inv-actions');
-      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-inv')">➕ Add Item</button><button class="btn btn-outline btn-sm" onclick="showToast('Exported!','t-success')">📥 Export</button>`;
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddInventory()">➕ Add Item</button><button class="btn btn-outline btn-sm" onclick="showToast('Exported!','t-success')">📥 Export</button>`;
       else el.innerHTML = '';
     },
     furniture:  () => {

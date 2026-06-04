@@ -64,7 +64,7 @@ function saveInvItem() {
       unit, 
       remarks,
       user_id: currentUser.user_id,   
-      performed_by: currentUser.nam
+      performed_by: document.getElementById("inv-f-performed").value
 
     })
   })
@@ -114,6 +114,7 @@ async function openWithdraw(id) {
   document.getElementById('wd-by').value      = currentUser.name;
   document.getElementById('wd-remarks').value = '';
   openM('m-withdraw');
+  loadUsersDropdown();
 }
 
 function doWithdraw() {
@@ -133,7 +134,7 @@ function doWithdraw() {
       id: withdrawItemId,
       qty: qty,
       user_id: currentUser.user_id,       // ✅ ADD
-      performed_by: document.getElementById("inv-f-performed").value     // ✅ ADD
+      performed_by: document.getElementById("wd-by").value || currentUser.name     // ✅ ADD
     })
   })
   .then(() => {
@@ -265,18 +266,30 @@ async function loadUsersDropdown() {
   const res = await fetch(`${API_URL}/api/auth/users`);
   const users = await res.json();
 
-  const select = document.getElementById("inv-f-performed");
-  if (!select) return;
+  // ✅ target BOTH dropdowns
+  const selects = [
+    document.getElementById("inv-f-performed"),
+    document.getElementById("wd-by")
+  ];
 
-  select.innerHTML = "";
+  selects.forEach(select => {
+    if (!select) return;
 
-  users.forEach(u => {
-    const opt = document.createElement("option");
-    opt.value = u.name;
-    opt.textContent = u.name;
-    select.appendChild(opt);
+    select.innerHTML = "";
+
+    users.forEach(u => {
+      const opt = document.createElement("option");
+      opt.value = u.name;
+      opt.textContent = u.name;
+      select.appendChild(opt);
+    });
+
+    select.value = currentUser.name; // default selection
   });
+}
 
-  // ✅ default to current user
-  select.value = currentUser.name;
+
+function openAddInventory() {
+  openM('m-add-inv');
+  loadUsersDropdown(); // ✅ important
 }
