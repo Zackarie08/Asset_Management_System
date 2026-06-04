@@ -49,6 +49,7 @@ function saveInvItem() {
   const price = document.getElementById("inv-f-price").value;
   const unit = document.getElementById("inv-f-unit").value;
   const remarks = document.getElementById("inv-f-remarks").value;
+  const location = document.getElementById("inv-f-loc").value;
 
   fetch(`${API_URL}/api/inventory`, {
     method: "POST",
@@ -64,7 +65,8 @@ function saveInvItem() {
       unit, 
       remarks,
       user_id: currentUser.user_id,   
-      performed_by: document.getElementById("inv-f-performed").value
+      performed_by: document.getElementById("inv-f-performed").value,
+      location_id: location
 
     })
   })
@@ -234,6 +236,7 @@ async function openEditInv(id) {
   document.getElementById('inv-f-remarks').value  = item.remarks||'';
   openM('m-add-inv');
   loadUsersDropdown();
+  loadLocationDropdown();
 }
 
 async function deleteInv(id) {
@@ -292,4 +295,27 @@ async function loadUsersDropdown() {
 function openAddInventory() {
   openM('m-add-inv');
   loadUsersDropdown(); // ✅ important
+  loadLocationDropdown();
+}
+
+async function loadLocationDropdown() {
+  const res = await fetch(`${API_URL}/api/location`);
+  const locations = await res.json();
+
+  const selects = [
+    document.getElementById("inv-f-loc"),
+  ];
+
+  selects.forEach(select => {
+    if (!select) return;
+
+    select.innerHTML = "";
+
+    locations.forEach(loc => {
+      const opt = document.createElement("option");
+      opt.value = loc.location_id;       // ✅ SAVE ID
+      opt.textContent = loc.location_name;
+      select.appendChild(opt);
+    });
+  });
 }

@@ -29,3 +29,6 @@ app.listen(PORT, () => {
 const logsRoutes = require("./routes/logs");
 
 app.use("/api/logs", logsRoutes);
+
+const locationRoutes = require("./routes/location");
+app.use("/api/location", locationRoutes);
