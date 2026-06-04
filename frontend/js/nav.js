@@ -72,11 +72,10 @@ function refreshPageActions(page) {
       if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-lp')">➕ Add Laptop</button>`;
       else el.innerHTML = '';
     },
-    orders:     () => {
-      const el = document.getElementById('po-actions');
-      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-po')">📦 New Order</button>`;
-      else el.innerHTML = '';
-    },
+  orders: () => {
+    const el = document.getElementById('po-actions');
+    el.innerHTML = ''; // ✅ REMOVE BUTTON
+  },
     vehicles:   () => {
       const el = document.getElementById('veh-actions');
       if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')">➕ Add Vehicle</button>`;

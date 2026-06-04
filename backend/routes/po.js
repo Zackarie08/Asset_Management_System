@@ -24,7 +24,9 @@ router.post("/", async (req, res) => {
       order_date,
       expected_delivery_date,
       remarks,
-      unit
+      unit,
+      user_id,
+      performed_by
     } = req.body;
 
     await pool.query(
@@ -34,6 +36,18 @@ router.post("/", async (req, res) => {
       [item_id, quantity, order_date, expected_delivery_date, remarks, unit]
     );
 
+    // ✅ LOG
+    await logAction({
+      user_id,
+      action_type: "CREATE",
+      module: "ORDER",
+      description: `Created purchase order`,
+      quantity,
+      movement_type: "ADD",
+      reference_type: "ORDER",
+      performed_by
+    });
+
     res.sendStatus(200);
 
   } catch (err) {
@@ -41,5 +55,4 @@ router.post("/", async (req, res) => {
     res.status(500).send("Error saving PO");
   }
 });
-
 module.exports = router;

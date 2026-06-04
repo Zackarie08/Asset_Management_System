@@ -545,59 +545,29 @@ function deleteLaptop(id) {
 /* ──────────────────────────────────────────────────────────────
    PURCHASE ORDERS
 ────────────────────────────────────────────────────────────── */
-let poItems = [
-  { id:1, poNum:'PO-2026-0001', item:'Bond Paper (Short)',       cat:'Office Supplies', qty:20, unit:'Ream',   supplier:'PaperWorld Inc.',    price:280,  orderDate:'2026-05-14', eta:'2026-05-22', status:'IN TRANSIT', notes:'Urgent. Deliver to storage room A.',    delivered:null },
-  { id:2, poNum:'PO-2026-0002', item:'Office Chairs (Mesh)',     cat:'Furniture',       qty:5,  unit:'Piece',  supplier:'OfficePro PH',       price:4200, orderDate:'2026-04-28', eta:'2026-05-10', status:'ORDERED',    notes:'Replacement for worn chairs.',          delivered:null },
-  { id:3, poNum:'PO-2026-0003', item:'HP Toner CF280A',         cat:'IT Supplies',     qty:6,  unit:'Piece',  supplier:'HP Philippines',     price:3500, orderDate:'2026-05-16', eta:'2026-05-25', status:'ORDERED',    notes:'Request official receipt.',             delivered:null },
-  { id:4, poNum:'PO-2026-0004', item:'Coffee 3-in-1 Sachet',    cat:'Pantry Supplies', qty:10, unit:'Box',    supplier:'Nestle Distributor', price:350,  orderDate:'2026-04-25', eta:'2026-05-01', status:'ORDERED',    notes:'',                                     delivered:null },
-  { id:5, poNum:'PO-2026-0005', item:'Bandage Rolls',           cat:'First Aid Kit',   qty:20, unit:'Roll',   supplier:'Mercury Drug',       price:40,   orderDate:'2026-05-17', eta:'2026-05-30', status:'ORDERED',    notes:'Emergency restock.',                   delivered:null },
-  { id:6, poNum:'PO-2026-0006', item:'USB-C Cables 2m',         cat:'IT Supplies',     qty:15, unit:'Piece',  supplier:'TechHub Supplies',   price:280,  orderDate:'2026-04-10', eta:'2026-04-20', status:'DELIVERED',  notes:'',                                     delivered:'2026-04-19' },
-  { id:7, poNum:'PO-2026-0007', item:'Mineral Water 500mL',     cat:'Pantry Supplies', qty:100,unit:'Bottle', supplier:'Selecta Distributor',price:20,   orderDate:'2026-05-01', eta:'2026-05-05', status:'DELIVERED',  notes:'Weekly restock.',                       delivered:'2026-05-04' },
-];
-let poId = 8;
 
-function renderOrders() {
-  const isAdmin = currentUser.role === 'admin';
-  const now = new Date(); now.setHours(0,0,0,0);
+async function renderOrders() {
+  const res = await fetch(`${API_URL}/api/po`);
+  const data = await res.json();
+
   const tbody = document.getElementById('po-tbody');
   tbody.innerHTML = '';
-  let delayed = 0, pending = 0;
 
-  poItems.forEach(o => {
-    let status = o.status;
-    const etaDate = o.eta ? new Date(o.eta) : null;
-    if (status !== 'DELIVERED' && etaDate && etaDate < now) status = 'DELAYED';
-    if (status === 'DELAYED') delayed++;
-    if (['ORDERED','IN TRANSIT','DELAYED'].includes(status)) pending++;
-
-    const sCls = {ORDERED:'b-amber','IN TRANSIT':'b-blue',DELIVERED:'b-green',DELAYED:'b-red'}[status]||'b-slate';
-    const sIcon = {ORDERED:'📋','IN TRANSIT':'🚚',DELIVERED:'✅',DELAYED:'⏰'}[status]||'';
-
+  data.forEach(o => {
     const tr = document.createElement('tr');
-    tr.className = 'tr-clickable' + (status==='DELAYED'?' tr-warn':'') + (status==='DELIVERED'?' ':'');
+
     tr.innerHTML = `
-      <td class="td-mono">${o.poNum}</td>
-      <td class="td-strong">${o.item}</td>
-      <td>${badge(o.cat,'b-slate b-none')}</td>
-      <td>${o.qty} ${o.unit}</td>
-      <td class="td-mono">${o.orderDate}</td>
-      <td class="td-mono">${o.eta||'—'}</td>
-      <td>${badge(sIcon+' '+status, sCls)}</td>
-      <td>
-        ${isAdmin && status!=='DELIVERED' ? `<button class="btn btn-xs btn-green" title="Mark Delivered" onclick="event.stopPropagation();markDelivered(${o.id})">✅</button>` : ''}
-        ${isAdmin ? `<button class="btn btn-xs btn-red" onclick="event.stopPropagation();deletePO(${o.id})">🗑️</button>` : ''}
-      </td>`;
-    tr.addEventListener('click', () => openDP('order', o.id, tr));
+      <td>${o.purchase_order_id}</td>
+      <td>${o.unit || '-'}</td>
+      <td>${o.quantity_ordered}</td>
+      <td>${o.order_date || ''}</td>
+      <td>${o.expected_delivery_date || ''}</td>
+      <td>${o.status}</td>
+    `;
+
     tbody.appendChild(tr);
   });
-
-  document.getElementById('po-total-ct').textContent = `${poItems.length} orders`;
-  document.getElementById('po-delay-ct').textContent  = `${delayed} delayed`;
-  const nb = document.getElementById('nb-po');
-  if (nb) { nb.textContent = pending; nb.style.display = pending ? '' : 'none'; }
-  refreshDashboard();
 }
-
 function dpOrder(id) {
   const o = poItems.find(x => x.id === id);
   if (!o) return;
@@ -652,23 +622,35 @@ function dpOrder(id) {
 }
 
 function savePO() {
-  const item     = document.getElementById('po-f-item').value.trim();
-  const cat      = document.getElementById('po-f-cat').value;
-  const qty      = parseInt(document.getElementById('po-f-qty').value)||1;
-  const unit     = document.getElementById('po-f-unit').value;
-  const supplier = document.getElementById('po-f-supplier').value.trim()||'Not specified';
-  const price    = parseFloat(document.getElementById('po-f-price').value)||0;
-  const date     = document.getElementById('po-f-date').value||todayStr();
-  const eta      = document.getElementById('po-f-eta').value||'';
-  const notes    = document.getElementById('po-f-notes').value.trim();
-  if (!item) { showToast('Item name required','t-error'); return; }
-  const poNum = 'PO-'+new Date().getFullYear()+'-'+String(poId).padStart(4,'0');
-  poItems.push({ id:poId++, poNum, item,cat,qty,unit,supplier,price,orderDate:date,eta,status:'ORDERED',notes,delivered:null });
-  closeM('m-add-po');
-  clearForm(['po-f-item','po-f-qty','po-f-supplier','po-f-price','po-f-date','po-f-eta','po-f-notes']);
-  addLog('CREATE','Purchase Orders',`Created PO: "${item}" x${qty} from ${supplier}`,poNum);
-  renderOrders(); showToast(`PO created: ${poNum}`,'t-success');
+  const qty   = parseInt(document.getElementById('po-f-qty').value) || 1;
+  const unit  = document.getElementById('po-f-unit').value;
+  const date  = document.getElementById('po-f-date').value || todayStr();
+  const eta   = document.getElementById('po-f-eta').value || '';
+  const notes = document.getElementById('po-f-notes').value.trim();
+
+  fetch(`${API_URL}/api/po`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      item_id: currentOrderItemId,
+      quantity: qty,
+      order_date: date,
+      expected_delivery_date: eta,
+      remarks: notes,
+      unit,
+
+      user_id: currentUser.user_id,
+      performed_by: currentUser.name
+    })
+  })
+  .then(() => {
+    closeM('m-add-po');
+    renderOrders();
+  });
 }
+
 
 async function markDelivered(id) {
   const o = poItems.find(x => x.id === id);

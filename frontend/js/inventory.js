@@ -231,19 +231,22 @@ async function dpInventory(id) {
 }
 
 
+let currentOrderItemId = null;
+
 async function openCreateOrder(id) {
-    
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
 
   const item = items.find(i => i.inventory_gen_id === id);
-  if (item) {
-    document.getElementById('po-f-item').value     = item.item_name;
-    document.getElementById('po-f-cat').value      = item.category;
-    document.getElementById('po-f-unit').value     = item.unit;
-    document.getElementById('po-f-price').value    = item.price || '';
-    document.getElementById('po-f-date').value     = todayStr();
-  }
+  if (!item) return;
+
+  currentOrderItemId = id; 
+
+  document.getElementById('po-f-item').value = item.item_name;
+  document.getElementById('po-f-cat').value = item.category;
+  document.getElementById('po-f-unit').value = item.unit;
+  document.getElementById('po-f-date').value = todayStr();
+
   openM('m-add-po');
 }
 
