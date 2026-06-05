@@ -90,7 +90,7 @@ router.post("/deliver/:id", async (req, res) => {
     // ✅ log it
     await logAction({
       user_id,
-      action_type: "DELIVERED",
+      action_type: "DELIVERED PO",
       module: "ORDER",
       description: `Delivered PO #${po.purchase_order_id}`,
       quantity: po.quantity_ordered,
@@ -132,7 +132,7 @@ router.post("/cancel/:id", async (req, res) => {
     // ✅ log
     await logAction({
       user_id,
-      action_type: "CANCEL",
+      action_type: "CANCELED PO",
       module: "ORDER",
       description: `Cancelled PO #${po.purchase_order_id}`,
       quantity: po.quantity_ordered,

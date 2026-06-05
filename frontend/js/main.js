@@ -630,7 +630,7 @@ async function dpOrder(id) {
   `;
 
   // ✅ ACTION BUTTON
-  if (o.status !== "DELIVERED") {
+  if (o.status === "ORDERED" || o.status === "DELAYED") {
     html += `
       <div class="dp-section">
         <div class="dp-section-hd">⚡ Actions</div>
