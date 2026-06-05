@@ -15,10 +15,17 @@ async function renderUsers() {
       <td>${u.department || '-'}</td>
       <td>${u.role}</td>
       <td>
-        <button class="btn btn-red btn-xs"
-          onclick="deleteUser(${u.user_id})">
-          🗑️
+        <td>
+        <button class="btn btn-outline btn-xs"
+            onclick="resetPassword(${u.user_id})">
+            Reset Password
         </button>
+
+        <button class="btn btn-red btn-xs"
+            onclick="deleteUser(${u.user_id})">
+            Delete User
+        </button>
+        </td>
       </td>
     `;
 
@@ -60,5 +67,24 @@ function deleteUser(id) {
   })
   .then(() => {
     renderUsers();
+  });
+}
+
+function resetPassword(id) {
+  const newPass = prompt("Enter new password:");
+
+  if (!newPass) return;
+
+  fetch(`${API_URL}/api/auth/users/reset-password/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      new_password: newPass
+    })
+  })
+  .then(() => {
+    showToast("Password reset ✅", "t-success");
   });
 }

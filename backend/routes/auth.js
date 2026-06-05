@@ -78,3 +78,20 @@ router.delete("/users/:id", async (req, res) => {
     res.status(500).send("Error deleting user");
   }
 });
+
+router.put("/users/reset-password/:id", async (req, res) => {
+  try {
+    const { new_password } = req.body;
+
+    await pool.query(
+      "UPDATE users SET password = $1 WHERE user_id = $2",
+      [new_password, req.params.id]
+    );
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error resetting password");
+  }
+});
