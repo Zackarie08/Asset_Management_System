@@ -568,6 +568,23 @@ async function renderOrders() {
 
     tr.className = 'tr-clickable';
 
+    // ✅ DEFINE STATUS FIRST
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let status = o.status;
+
+    if (status !== "DELIVERED" && o.expected_delivery_date) {
+      const eta = new Date(o.expected_delivery_date);
+      const etaDate = new Date(eta.getFullYear(), eta.getMonth(), eta.getDate());
+
+      if (etaDate < today) {
+        status = "DELAYED";
+      }
+    }
+
+
+    // ✅ THEN USE IT
     tr.innerHTML = `
       <td>${o.purchase_order_id}</td>
       <td>${o.item_id}</td>
@@ -581,17 +598,6 @@ async function renderOrders() {
     tr.addEventListener('click', () => {
       openDP('order', o.purchase_order_id, tr);
     });
-    
-    const now = new Date();
-    let status = o.status;
-
-    if (status !== "DELIVERED" && o.expected_delivery_date) {
-      const eta = new Date(o.expected_delivery_date);
-      if (eta < now) {
-        status = "DELAYED";
-      }
-    }
-
 
     tbody.appendChild(tr);
   });
@@ -632,11 +638,16 @@ async function dpOrder(id) {
           <button class="btn btn-green btn-sm"
             onclick="event.stopPropagation(); markDelivered(${o.purchase_order_id})">
             ✅ Mark Delivered
+          </button>      
+          <button class="btn btn-red btn-sm"
+            onclick="event.stopPropagation(); cancelOrder(${o.purchase_order_id})">
+            ❌ Cancel Order
           </button>
         </div>
       </div>
     `;
   }
+  
 
   document.getElementById('dp-body').innerHTML = html;
   document.getElementById('dp-footer').style.display = 'none';
@@ -669,6 +680,7 @@ function savePO() {
   })
   .then(() => {
     closeM("m-add-po");
+    renderOrders();
     renderPO();
     renderInventory(); 
   });
@@ -1306,6 +1318,21 @@ function markDelivered(id) {
   .then(() => {
     renderOrders();
     renderInventory();
+    closeDP();
+  });
+}
+
+function cancelOrder(id) {
+  fetch(`${API_URL}/api/po/cancel/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: currentUser.user_id,
+      performed_by: currentUser.name
+    })
+  })
+  .then(() => {
+    renderOrders();
     closeDP();
   });
 }

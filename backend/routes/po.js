@@ -90,7 +90,7 @@ router.post("/deliver/:id", async (req, res) => {
     // ✅ log it
     await logAction({
       user_id,
-      action_type: "DELIVER",
+      action_type: "DELIVERED",
       module: "ORDER",
       description: `Delivered PO #${po.purchase_order_id}`,
       quantity: po.quantity_ordered,
@@ -104,6 +104,48 @@ router.post("/deliver/:id", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Error delivering order");
+  }
+});
+
+router.post("/cancel/:id", async (req, res) => {
+  try {
+    const { user_id, performed_by } = req.body;
+
+    const result = await pool.query(
+      "SELECT * FROM purchase_orders WHERE purchase_order_id = $1",
+      [req.params.id]
+    );
+
+    const po = result.rows[0];
+    if (!po) return res.status(404).send("Not found");
+
+    if (po.status === "DELIVERED") {
+      return res.status(400).send("Already delivered");
+    }
+
+    // ✅ update status
+    await pool.query(
+      "UPDATE purchase_orders SET status='CANCELLED' WHERE purchase_order_id=$1",
+      [req.params.id]
+    );
+
+    // ✅ log
+    await logAction({
+      user_id,
+      action_type: "CANCEL",
+      module: "ORDER",
+      description: `Cancelled PO #${po.purchase_order_id}`,
+      quantity: po.quantity_ordered,
+      movement_type: null,
+      reference_type: "MANUAL",
+      performed_by
+    });
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error cancelling order");
   }
 });
 
