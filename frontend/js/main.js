@@ -631,12 +631,13 @@ function dpOrder(id) {
   document.getElementById('dp-footer').style.display = 'none';
 }
 
+
 function savePO() {
-  const qty   = parseInt(document.getElementById('po-f-qty').value) || 1;
-  const unit  = document.getElementById('po-f-unit').value;
-  const date  = document.getElementById('po-f-date').value || todayStr();
-  const eta   = document.getElementById('po-f-eta').value || '';
-  const notes = document.getElementById('po-f-notes').value.trim();
+  const qty   = parseInt(document.getElementById("po-f-qty").value) || 1;
+  const unit  = document.getElementById("po-f-unit").value;
+  const date  = document.getElementById("po-f-date").value;
+  const eta   = document.getElementById("po-f-eta").value;
+  const notes = document.getElementById("po-f-notes").value;
 
   fetch(`${API_URL}/api/po`, {
     method: "POST",
@@ -652,13 +653,13 @@ function savePO() {
       unit,
 
       user_id: currentUser.user_id,
-      performed_by: currentUser.name 
+      performed_by: document.getElementById("po-f-performed").value
     })
   })
   .then(() => {
-    closeM('m-add-po');
-    renderOrders(); 
-    showToast('PO created','t-success');
+    closeM("m-add-po");
+    renderPO();
+    renderInventory(); 
   });
 }
 
