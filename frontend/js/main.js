@@ -18,6 +18,7 @@ const ADMIN_NAV = [
   { id:'globe',       icon:'📱', label:'Globe Mobile Plans',   badge:null, admin:true },
   { id:'m365',        icon:'💼', label:'M365 Licenses',        badge:null, admin:true },
   { id:'logs',        icon:'📜', label:'System Logs',          badge:null, admin:true },
+  { id: 'users', label: 'Users', icon: '👤', page: 'page-users', admin:true },
 ];
 
 const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','orders'];

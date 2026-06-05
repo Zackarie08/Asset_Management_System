@@ -437,6 +437,44 @@
         </div>
       </section>
 
+            <!-- ════════════════ USER MANAGEMENT ════════════════ -->
+      <section class="page" id="page-users">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">User Management</div>
+            <div class="pg-sub">System users · Manage access and roles</div>
+          </div>
+          <div class="pg-actions" id="user-actions">
+            <button class="btn btn-green btn-sm" onclick="openM('m-add-user')">
+              ➕ Add User
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">👤 Users</div>
+            <span class="badge b-slate" id="user-ct">0 users</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="user-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </div><!-- end main-content -->
   </div><!-- end app-body -->
 
@@ -945,6 +983,53 @@
   </div>
 </div>
 
+<!-- Add User -->
+<div class="modal-overlay" id="m-add-user">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">👤 Add User</div>
+      <button class="modal-close" onclick="closeM('m-add-user')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Name *</label>
+          <input class="form-ctrl" id="u-name" placeholder="Full name">
+        </div>
+        <div class="form-grp">
+          <label>Email *</label>
+          <input class="form-ctrl" id="u-email" placeholder="Email">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Password *</label>
+          <input class="form-ctrl" id="u-password" type="password">
+        </div>
+        <div class="form-grp">
+          <label>Department</label>
+          <input class="form-ctrl" id="u-dept" placeholder="Department">
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Role</label>
+        <select class="form-ctrl" id="u-role">
+          <option value="admin">Admin</option>
+          <option value="employee">Employee</option>
+        </select>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-user')">Cancel</button>
+        <button class="btn btn-green" onclick="saveUser()">✅ Save User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-wrap" id="toast-wrap"></div>
 
@@ -955,6 +1040,7 @@
 <script src="js/inventory.js"></script>
 <script src="js/orders.js"></script>
 <script src="js/main.js"></script>
+<script src="js/users.js"></script>
 
 </body>
 </html>

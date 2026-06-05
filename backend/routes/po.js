@@ -105,6 +105,9 @@ router.post("/deliver/:id", async (req, res) => {
     console.error(err);
     res.status(500).send("Error delivering order");
   }
+  if (po.status === "CANCELLED") {
+    return res.status(400).send("Cannot deliver cancelled order");
+  }
 });
 
 router.post("/cancel/:id", async (req, res) => {
@@ -146,6 +149,9 @@ router.post("/cancel/:id", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Error cancelling order");
+  }
+  if (po.status === "DELIVERED") {
+    return res.status(400).send("Cannot cancel delivered order");
   }
 });
 

@@ -34,12 +34,12 @@ router.post("/login", async (req, res) => {
 
 module.exports = router;
 
+
 router.get("/users", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT user_id, name FROM users ORDER BY name ASC"
+      "SELECT * FROM users ORDER BY user_id DESC"
     );
-
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -47,3 +47,34 @@ router.get("/users", async (req, res) => {
   }
 });
 
+router.post("/users", async (req, res) => {
+  try {
+    const { name, email, password, role, department } = req.body;
+
+    await pool.query(
+      "INSERT INTO users (name, email, password, role, department) VALUES ($1,$2,$3,$4,$5)",
+      [name, email, password, role, department]
+    );
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error saving user");
+  }
+});
+
+router.delete("/users/:id", async (req, res) => {
+  try {
+    await pool.query(
+      "DELETE FROM users WHERE user_id = $1",
+      [req.params.id]
+    );
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error deleting user");
+  }
+});
