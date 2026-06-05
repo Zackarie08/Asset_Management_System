@@ -25,8 +25,14 @@
     <div class="login-title">Welcome back</div>
     <div class="login-sub">Sign in to access your workspace</div>
     <label class="login-label">Select Account</label>
-    <input id="email" class="login-input" placeholder="Email">
-  <input id="password" type="password" class="login-input" placeholder="Password">
+    <input id="email" class="login-input" placeholder="Email" maxlength="50">
+    <div style="position:relative;">
+      <input id="password" type="password" class="login-input" placeholder="Password" maxlength="50">
+      <span onclick="togglePassword('password', this)"
+            style="position:absolute; right:10px; top:38%; transform:translateY(-50%); cursor:pointer;">
+        👁️
+      </span>
+    </div>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
   </div>
 </div>
@@ -541,7 +547,7 @@
     </div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="inv-f-name" placeholder="Item name"/></div>
+        <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="inv-f-name" placeholder="Item name" maxlength="50"/></div>
         <div class="form-grp"><label>Category *</label>
           <select class="form-ctrl" id="inv-f-cat">
             <option>Office Supplies</option>
@@ -577,7 +583,7 @@
         <div class="form-grp"><label>Location</label><select class="form-ctrl" id="inv-f-loc"  placeholder="Storage location"></select></div>
         <div class="form-grp"><label>Performed by</label><select class="form-ctrl" id="inv-f-performed"></select></div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="inv-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="inv-f-remarks" rows="2" placeholder="Optional notes..." maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-inv')">Cancel</button>
         <button class="btn btn-green" onclick="saveInvItem()">✅ Save Item</button>
@@ -632,7 +638,7 @@
         <div class="form-grp"><label>Order Date</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
         <div class="form-grp"><label>Expected Delivery</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Special instructions..."></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Special instructions..." maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-po')">Cancel</button>
         <button class="btn btn-green" onclick="savePO()">📦 Create Order</button>
@@ -995,18 +1001,42 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Name *</label>
-          <input class="form-ctrl" id="u-name" placeholder="Full name">
+          <input class="form-ctrl" id="u-name" placeholder="Full name" maxlength="50">
         </div>
         <div class="form-grp">
           <label>Email *</label>
-          <input class="form-ctrl" id="u-email" placeholder="Email">
+          <input class="form-ctrl" id="u-email" placeholder="Email" maxlength="50">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Password *</label>
-          <input class="form-ctrl" id="u-password" type="password">
+          <div class="form-grp">
+            <label>Password *</label>
+
+            <div style="position:relative;">
+              <input class="form-ctrl"
+                    id="u-password"
+                    type="password"
+                    maxlength="50"
+                    style="padding-right:40px; width:100%;">
+
+              <span onclick="togglePassword('u-password', this)"
+                    style="
+                      position:absolute;
+                      right:12px;
+                      top:0;
+                      bottom:0;
+                      margin:auto;
+                      height:16px;
+                      display:flex;
+                      align-items:center;
+                      cursor:pointer;
+                    ">
+                👁️
+              </span>
+            </div>
+          </div>
         </div>
         <div class="form-grp">
           <label>Department</label>
@@ -1033,6 +1063,79 @@
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-user')">Cancel</button>
         <button class="btn btn-green" onclick="saveUser()">✅ Save User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password -->
+<div class="modal-overlay" id="m-reset-pass">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd">
+      <div class="modal-title">🔑 Reset Password</div>
+      <button class="modal-close" onclick="closeM('m-reset-pass')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af">
+          User: <span id="rp-user-name">—</span>
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>New Password *</label>
+        <div style="position:relative; display:flex; align-items:center;">
+          <input id="rp-pass"
+                type="password"
+                class="form-ctrl"
+                style="padding-right:40px; width:100%;" maxlength="50">
+          <span onclick="togglePassword('rp-pass', this)"
+                style="
+                  position:absolute;
+                  right:12px;
+                  top:0;
+                  bottom:0;
+                  margin:auto;
+                  height:16px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  cursor:pointer;
+                ">
+            👁️
+          </span>
+        </div>
+      </div>
+
+            <div class="form-grp">
+        <label>New Password *</label>
+        <div style="position:relative; display:flex; align-items:center;">
+          <input id="rp-pass2"
+                type="password"
+                class="form-ctrl"
+                style="padding-right:40px; width:100%;" maxlength="50">
+          <span onclick="togglePassword('rp-pass2', this)"
+                style="
+                  position:absolute;
+                  right:12px;
+                  top:0;
+                  bottom:0;
+                  margin:auto;
+                  height:16px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  cursor:pointer;
+                ">
+            👁️
+          </span>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-reset-pass')">Cancel</button>
+        <button class="btn btn-green" onclick="confirmResetPassword()">✅ Reset</button>
       </div>
     </div>
   </div>

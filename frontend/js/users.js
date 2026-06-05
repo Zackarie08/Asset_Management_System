@@ -17,7 +17,7 @@ async function renderUsers() {
       <td>
         <td>
         <button class="btn btn-outline btn-xs"
-            onclick="resetPassword(${u.user_id})">
+            onclick="resetPassword(${u.user_id}, '${u.name}')">
             Reset Password
         </button>
 
@@ -70,21 +70,41 @@ function deleteUser(id) {
   });
 }
 
-function resetPassword(id) {
-  const newPass = prompt("Enter new password:");
+let selectedUserId = null;
 
-  if (!newPass) return;
+function resetPassword(id, name) {
+  selectedUserId = id;
 
-  fetch(`${API_URL}/api/auth/users/reset-password/${id}`, {
+  document.getElementById("rp-user-name").textContent = name;
+  document.getElementById("rp-pass").value = "";
+  document.getElementById("rp-pass2").value = "";
+
+  openM("m-reset-pass");
+}
+
+function confirmResetPassword() {
+  const pass1 = document.getElementById("rp-pass").value;
+  const pass2 = document.getElementById("rp-pass2").value;
+
+  if (!pass1 || !pass2) {
+    showToast("Fill all fields", "t-error");
+    return;
+  }
+
+  if (pass1 !== pass2) {
+    showToast("Passwords do not match", "t-error");
+    return;
+  }
+
+  fetch(`${API_URL}/api/auth/users/reset-password/${selectedUserId}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      new_password: newPass
+      new_password: pass1
     })
   })
   .then(() => {
     showToast("Password reset ✅", "t-success");
+    closeM("m-reset-pass");
   });
 }
