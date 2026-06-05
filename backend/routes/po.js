@@ -7,7 +7,7 @@ const logAction = require("../utils/log");
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM purchase_orders ORDER BY purchase_order_id DESC"
+      "SELECT p.*, i.item_name FROM purchase_orders p LEFT JOIN inventory_gen i ON p.item_id = i.inventory_gen_id ORDER BY p.purchase_order_id DESC"
     );
     res.json(result.rows);
   } catch (err) {

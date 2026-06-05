@@ -289,20 +289,6 @@ input, select, textarea { font-family: var(--font); outline: none; }
 }
 .tb-search:hover { border-color: var(--slate-300); }
 
-.tb-btn {
-  width: 34px; height: 34px; border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  background: var(--slate-100); border: 1.5px solid var(--slate-200);
-  cursor: pointer; font-size: 14px; position: relative;
-  transition: all var(--trans);
-}
-.tb-btn:hover { background: var(--slate-200); border-color: var(--slate-300); }
-.notif-dot {
-  position: absolute; top: 7px; right: 7px;
-  width: 6px; height: 6px; background: var(--red-500); border-radius: 50%;
-  border: 2px solid var(--white);
-}
-
 .tb-user {
   display: flex; align-items: center; gap: 9px;
   padding: 5px 10px; border-radius: var(--radius-sm);

@@ -28,16 +28,16 @@ const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','ord
    NAVIGATION
 ────────────────────────────────────────────────────────────── */
 const PAGE_META = {
-  dashboard:  { title:'Dashboard',         parent:'AssetCore' },
-  inventory:  { title:'Inventory Management', parent:'AssetCore' },
-  furniture:  { title:'Office Furniture',  parent:'AssetCore' },
-  itsupplies: { title:'IT Supplies',       parent:'AssetCore' },
-  laptops:    { title:'Laptop Management', parent:'AssetCore' },
-  orders:     { title:'Purchase Orders',   parent:'AssetCore' },
-  vehicles:   { title:'Vehicle Management',parent:'AssetCore' },
-  globe:      { title:'Globe Mobile Plans',parent:'AssetCore' },
-  m365:       { title:'M365 Licenses',     parent:'AssetCore' },
-  logs:       { title:'System Logs',       parent:'AssetCore' },
+  dashboard:  { title:'Dashboard',         parent:'Asset Management System' },
+  inventory:  { title:'Inventory Management', parent:'Asset Management System' },
+  furniture:  { title:'Office Furniture',  parent:'Asset Management System' },
+  itsupplies: { title:'IT Supplies',       parent:'Asset Management System' },
+  laptops:    { title:'Laptop Management', parent:'Asset Management System' },
+  orders:     { title:'Purchase Orders',   parent:'Asset Management System' },
+  vehicles:   { title:'Vehicle Management',parent:'Asset Management System' },
+  globe:      { title:'Globe Mobile Plans',parent:'Asset Management System' },
+  m365:       { title:'M365 Licenses',     parent:'Asset Management System' },
+  logs:       { title:'System Logs',       parent:'Asset Management System' },
 };
 
 let currentPage = 'dashboard';
@@ -555,6 +555,7 @@ let poItems = [
   { id:7, poNum:'PO-2026-0007', item:'Mineral Water 500mL',     cat:'Pantry Supplies', qty:100,unit:'Bottle', supplier:'Selecta Distributor',price:20,   orderDate:'2026-05-01', eta:'2026-05-05', status:'DELIVERED',  notes:'Weekly restock.',                       delivered:'2026-05-04' },
 ];
 let poId = 8;
+
 async function renderOrders() {
   const res = await fetch(`${API_URL}/api/po`);
   const data = await res.json();
@@ -565,66 +566,65 @@ async function renderOrders() {
   data.forEach(o => {
     const tr = document.createElement('tr');
 
+    tr.className = 'tr-clickable';
+
     tr.innerHTML = `
       <td>${o.purchase_order_id}</td>
       <td>${o.item_id}</td>
+      <td>${o.item_name || '-'}</td>
       <td>${o.quantity_ordered}</td>
       <td>${o.order_date || ''}</td>
       <td>${o.expected_delivery_date || ''}</td>
       <td>${o.status}</td>
     `;
 
+    tr.addEventListener('click', () => {
+      openDP('order', o.purchase_order_id, tr);
+    });
+
     tbody.appendChild(tr);
   });
 }
 
-function dpOrder(id) {
-  const o = poItems.find(x => x.id === id);
+async function dpOrder(id) {
+  const res = await fetch(`${API_URL}/api/po`);
+  const data = await res.json();
+
+  const o = data.find(x => x.purchase_order_id === id);
   if (!o) return;
-  const isAdmin = currentUser.role === 'admin';
-  const now = new Date(); now.setHours(0,0,0,0);
-  const etaDate = o.eta ? new Date(o.eta) : null;
-  let status = o.status;
-  if (status!=='DELIVERED' && etaDate && etaDate < now) status = 'DELAYED';
-  const isDelayed = status === 'DELAYED';
-  const daysLate = isDelayed && etaDate ? Math.floor((now-etaDate)/86400000) : 0;
-  const sCls = {ORDERED:'b-amber','IN TRANSIT':'b-blue',DELIVERED:'b-green',DELAYED:'b-red'}[status]||'b-slate';
-  setDPHeader('🛒',isDelayed?'#fef2f2':status==='DELIVERED'?'#f0fdf4':'#eff6ff', o.item, o.poNum);
 
+  // ✅ HEADER
+  setDPHeader('🛒', '#eff6ff', `PO #${o.purchase_order_id}`, "Purchase Order");
+
+  // ✅ CONTENT
   let html = `
-    ${isDelayed ? `<div class="dp-alert danger">⏰ <span class="dp-alert-text">Delivery is ${daysLate} day${daysLate!==1?'s':''} overdue. Follow up with supplier.</span></div>` : ''}
-    <div class="dp-status-row">${badge(status, sCls)}<span class="dp-status-label">Order status</span></div>
-
     <div class="dp-section">
       <div class="dp-section-hd">📦 Order Information</div>
       <div class="dp-grid">
-        ${dpFieldFull('Item Name',`<strong>${o.item}</strong>`)}
-        ${dpField('PO Number', o.poNum, 'mono')}
-        ${dpField('Category', o.cat)}
-        ${dpField('Quantity', o.qty+' '+o.unit)}
-        ${dpField('Unit Price', o.price?'₱'+o.price.toLocaleString():null)}
-        ${dpField('Total Cost', o.price?'₱'+(o.price*o.qty).toLocaleString():null)}
-        ${dpField('Order Date', o.orderDate, 'mono')}
-        ${dpField('Expected Delivery', o.eta||'—', 'mono')}
-        ${dpField('Actual Delivery', o.delivered||'Pending', 'mono')}
+        ${dpField('Item ID', o.item_id)}
+        ${dpField('Item Name', o.item_name || '-')}
+        ${dpField('Quantity', o.quantity_ordered + ' ' + (o.unit || ''))}
+        ${dpField('Status', o.status)}
+        ${dpField('Order Date', o.order_date)}
+        ${dpField('Expected Delivery', o.expected_delivery_date || '—')}
+        ${dpField('Delivered', o.actual_delivery_date || 'Pending')}
       </div>
     </div>
+  `;
 
-    <div class="dp-section">
-      <div class="dp-section-hd">🏪 Supplier</div>
-      <div class="supplier-card">
-        <div class="sc-name">🏢 ${o.supplier||'Not specified'}</div>
-        <div class="sc-note">Contact supplier to follow up on delivery</div>
-        <span class="sc-link" onclick="showToast('Contacting ${o.supplier}…','t-info')">🔗 Contact Supplier</span>
+  // ✅ ACTION BUTTON
+  if (o.status !== "DELIVERED") {
+    html += `
+      <div class="dp-section">
+        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-action-row">
+          <button class="btn btn-green btn-sm"
+            onclick="event.stopPropagation(); markDelivered(${o.purchase_order_id})">
+            ✅ Mark Delivered
+          </button>
+        </div>
       </div>
-    </div>
-
-    ${o.notes ? `<div class="dp-section"><div class="dp-section-hd">📝 Notes</div><div class="dp-grid">${dpFieldFull('Order Notes',o.notes)}</div></div>` : ''}`;
-
-  if (isAdmin && status!=='DELIVERED') {
-    html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-green btn-sm" onclick="markDelivered(${o.id})">✅ Mark Delivered</button><button class="btn btn-red btn-sm" onclick="deletePO(${o.id})">🗑️ Delete</button></div></div>`;
-  } else if (isAdmin) {
-    html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-red btn-sm" onclick="deletePO(${o.id})">🗑️ Delete</button></div></div>`;
+    `;
   }
 
   document.getElementById('dp-body').innerHTML = html;
