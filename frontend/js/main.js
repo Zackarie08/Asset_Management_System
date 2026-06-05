@@ -575,12 +575,23 @@ async function renderOrders() {
       <td>${o.quantity_ordered}</td>
       <td>${o.order_date || ''}</td>
       <td>${o.expected_delivery_date || ''}</td>
-      <td>${o.status}</td>
+      <td>${status}</td>
     `;
 
     tr.addEventListener('click', () => {
       openDP('order', o.purchase_order_id, tr);
     });
+    
+    const now = new Date();
+    let status = o.status;
+
+    if (status !== "DELIVERED" && o.expected_delivery_date) {
+      const eta = new Date(o.expected_delivery_date);
+      if (eta < now) {
+        status = "DELAYED";
+      }
+    }
+
 
     tbody.appendChild(tr);
   });
@@ -1281,3 +1292,20 @@ async function renderLogs() {
 window.onload = function () {
   autoLogin();
 };
+
+
+function markDelivered(id) {
+  fetch(`${API_URL}/api/po/deliver/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: currentUser.user_id,
+      performed_by: currentUser.name
+    })
+  })
+  .then(() => {
+    renderOrders();
+    renderInventory();
+    closeDP();
+  });
+}

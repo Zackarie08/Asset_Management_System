@@ -58,4 +58,53 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.post("/deliver/:id", async (req, res) => {
+  try {
+    const { user_id, performed_by } = req.body;
+
+    // ✅ get PO
+    const result = await pool.query(
+      "SELECT * FROM purchase_orders WHERE purchase_order_id = $1",
+      [req.params.id]
+    );
+
+    const po = result.rows[0];
+    if (!po) return res.status(404).send("Not found");
+
+    if (po.status === "DELIVERED") {
+      return res.status(400).send("Already delivered");
+    }
+
+    // ✅ update PO
+    await pool.query(
+      "UPDATE purchase_orders SET status='DELIVERED', actual_delivery_date=NOW() WHERE purchase_order_id=$1",
+      [req.params.id]
+    );
+
+    // ✅ update inventory stock
+    await pool.query(
+      "UPDATE inventory_gen SET current_quantity = current_quantity + $1 WHERE inventory_gen_id = $2",
+      [po.quantity_ordered, po.item_id]
+    );
+
+    // ✅ log it
+    await logAction({
+      user_id,
+      action_type: "DELIVER",
+      module: "ORDER",
+      description: `Delivered PO #${po.purchase_order_id}`,
+      quantity: po.quantity_ordered,
+      movement_type: "ADD",
+      reference_type: "DELIVERY",
+      performed_by
+    });
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error delivering order");
+  }
+});
+
 module.exports = router;
