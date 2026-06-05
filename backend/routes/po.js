@@ -59,6 +59,10 @@ router.post("/", async (req, res) => {
 });
 
 router.post("/deliver/:id", async (req, res) => {
+  const { role } = req.body;
+  if (role !== "admin") {
+    return res.status(403).send("Unauthorized");
+  }
   try {
     const { user_id, performed_by } = req.body;
 
@@ -111,6 +115,10 @@ router.post("/deliver/:id", async (req, res) => {
 });
 
 router.post("/cancel/:id", async (req, res) => {
+  const { role } = req.body;
+  if (role !== "admin") {
+    return res.status(403).send("Unauthorized");
+  }
   try {
     const { user_id, performed_by } = req.body;
 

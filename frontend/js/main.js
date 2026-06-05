@@ -631,7 +631,9 @@ async function dpOrder(id) {
   `;
 
   // ✅ ACTION BUTTON
-  if (o.status === "ORDERED" || o.status === "DELAYED") {
+if (
+  (o.status === "ORDERED" || o.status === "DELAYED") && currentUser.role === "admin"
+) {
     html += `
       <div class="dp-section">
         <div class="dp-section-hd">⚡ Actions</div>
@@ -1251,6 +1253,7 @@ function initAllModules() {
   renderGlobe();
   renderM365();
   renderLogs();
+  renderUsers();
   refreshDashboard();
   refreshPageActions('dashboard');
 
@@ -1313,7 +1316,8 @@ function markDelivered(id) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: currentUser.user_id,
-      performed_by: currentUser.name
+      performed_by: currentUser.name,
+      role: currentUser.role
     })
   })
   .then(() => {
@@ -1329,7 +1333,8 @@ function cancelOrder(id) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: currentUser.user_id,
-      performed_by: currentUser.name
+      performed_by: currentUser.name,
+      role: currentUser.role
     })
   })
   .then(() => {

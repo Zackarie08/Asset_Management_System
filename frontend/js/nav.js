@@ -95,4 +95,7 @@ function refreshPageActions(page) {
   if (page === "logs") {
     renderLogs();
   }
+  if (page === 'page-users') {
+    renderUsers();
+  }
 }
