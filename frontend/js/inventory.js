@@ -205,7 +205,7 @@ async function dpInventory(id) {
         ${dpFieldFull('Item Name', `<strong>${item.item_name}</strong>`)}
         ${dpField('Category', item.category)}
         ${dpField('Unit', item.unit)}
-        ${dpField('Location', item.location_id)}
+        ${dpField('Location', item.location_name || '-')}
         ${dpField('Price / Unit', item.price ? '₱'+item.price.toLocaleString() : null)}
         ${dpField('Total Value', item.price ? '₱'+(item.price*item.current_quantity).toLocaleString() : null)}
       </div>
