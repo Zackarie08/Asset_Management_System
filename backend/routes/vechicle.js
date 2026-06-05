@@ -1,0 +1,27 @@
+router.get("/", async (req, res) => {
+  const result = await pool.query(
+    "SELECT * FROM vehicle ORDER BY vehicle_id DESC"
+  );
+  res.json(result.rows);
+});
+
+router.post("/", async (req, res) => {
+  const {
+    vehicle_name,
+    plate_number,
+    type,
+    purchase_date,
+    status,
+    price,
+    remarks
+  } = req.body;
+
+  await pool.query(
+    `INSERT INTO vehicle 
+    (vehicle_name, plate_number, type, purchase_date, status, price, remarks)
+    VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [vehicle_name, plate_number, type, purchase_date, status, price, remarks]
+  );
+
+  res.sendStatus(200);
+});

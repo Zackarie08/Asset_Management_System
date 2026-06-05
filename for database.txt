@@ -1,0 +1,208 @@
+NOTE: CHECKED BY AI, PLEASE DOUBLE CHECK SA EXCEL ASSET PLANNING 
+
+
+
+-- =========================
+-- USERS ----- DONE
+-- =========================
+CREATE TABLE users (
+  user_id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL, -- admin / employee
+  department TEXT
+);
+
+-- =========================
+-- LOCATIONS ----- DONE
+-- =========================
+CREATE TABLE location (
+  location_id SERIAL PRIMARY KEY,
+  location_name TEXT NOT NULL,
+  remarks TEXT
+);
+
+-- =========================
+-- INVENTORY ----- DONE
+-- =========================
+CREATE TABLE inventory_gen (
+  inventory_gen_id SERIAL PRIMARY KEY,
+  item_name TEXT NOT NULL,
+  unit TEXT,
+  location_id INT REFERENCES location(location_id),
+  current_quantity INT DEFAULT 0,
+  last_updated TIMESTAMP DEFAULT NOW(),
+  remarks TEXT,
+  price NUMERIC(12,2),
+  category TEXT,
+  reorder_level INT
+);
+
+-- =========================
+-- PURCHASE ORDERS ----- DONE
+-- =========================
+CREATE TABLE purchase_orders (
+  purchase_order_id SERIAL PRIMARY KEY,
+  item_id INT REFERENCES inventory_gen(inventory_gen_id),
+  quantity_ordered INT,
+  order_date DATE,
+  expected_delivery_date DATE,
+  actual_delivery_date DATE,
+  status TEXT,
+  remarks TEXT,
+  unit TEXT
+);
+
+-- =========================
+-- SYSTEM LOGS ----- DONE
+-- =========================
+CREATE TABLE system_log (
+  log_id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(user_id),
+  action_type TEXT,
+  module TEXT,
+  description TEXT,
+  date_time TIMESTAMP DEFAULT NOW(),
+  quantity INT,
+  movement_type TEXT,
+  reference_type TEXT,
+  performed_by TEXT
+);
+
+-- =========================
+-- VEHICLES ----- DONE
+-- =========================
+CREATE TABLE vehicle (
+  vehicle_id SERIAL PRIMARY KEY,
+  vehicle_name TEXT NOT NULL,
+  plate_number TEXT,
+  type TEXT,
+  purchase_date DATE,
+  status TEXT,
+  price NUMERIC(12,2),
+  remarks TEXT
+);
+
+-- =========================
+-- VEHICLE MAINTENANCE ----- DONE
+-- =========================
+CREATE TABLE vehicle_maintenance (
+  maintenance_id SERIAL PRIMARY KEY,
+  vehicle_id INT REFERENCES vehicle(vehicle_id),
+  service_type TEXT,
+  maintenance_date DATE,
+  maintenance_cost NUMERIC(12,2),
+  remarks TEXT,
+  odometer INT
+);
+
+-- =========================
+-- OFFICE FURNITURE
+-- =========================
+CREATE TABLE office_furniture (
+  office_furniture_id SERIAL PRIMARY KEY,
+  furniture_name TEXT,
+  quantity INT,
+  date_of_purchase DATE,
+  supplier TEXT,
+  price NUMERIC(12,2),
+  remarks TEXT,
+  current_location INT REFERENCES location(location_id),
+  supplier_link TEXT
+);
+
+-- =========================
+-- IT SUPPLIES
+-- =========================
+CREATE TABLE it_supplies (
+  it_supplies_id SERIAL PRIMARY KEY,
+  asset_name TEXT,
+  serial_number TEXT,
+  quantity INT,
+  date_of_purchase DATE,
+  supplier TEXT,
+  price NUMERIC(12,2),
+  warranty_end_date DATE,
+  remarks TEXT,
+  location_id INT REFERENCES location(location_id),
+  supplier_link TEXT,
+  status TEXT
+);
+
+-- =========================
+-- LAPTOP
+-- =========================
+CREATE TABLE laptop (
+  laptop_id SERIAL PRIMARY KEY,
+  asset_number TEXT,
+  item_description TEXT,
+  date_of_purchase DATE,
+  warranty_end_date DATE,
+  supplier TEXT,
+  serial_number TEXT,
+  xero_asset_number TEXT,
+  category TEXT,
+  price NUMERIC(12,2),
+  current_user TEXT,
+  current_location INT REFERENCES location(location_id),
+  status TEXT
+);
+
+-- =========================
+-- LAPTOP HISTORY
+-- =========================
+CREATE TABLE laptop_history (
+  laptop_history_id SERIAL PRIMARY KEY,
+  laptop_id INT REFERENCES laptop(laptop_id),
+  previous_user TEXT,
+  new_user TEXT,
+  date_changed DATE,
+  remarks TEXT
+);
+
+-- =========================
+-- LAPTOP MAINTENANCE
+-- =========================
+CREATE TABLE laptop_maintenance (
+  laptop_maintenance_id SERIAL PRIMARY KEY,
+  laptop_id INT REFERENCES laptop(laptop_id),
+  check_date DATE,
+  status TEXT,
+  remarks TEXT,
+  user_id INT REFERENCES users(user_id)
+);
+
+-- =========================
+-- GLOBE MOBILE PLAN
+-- =========================
+CREATE TABLE globe_mobile_plan (
+  plan_id SERIAL PRIMARY KEY,
+  employee_name TEXT,
+  mobile_number TEXT,
+  account_number TEXT,
+  plan_name TEXT,
+  data_allocation TEXT,
+  monthly_cost NUMERIC(12,2),
+  credit_limit NUMERIC(12,2),
+  start_date DATE,
+  renewal_date DATE,
+  status TEXT,
+  remarks TEXT
+);
+
+-- =========================
+-- M365 LICENSES
+-- =========================
+CREATE TABLE m365 (
+  license_id SERIAL PRIMARY KEY,
+  assigned_email TEXT,
+  license_type TEXT,
+  category TEXT,
+  supplier TEXT,
+  license_cost NUMERIC(12,2),
+  start_date DATE,
+  expiry_date DATE,
+  renewal_date DATE,
+  status TEXT
+);

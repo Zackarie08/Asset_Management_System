@@ -98,4 +98,7 @@ function refreshPageActions(page) {
   if (page === 'page-users') {
     renderUsers();
   }
+  if (page === "page-vehicles") {
+  renderVehicles();
+}
 }

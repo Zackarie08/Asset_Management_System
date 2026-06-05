@@ -76,6 +76,7 @@ function openDP(type, id, row) {
     log:       dpLog,
   };
   if (renderers[type]) renderers[type](id);
+  if (type === "vehicle") dpVehicle(id);
 }
 
 function closeDP() {
@@ -756,50 +757,30 @@ function renderVehicles() {
   document.getElementById('veh-ct').textContent = `${vehicles.length} vehicles`;
 }
 
-function dpVehicle(id) {
-  const v = vehicles.find(x => x.id === id);
+async function dpVehicle(id) {
+  const res = await fetch(`${API_URL}/api/vehicle`);
+  const data = await res.json();
+
+  const v = data.find(x => x.vehicle_id === id);
   if (!v) return;
-  const isAdmin = currentUser.role === 'admin';
-  const sCls = {Active:'b-green','For Maintenance':'b-amber','Out of Service':'b-red'}[v.status]||'b-slate';
-  const typeIcon = {Car:'🚗',Motorcycle:'🏍️',Van:'🚐',Truck:'🚛'}[v.type]||'🚗';
-  const now = new Date(); now.setHours(0,0,0,0);
-  const maintDue = v.nextMaint && new Date(v.nextMaint) <= now;
-  setDPHeader(typeIcon,'#f0fdf4', v.name, v.plate);
 
-  let histHTML = '';
-  if (v.maintHistory && v.maintHistory.length) {
-    histHTML = '<ul class="mh-list">' + v.maintHistory.slice().reverse().map(m =>
-      `<li class="mh-item"><div class="mh-dot good"></div><div><div class="mh-cond good">${m.type}</div><div class="mh-date">${m.date} · ₱${m.cost?.toLocaleString()||'0'} · ${m.odo?.toLocaleString()||'0'} km</div><div class="mh-remarks">${m.remarks||'—'}</div></div></li>`
-    ).join('') + '</ul>';
-  } else {
-    histHTML = '<div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">No maintenance records.</div>';
-  }
+  setDPHeader('🚗', '#ecfeff', v.vehicle_name, "Vehicle Details");
 
-  let html = `
-    ${maintDue ? `<div class="dp-alert warning">🔧 <span class="dp-alert-text">Maintenance is due! Last scheduled: ${v.nextMaint}</span></div>` : ''}
-    <div class="dp-status-row">${badge(v.status,sCls)}<span class="dp-status-label">Vehicle status</span></div>
-
+  const html = `
     <div class="dp-section">
-      <div class="dp-section-hd">🚗 Vehicle Information</div>
+      <div class="dp-section-hd">Vehicle Info</div>
       <div class="dp-grid">
-        ${dpFieldFull('Vehicle Name',`<strong>${typeIcon} ${v.name}</strong>`)}
-        ${dpField('Type', v.type)}
-        ${dpField('Plate Number', v.plate, 'mono')}
-        ${dpField('Year Model', v.year)}
-        ${dpField('Assigned To', v.assigned)}
-        ${dpField('OR/CR Expiry', v.orcr, 'mono')}
-        ${dpField('Next Maintenance', v.nextMaint||'—', 'mono')}
+        ${dpField("Plate Number", v.plate_number)}
+        ${dpField("Type", v.type)}
+        ${dpField("Status", v.status)}
+        ${dpField("Purchase Date", v.purchase_date)}
+        ${dpField("Price", v.price)}
+        ${dpField("Remarks", v.remarks || '-')}
       </div>
     </div>
+  `;
 
-    <div class="dp-section">
-      <div class="dp-section-hd">🔧 Service History</div>
-      ${histHTML}
-    </div>`;
-
-  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-primary btn-sm" onclick="openVehMaint(${v.id})">🔧 Add Maintenance Record</button><button class="btn btn-red btn-sm" onclick="deleteVeh(${v.id})">🗑️ Delete</button></div></div>`;
-  document.getElementById('dp-body').innerHTML = html;
-  document.getElementById('dp-footer').style.display = 'none';
+  document.getElementById("dp-body").innerHTML = html;
 }
 
 function saveVehicle() {
