@@ -25,14 +25,15 @@ router.post('/', async (req, res) => {
       purchase_date,
       status,
       price,
-      remarks
+      remarks,
+      odometer
     } = req.body;
 
     await pool.query(
       `INSERT INTO vehicle 
-       (vehicle_name, plate_number, type, purchase_date, status, price, remarks)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [vehicle_name, plate_number, type, purchase_date, status, price, remarks]
+       (vehicle_name, plate_number, type, purchase_date, status, price, remarks, odometer)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [vehicle_name, plate_number, type, purchase_date, status, price, remarks, odometer]
     );
 
     res.sendStatus(200);

@@ -786,8 +786,10 @@ function saveVehicle() {
   const type = document.getElementById("veh-f-type").value;
   const plate = document.getElementById("veh-f-plate").value;
   const status = document.getElementById("veh-f-status").value;
+  const odometer = document.getElementById("veh-f-odometer").value;
 
-  console.log({ name, type, plate, status }); // ✅ DEBUG
+
+  console.log({ name, type, plate, status, odometer }); // ✅ DEBUG
 
   fetch(`${API_URL}/api/vehicle`, {
     method: "POST",
@@ -798,7 +800,8 @@ function saveVehicle() {
       vehicle_name: name,
       plate_number: plate,
       type,
-      status
+      status,
+      odometer
     })
   })
   .then(res => {
@@ -1317,6 +1320,7 @@ async function dpVehicle(id) {
         ${dpField("Plate Number", v.plate_number)}
         ${dpField("Type", v.type)}
         ${dpField("Status", v.status)}
+        ${dpField("Odometer", (v.odometer || 0) + " km")}
         ${dpField("Purchase Date", v.purchase_date)}
         ${dpField("Price", v.price)}
         ${dpField("Remarks", v.remarks || '-')}
