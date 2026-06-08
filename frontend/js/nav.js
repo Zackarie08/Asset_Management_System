@@ -100,5 +100,8 @@ function refreshPageActions(page) {
   }
   if (page === "page-vehicles") {
   renderVehicles();
+  if (page === "page-vehicles") {
+  renderVehicles();
+}
 }
 }

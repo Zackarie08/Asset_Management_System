@@ -77,6 +77,7 @@ function openDP(type, id, row) {
   };
   if (renderers[type]) renderers[type](id);
   if (type === "vehicle") dpVehicle(id);
+  if (type === "vehicle") dpVehicle(id);
 }
 
 function closeDP() {
@@ -784,21 +785,46 @@ async function dpVehicle(id) {
 }
 
 function saveVehicle() {
-  const name   = document.getElementById('veh-f-name').value.trim();
-  const type   = document.getElementById('veh-f-type').value;
-  const plate  = document.getElementById('veh-f-plate').value.trim()||'—';
-  const assigned = document.getElementById('veh-f-assigned').value.trim()||'Unassigned';
-  const status = document.getElementById('veh-f-status').value;
-  const nextMaint = document.getElementById('veh-f-maint').value||'';
-  const year   = parseInt(document.getElementById('veh-f-year').value)||new Date().getFullYear();
-  const orcr   = document.getElementById('veh-f-orcr').value||'—';
-  if (!name) { showToast('Vehicle name required','t-error'); return; }
-  vehicles.push({ id:vehId++, name,type,plate,assigned,status,nextMaint,year,orcr,maintHistory:[] });
-  closeM('m-add-veh');
-  clearForm(['veh-f-name','veh-f-plate','veh-f-assigned','veh-f-maint','veh-f-year','veh-f-orcr']);
-  addLog('CREATE','Vehicles',`Added vehicle: "${name}" (${plate})`,plate);
-  renderVehicles(); showToast(`"${name}" added`,'t-success');
+  constElementById("veh-f-name").value;
+  const type = document.getElementById("veh-f-type").value;
+  const plate = document.getElementById("veh-f-plate").value;
+  const status = document.getElementById("veh-f-status").value;
+  const date = document.getElementById("veh-f-bought")?.value;
+  const price = document.getElementById("veh-f-price")?.value;
+  const remarks = document.getElementById("veh-f-remarks")?.value;
+
+  console.log({ name, type, plate, status }); // ✅ DEBUG
+
+  fetch(`${API_URL}/api/vehicle`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      vehicle_name: name,
+      plate_number: plate,
+      type,
+      purchase_date: date,
+      status,
+      price,
+      remarks
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to save");
+    return res.text();
+  })
+  .then(() => {
+    showToast("Vehicle added ✅", "t-success");
+    closeM("m-add-veh");
+    renderVehicles(); // ✅ IMPORTANT
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error saving vehicle ❌", "t-error");
+  });
 }
+
 
 function openVehMaint(id) {
   const v = vehicles.find(x => x.id === id);
@@ -1235,6 +1261,7 @@ function initAllModules() {
   renderM365();
   renderLogs();
   renderUsers();
+  renderVehicles()
   refreshDashboard();
   refreshPageActions('dashboard');
 
@@ -1323,3 +1350,30 @@ function cancelOrder(id) {
     closeDP();
   });
 }
+
+async function dpVehicle(id) {
+  const res = await fetch(`${API_URL}/api/vehicle`);
+  const data = await res.json();
+
+  const v = data.find(x => x.vehicle_id === id);
+  if (!v) return;
+
+  setDPHeader('🚗', '#ecfeff', v.vehicle_name, "Vehicle Details");
+
+  const html = `
+    <div class="dp-section">
+      <div class="dp-section-hd">Vehicle Info</div>
+      <div class="dp-grid">
+        ${dpField("Plate Number", v.plate_number)}
+        ${dpField("Type", v.type)}
+        ${dpField("Status", v.status)}
+        ${dpField("Purchase Date", v.purchase_date)}
+        ${dpField("Price", v.price)}
+        ${dpField("Remarks", v.remarks || '-')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById("dp-body").innerHTML = html;
+}
+

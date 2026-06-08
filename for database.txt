@@ -1,7 +1,6 @@
 NOTE: CHECKED BY AI, PLEASE DOUBLE CHECK SA EXCEL ASSET PLANNING 
 
 
-
 -- =========================
 -- USERS ----- DONE
 -- =========================
@@ -105,11 +104,9 @@ CREATE TABLE office_furniture (
   furniture_name TEXT,
   quantity INT,
   date_of_purchase DATE,
-  supplier TEXT,
   price NUMERIC(12,2),
   remarks TEXT,
   current_location INT REFERENCES location(location_id),
-  supplier_link TEXT
 );
 
 -- =========================
@@ -121,12 +118,10 @@ CREATE TABLE it_supplies (
   serial_number TEXT,
   quantity INT,
   date_of_purchase DATE,
-  supplier TEXT,
   price NUMERIC(12,2),
   warranty_end_date DATE,
   remarks TEXT,
   location_id INT REFERENCES location(location_id),
-  supplier_link TEXT,
   status TEXT
 );
 
@@ -139,7 +134,6 @@ CREATE TABLE laptop (
   item_description TEXT,
   date_of_purchase DATE,
   warranty_end_date DATE,
-  supplier TEXT,
   serial_number TEXT,
   xero_asset_number TEXT,
   category TEXT,

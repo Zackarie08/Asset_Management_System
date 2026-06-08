@@ -35,3 +35,6 @@ app.use("/api/location", locationRoutes);
 
 const poRoutes = require("./routes/po");
 app.use("/api/po", poRoutes);
+
+const vehicleRoutes = require('./routes/vehicle');
+app.use('/api/vehicle', vehicleRoutes);
