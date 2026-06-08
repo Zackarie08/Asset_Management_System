@@ -861,7 +861,7 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Vehicle Name *</label>
-          <input class="form-ctrl" id="veh-f-name">
+          <input class="form-ctrl" id="veh-f-name" maxlength="50" placeholder="e.g. Company Car 1">
         </div>
 
         <div class="form-grp">
@@ -878,7 +878,7 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Plate Number</label>
-          <input class="form-ctrl" id="veh-f-plate">
+          <input class="form-ctrl" id="veh-f-plate" maxlength="20" placeholder="e.g. ABC-123">
         </div>
 
         <div class="form-grp">
@@ -895,16 +895,13 @@
 
         <div class="form-grp">
           <label>Price</label>
-          <input class="form-ctrl" id="veh-f-price" type="number">
+          <input class="form-ctrl" id="veh-f-price" type="number" placeholder="0.00">
         </div>
       </div>
 
-
-
-
       <div class="form-grp">
         <label>Remarks</label>
-        <textarea class="form-ctrl" id="veh-f-remarks"></textarea>
+        <textarea class="form-ctrl" id="veh-f-remarks" maxlength="255"></textarea>
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-veh')">Cancel</button>
@@ -936,7 +933,7 @@
         </select>
       </div>
       <div class="form-grp"><label>Cost (₱)</label><input class="form-ctrl" id="vm-cost" type="number" placeholder="0.00"/></div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2"></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2" maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-veh-maint')">Cancel</button>
         <button class="btn btn-primary" onclick="saveVehicleMaint()">💾 Save Record</button>
@@ -1212,6 +1209,32 @@
 
         <button class="btn btn-red"
           onclick="confirmDeleteVehicle()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete User -->
+<div class="modal-overlay" id="m-confirm-user-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete User</div>
+      <button onclick="closeM('m-confirm-user-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete this user?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline"
+          onclick="closeM('m-confirm-user-del')">
+          Cancel
+        </button>
+
+        <button class="btn btn-red"
+          onclick="confirmDeleteUser()">
           🗑️ Delete
         </button>
       </div>

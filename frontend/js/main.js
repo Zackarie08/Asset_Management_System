@@ -796,6 +796,8 @@ function cancelOrder(id) {
    VEHICLES
 ────────────────────────────────────────────────────────────── */
 
+let currentDisplayedKM = 0;
+
 async function renderVehicles() {
   const res = await fetch(`${API_URL}/api/vehicle`);
   const data = await res.json();
@@ -862,9 +864,15 @@ function saveVehicle() {
   if (type === "Van") threshold = 8000;
   if (type === "Truck") threshold = 10000;
 
-
-
-  console.log({ name, type, plate, status, odometer }); // ✅ DEBUG
+  // Prevent Invalid Inputs
+  if (!name || !plate || !type || !price || !date) {
+    showToast("Please fill all required fields", "t-error");
+    return;
+  }
+  if (odometer < 0) {
+    showToast("Odometer cannot be negative", "t-error");
+    return;
+  }
 
   fetch(`${API_URL}/api/vehicle`, {
     method: "POST",
@@ -909,7 +917,7 @@ function saveVehicle() {
   })
     .catch(err => {
     console.error(err);
-    showToast("Error saving vehicle ❌", "t-error");
+    showToast("Error saving vehicle", "t-error");
   });
   
 }
@@ -1089,6 +1097,16 @@ function saveVehicleMaint() {
   const cost = document.getElementById("vm-cost").value;
   const remarks = document.getElementById("vm-remarks").value;
 
+  if (!date || !odo || !type || !cost) {
+    showToast("Complete required fields", "t-error");
+    return;
+  }
+
+  if (odo < 0) {
+    showToast("Invalid odometer", "t-error");
+    return;
+  }
+
   fetch(`${API_URL}/api/vehicle/maintenance`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1147,6 +1165,7 @@ let odoVehId = null;
 function openUpdateOdo(id, km, plate) {
   odoVehId = id;
   odoVehPlate = plate;
+  currentDisplayedKM = km;
 
   document.getElementById("uo-km").value = km;
   openM("m-update-odo");
@@ -1155,6 +1174,11 @@ function openUpdateOdo(id, km, plate) {
 let odoVehPlate = null;
 function saveOdoUpdate() {
   const km = document.getElementById("uo-km").value;
+
+  if (km < currentDisplayedKM) {
+    showToast("Odometer cannot decrease", "t-error");
+    return;
+  }
 
   fetch(`${API_URL}/api/vehicle/update-odo/${odoVehId}`, {
     method: "PUT",

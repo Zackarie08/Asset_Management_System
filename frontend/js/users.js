@@ -1,3 +1,5 @@
+let resetUserEmail = "";
+
 async function renderUsers() {
   const res = await fetch(`${API_URL}/api/auth/users`);
   const data = await res.json();
@@ -15,17 +17,14 @@ async function renderUsers() {
       <td>${u.department || '-'}</td>
       <td>${u.role}</td>
       <td>
-        <td>
         <button class="btn btn-outline btn-xs"
-            onclick="resetPassword(${u.user_id}, '${u.name}')">
+            onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')">
             Reset Password
         </button>
-
         <button class="btn btn-red btn-xs"
-            onclick="deleteUser(${u.user_id})">
+            onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}')">
             Delete User
         </button>
-        </td>
       </td>
     `;
 
@@ -40,6 +39,28 @@ function saveUser() {
   const role = document.getElementById("u-role").value;
   const department = document.getElementById("u-dept").value;
 
+  if (!name || !email || !role || !password || !department) {
+    showToast("Please fill all required fields", "t-error");
+    return;
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailPattern.test(email)) {
+    showToast("Invalid email format", "t-error");
+    return;
+  }
+
+  if (name.length < 2) {
+    showToast("Name too short", "t-error");
+    return;
+  }
+
+  if (password.length < 6) {
+    showToast("Password too short", "t-error");
+    return;
+  }
+
   fetch(`${API_URL}/api/auth/users`, {
     method: "POST",
     headers: {
@@ -53,27 +74,45 @@ function saveUser() {
       department
     })
   })
-  .then(() => {
-    renderUsers();
+  .then(res => {
+    if (!res.ok) throw new Error("Failed");
+
+    showToast("User added ✅", "t-success");
+
+    addLog(
+      "CREATE",
+      "USER",
+      `Added user: ${name} (${email})`,
+      email
+    );
+
     closeM("m-add-user");
-  });
-}
-
-function deleteUser(id) {
-  if (!confirm("Delete this user?")) return;
-
-  fetch(`${API_URL}/api/auth/users/${id}`, {
-    method: "DELETE"
-  })
-  .then(() => {
     renderUsers();
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error adding user ❌", "t-error");
   });
 }
+
+let deleteUserId = null;
+let deleteUserName = "";
+let deleteUserEmail = "";
+
+function deleteUser(id, name, email) {
+  deleteUserId = id;
+  deleteUserName = name;
+  deleteUserEmail = email;
+
+  openM("m-confirm-user-del"); 
+}
+
 
 let selectedUserId = null;
 
-function resetPassword(id, name) {
+function resetPassword(id, name, email) {
   selectedUserId = id;
+  resetUserEmail = email;
 
   document.getElementById("rp-user-name").textContent = name;
   document.getElementById("rp-pass").value = "";
@@ -81,6 +120,7 @@ function resetPassword(id, name) {
 
   openM("m-reset-pass");
 }
+
 
 function confirmResetPassword() {
   const pass1 = document.getElementById("rp-pass").value;
@@ -96,6 +136,11 @@ function confirmResetPassword() {
     return;
   }
 
+  if (pass1.length < 6) {
+    showToast("Password too short", "t-error");
+    return;
+  }
+
   fetch(`${API_URL}/api/auth/users/reset-password/${selectedUserId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -105,6 +150,38 @@ function confirmResetPassword() {
   })
   .then(() => {
     showToast("Password reset ✅", "t-success");
+    addLog(
+      "UPDATE",
+      "USER",
+      `Password reset for ${resetUserEmail}`,
+      resetUserEmail
+    );
     closeM("m-reset-pass");
+  })
+}
+
+
+function confirmDeleteUser() {
+  fetch(`${API_URL}/api/auth/users/${deleteUserId}`, {
+    method: "DELETE"
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Delete failed");
+
+    showToast("User deleted ✅", "t-warning");
+
+    addLog(
+      "DELETE",
+      "USER",
+      `Deleted user: ${deleteUserName} (${deleteUserEmail})`,
+      deleteUserEmail
+    );
+
+    closeM("m-confirm-user-del");
+    renderUsers();
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error deleting user ❌", "t-error");
   });
 }
