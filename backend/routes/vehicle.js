@@ -59,27 +59,21 @@ router.post('/', async (req, res) => {
 
 router.post("/maintenance", async (req, res) => {
   const {
-    vehicle_name,
-    plate_number,
-    type,
-    purchase_date,
-    status,
-    price,
-    remarks,
+    vehicle_id,
+    service_type,
+    maintenance_date,
+    maintenance_cost,
     odometer,
-    last_maintenance_km,
-    maintenance_threshold
+    remarks
   } = req.body;
 
-  // ✅ insert maintenance record
   await pool.query(
-    `INSERT INTO vehicle_maintenance 
+    `INSERT INTO vehicle_maintenance
     (vehicle_id, service_type, maintenance_date, maintenance_cost, odometer, remarks)
     VALUES ($1,$2,$3,$4,$5,$6)`,
     [vehicle_id, service_type, maintenance_date, maintenance_cost, odometer, remarks]
   );
 
-  // ✅ update vehicle current KM
   await pool.query(
     `UPDATE vehicle SET odometer = $1 WHERE vehicle_id = $2`,
     [odometer, vehicle_id]
@@ -87,6 +81,7 @@ router.post("/maintenance", async (req, res) => {
 
   res.sendStatus(200);
 });
+
 
 router.get("/maintenance/:id", async (req, res) => {
   const result = await pool.query(

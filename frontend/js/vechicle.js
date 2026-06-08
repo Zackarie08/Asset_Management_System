@@ -1,32 +1,3 @@
-async function renderVehicles() {
-  const res = await fetch(`${API_URL}/api/vehicle`);
-  const data = await res.json();
-
-  const tbody = document.getElementById("veh-tbody");
-  tbody.innerHTML = "";
-
-  data.forEach(v => {
-    const tr = document.createElement("tr");
-
-    tr.className = "tr-clickable";
-    tr.innerHTML = `
-      <td>${v.vehicle_name}</td>
-      <td>${v.type}</td>
-      <td>${v.plate_number}</td>
-      <td>${v.odometer || 0} km</td>
-      <td>${v.status}</td>
-      <td>${v.purchase_date || '-'}</td>
-      <td>${v.price || '-'}</td>
-    `;
-
-    tr.addEventListener("click", () => {
-      openDP("vehicle", v.vehicle_id, tr);
-    });
-
-    tbody.appendChild(tr);
-  });
-}
-
 
 fetch(`${API_URL}/api/vehicle-maintenance`, {
   method: "POST",
@@ -40,20 +11,3 @@ fetch(`${API_URL}/api/vehicle-maintenance`, {
     remarks
   })
 });
-
-function completeMaintenance(id, currentKM) {
-  fetch(`${API_URL}/api/vehicle/complete-maint/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      odometer: currentKM
-    })
-  })
-  .then(() => {
-    showToast("Maintenance completed ✅", "t-success");
-    renderVehicles();
-  })
-  .catch(err => console.error(err));
-}

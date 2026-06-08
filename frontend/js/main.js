@@ -4,6 +4,8 @@
 let currentUser = null; // { name, role, initials }
 
 
+
+
 /* ──────────────────────────────────────────────────────────────
    SIDEBAR
 ────────────────────────────────────────────────────────────── */
@@ -25,6 +27,8 @@ const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','ord
 
 
 
+
+
 /* ──────────────────────────────────────────────────────────────
    NAVIGATION
 ────────────────────────────────────────────────────────────── */
@@ -42,6 +46,8 @@ const PAGE_META = {
 };
 
 let currentPage = 'dashboard';
+
+
 
 
 
@@ -93,6 +99,12 @@ function setDPHeader(icon, iconBg, title, sub) {
   document.getElementById('dp-title').textContent    = title;
   document.getElementById('dp-subtitle').textContent = sub;
 }
+
+
+
+
+
+
 
 
 
@@ -211,6 +223,15 @@ function deleteFur(id) {
   addLog('DELETE','Furniture',`Deleted: "${f.name}"`,`FUR-${id}`);
   closeDP(); renderFurniture(); showToast('Furniture deleted','t-warning');
 }
+
+
+
+
+
+
+
+
+
 
 /* ──────────────────────────────────────────────────────────────
    IT SUPPLIES
@@ -350,6 +371,15 @@ function deleteIT(id) {
   addLog('DELETE','IT Supplies',`Deleted: "${s.name}"`,`IT-${id}`);
   closeDP(); renderITSupplies(); showToast('IT supply deleted','t-warning');
 }
+
+
+
+
+
+
+
+
+
 
 /* ──────────────────────────────────────────────────────────────
    LAPTOPS
@@ -545,6 +575,16 @@ function deleteLaptop(id) {
   closeDP(); renderLaptops(); showToast('Laptop deleted','t-warning');
 }
 
+
+
+
+
+
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    PURCHASE ORDERS
 ────────────────────────────────────────────────────────────── */
@@ -710,6 +750,48 @@ function deletePO(id) {
   closeDP(); renderOrders(); showToast('PO deleted','t-warning');
 }
 
+function markDelivered(id) {
+  fetch(`${API_URL}/api/po/deliver/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: currentUser.user_id,
+      performed_by: currentUser.name,
+      role: currentUser.role
+    })
+  })
+  .then(() => {
+    renderOrders();
+    renderInventory();
+    closeDP();
+  });
+}
+
+function cancelOrder(id) {
+  fetch(`${API_URL}/api/po/cancel/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: currentUser.user_id,
+      performed_by: currentUser.name,
+      role: currentUser.role
+    })
+  })
+  .then(() => {
+    renderOrders();
+    closeDP();
+  });
+}
+
+
+
+
+
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    VEHICLES
 ────────────────────────────────────────────────────────────── */
@@ -717,24 +799,29 @@ function deletePO(id) {
 async function renderVehicles() {
   const res = await fetch(`${API_URL}/api/vehicle`);
   const data = await res.json();
-  const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
-  const needsMaint = kmUsed >= (v.maintenance_threshold || 1000);
 
   const tbody = document.getElementById('veh-tbody');
   tbody.innerHTML = '';
-  if (needsMaint) {
-    tr.classList.add("tr-warn");
-  }
 
   data.forEach(v => {
     const tr = document.createElement('tr');
 
-    tr.className = 'tr-clickable';
+    // ✅ compute inside loop
+    const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
+    const needsMaint = kmUsed >= (v.maintenance_threshold || 1000);
+
+    // ✅ apply highlight
+    if (needsMaint) {
+      tr.classList.add("tr-warn");
+    }
+
+    tr.className += ' tr-clickable';
 
     tr.innerHTML = `
       <td>${v.vehicle_name}</td>
       <td>${v.type}</td>
       <td>${v.plate_number}</td>
+
       <td>
         ${
           needsMaint
@@ -742,6 +829,8 @@ async function renderVehicles() {
             : v.status
         }
       </td>
+
+      <td>${v.odometer || 0} km</td>
       <td>${v.purchase_date || '-'}</td>
     `;
 
@@ -857,6 +946,139 @@ function openVehMaint(id) {
     method: "PUT"
   }).catch(err => console.error(err));
 }
+
+
+async function dpVehicle(id) {
+  const res = await fetch(`${API_URL}/api/vehicle`);
+  const data = await res.json();
+
+  const v = data.find(x => x.vehicle_id === id);
+  if (!v) return;
+
+  // ✅ fetch maintenance FIRST
+  const maintRes = await fetch(`${API_URL}/api/vehicle/maintenance/${id}`);
+  const maintData = await maintRes.json();
+
+  let maintHTML = '';
+
+  if (maintData.length === 0) {
+    maintHTML = `<div class="td-muted">No maintenance records</div>`;
+  } else {
+    maintHTML = maintData.map(m => `
+      <div class="dp-item">
+        <div><b>${m.service_type}</b></div>
+        <div>Date: ${m.maintenance_date}</div>
+        <div>KM: ${m.odometer}</div>
+        <div>Cost: ₱${m.maintenance_cost}</div>
+        <div>${m.remarks || ''}</div>
+      </div>
+    `).join('');
+  }
+
+  // ✅ NOW build HTML (after maintHTML is ready)
+  const html = `
+    <div class="dp-section">
+      <div class="dp-section-hd">Vehicle Info</div>
+      <div class="dp-grid">
+        ${dpField("Plate Number", v.plate_number)}
+        ${dpField("Type", v.type)}
+        ${dpField("Status", v.status)}
+        ${dpField("Odometer", (v.odometer || 0) + " km")}
+        ${dpField("Maintenance Limit", v.maintenance_threshold + " km")}
+        ${dpField("Purchase Date", v.purchase_date || '-')}
+        ${dpField("Price", v.price || '-')}
+        ${dpField("Remarks", v.remarks || '-')}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">🔧 Maintenance History</div>
+      ${maintHTML}
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-action-row">
+        <button class="btn btn-primary btn-sm"
+          onclick="openVehMaint(${v.vehicle_id})">
+          🔧 Add Maintenance
+        </button>
+        <button class="btn btn-green btn-sm"
+          onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer})">
+          ✅ Complete Maintenance
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("dp-body").innerHTML = html;
+}
+
+
+function completeMaintenance(id, currentKM) {
+  fetch(`${API_URL}/api/vehicle/complete-maint/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      odometer: currentKM
+    })
+  })
+  .then(() => {
+    showToast("Maintenance completed ✅", "t-success");
+    renderVehicles();
+  })
+  .catch(err => console.error(err));
+}
+
+function saveVehicleMaint() {
+  const date = document.getElementById("vm-date").value;
+  const odo = document.getElementById("vm-odo").value;
+  const type = document.getElementById("vm-type").value;
+  const cost = document.getElementById("vm-cost").value;
+  const remarks = document.getElementById("vm-remarks").value;
+
+  // ✅ IMPORTANT DEBUG
+  console.log({
+    vehicle_id: currentVehId,
+    date,
+    odo,
+    type,
+    cost,
+    remarks
+  });
+
+  fetch(`${API_URL}/api/vehicle/maintenance`, { 
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      vehicle_id: currentVehId,
+      maintenance_date: date,
+      service_type: type,
+      maintenance_cost: cost,
+      odometer: odo,
+      remarks
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed");
+
+    showToast("Maintenance saved ✅", "t-success");
+    closeM("m-veh-maint");
+
+    renderVehicles(); 
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error saving maintenance ❌", "t-error");
+  });
+}
+
+
+
+
+
+
 
 
 
@@ -976,6 +1198,15 @@ function deleteGlobe(id) {
   addLog('DELETE','Globe Mobile Plans',`Deleted plan for ${g.name}`,g.acct);
   closeDP(); renderGlobe(); showToast('Plan deleted','t-warning');
 }
+
+
+
+
+
+
+
+
+
 
 /* ──────────────────────────────────────────────────────────────
    M365 LICENSES
@@ -1137,6 +1368,15 @@ function clearLogs() {
   showToast('Logs cleared','t-warning');
 }
 
+
+
+
+
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    DASHBOARD REFRESH
 ────────────────────────────────────────────────────────────── */
@@ -1205,6 +1445,14 @@ async function refreshDashboard() {
   // Date
   document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
+
+
+
+
+
+
+
+
 
 
 /* ──────────────────────────────────────────────────────────────
@@ -1278,7 +1526,15 @@ function initAllModules() {
 
 
 
-// Logs
+
+
+
+
+
+
+/* ──────────────────────────────────────────────────────────────
+   LOGS
+────────────────────────────────────────────────────────────── */
 
 async function renderLogs() {
   const res = await fetch(`${API_URL}/api/logs`);
@@ -1309,103 +1565,4 @@ async function renderLogs() {
 window.onload = function () {
   autoLogin();
 };
-
-
-function markDelivered(id) {
-  fetch(`${API_URL}/api/po/deliver/${id}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: currentUser.user_id,
-      performed_by: currentUser.name,
-      role: currentUser.role
-    })
-  })
-  .then(() => {
-    renderOrders();
-    renderInventory();
-    closeDP();
-  });
-}
-
-function cancelOrder(id) {
-  fetch(`${API_URL}/api/po/cancel/${id}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: currentUser.user_id,
-      performed_by: currentUser.name,
-      role: currentUser.role
-    })
-  })
-  .then(() => {
-    renderOrders();
-    closeDP();
-  });
-}
-
-async function dpVehicle(id) {
-  const res = await fetch(`${API_URL}/api/vehicle`);
-  const data = await res.json();
-
-  const v = data.find(x => x.vehicle_id === id);
-  if (!v) return;
-
-  // ✅ fetch maintenance FIRST
-  const maintRes = await fetch(`${API_URL}/api/vehicle/maintenance/${id}`);
-  const maintData = await maintRes.json();
-
-  let maintHTML = '';
-
-  if (maintData.length === 0) {
-    maintHTML = `<div class="td-muted">No maintenance records</div>`;
-  } else {
-    maintHTML = maintData.map(m => `
-      <div class="dp-item">
-        <div><b>${m.service_type}</b></div>
-        <div>Date: ${m.maintenance_date}</div>
-        <div>KM: ${m.odometer}</div>
-        <div>Cost: ₱${m.maintenance_cost}</div>
-        <div>${m.remarks || ''}</div>
-      </div>
-    `).join('');
-  }
-
-  // ✅ NOW build HTML (after maintHTML is ready)
-  const html = `
-    <div class="dp-section">
-      <div class="dp-section-hd">Vehicle Info</div>
-      <div class="dp-grid">
-        ${dpField("Plate Number", v.plate_number)}
-        ${dpField("Type", v.type)}
-        ${dpField("Status", v.status)}
-        ${dpField("Odometer", (v.odometer || 0) + " km")}
-        ${dpField("Maintenance Limit", v.maintenance_threshold + " km")}
-        ${dpField("Purchase Date", v.purchase_date || '-')}
-        ${dpField("Price", v.price || '-')}
-        ${dpField("Remarks", v.remarks || '-')}
-      </div>
-    </div>
-
-    <div class="dp-section">
-      <div class="dp-section-hd">🔧 Maintenance History</div>
-      ${maintHTML}
-    </div>
-
-    <div class="dp-section">
-      <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm"
-          onclick="openVehMaint(${v.vehicle_id})">
-          🔧 Add Maintenance
-        </button>
-        <button class="btn btn-green btn-sm"
-          onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer})">
-          ✅ Complete Maintenance
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.getElementById("dp-body").innerHTML = html;
-}
 
