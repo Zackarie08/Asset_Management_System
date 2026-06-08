@@ -535,7 +535,7 @@
       </div>
       <div class="form-grp">
         <label>Purpose / Remarks</label>
-        <textarea class="form-ctrl" id="wd-remarks" rows="2" placeholder="Reason for withdrawal..."></textarea>
+        <textarea class="form-ctrl" id="wd-remarks" rows="2" placeholder="Optional notes..."></textarea>
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-withdraw')">Cancel</button>
@@ -645,7 +645,7 @@
         <div class="form-grp"><label>Order Date</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
         <div class="form-grp"><label>Expected Delivery</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Special instructions..." maxlength="255"></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Optional notes..." maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-po')">Cancel</button>
         <button class="btn btn-green" onclick="savePO()">📦 Create Order</button>
@@ -685,7 +685,7 @@
         </div>
         <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="fur-f-contact" placeholder="email or phone"/></div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Notes..."></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-fur')">Cancel</button>
         <button class="btn btn-green" onclick="saveFurniture()">✅ Add Furniture</button>
@@ -718,7 +718,7 @@
         <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="it-f-contact" placeholder="email or phone"/></div>
         <div class="form-grp"><label>Supplier Website</label><input class="form-ctrl" id="it-f-website" placeholder="https://..."/></div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="it-f-remarks" rows="2"></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="it-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-it')">Cancel</button>
         <button class="btn btn-green" onclick="saveITSupply()">✅ Add Supply</button>
@@ -810,7 +810,7 @@
         </select>
       </div>
       <div class="form-grp"><label>Remarks / Findings</label>
-        <textarea class="form-ctrl" id="maint-remarks" rows="3" placeholder="Describe condition, issues, actions taken..."></textarea>
+        <textarea class="form-ctrl" id="maint-remarks" rows="3" placeholder="Optional notes..."></textarea>
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-maint')">Cancel</button>
@@ -901,7 +901,7 @@
 
       <div class="form-grp">
         <label>Remarks</label>
-        <textarea class="form-ctrl" id="veh-f-remarks" maxlength="255"></textarea>
+        <textarea class="form-ctrl" id="veh-f-remarks" maxlength="255" placeholder="Optional notes..."></textarea>
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-veh')">Cancel</button>
@@ -933,7 +933,7 @@
         </select>
       </div>
       <div class="form-grp"><label>Cost (₱)</label><input class="form-ctrl" id="vm-cost" type="number" placeholder="0.00"/></div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2" maxlength="255"></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2" maxlength="255" placeholder="Optional notes..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-veh-maint')">Cancel</button>
         <button class="btn btn-primary" onclick="saveVehicleMaint()">💾 Save Record</button>
@@ -966,7 +966,7 @@
         <div class="form-grp"><label>Renewal Date</label><input class="form-ctrl" id="globe-f-renew" type="date"/></div>
         <div class="form-grp"><label>Credit Limit (₱)</label><input class="form-ctrl" id="globe-f-credit" type="number" placeholder="0"/></div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="globe-f-remarks" rows="2"></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="globe-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-globe')">Cancel</button>
         <button class="btn btn-green" onclick="saveGlobe()">✅ Add Plan</button>
@@ -1007,7 +1007,7 @@
         <div class="form-grp"><label>Monthly Cost (₱)</label><input class="form-ctrl" id="m365-f-cost" type="number" placeholder="0.00"/></div>
         <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="m365-f-supplier" placeholder="e.g. Microsoft, CDRKing"/></div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="m365-f-remarks" rows="2"></textarea></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="m365-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-m365')">Cancel</button>
         <button class="btn btn-green" onclick="saveM365()">✅ Add License</button>

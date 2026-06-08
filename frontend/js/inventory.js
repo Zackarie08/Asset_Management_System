@@ -1,3 +1,5 @@
+let currentItemStock = 0;
+
 async function renderInventory() {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
@@ -50,6 +52,11 @@ function saveInvItem() {
   const unit = document.getElementById("inv-f-unit").value;
   const remarks = document.getElementById("inv-f-remarks").value;
   const location = document.getElementById("inv-f-loc").value;
+
+  if (!name || !qty || !category || !limit || !price || !unit || !location) {
+    showToast("Please fill all required fields", "t-error");
+    return;
+  }
 
   // ✅ CHECK MODE FIRST
   if (invEditId) {
@@ -106,6 +113,8 @@ function saveInvItem() {
 
 
 function withdrawItem(id, qty) {
+
+  
   fetch(`${API_URL}/api/inventory/withdraw`, {
     method: "POST",
     headers: {
@@ -139,6 +148,7 @@ async function openWithdraw(id) {
   const item = items.find(i => i.inventory_gen_id === id);
   if (!item) return;
   withdrawItemId = id;
+  currentItemStock = item.current_quantity;
   document.getElementById('wd-item-name').textContent = item.item_name;
   document.getElementById('wd-current').textContent   = `${item.current_quantity} ${item.unit}`;
   document.getElementById('wd-qty').value     = '';
@@ -149,10 +159,23 @@ async function openWithdraw(id) {
 }
 
 function doWithdraw() {
-  const qty = parseInt(document.getElementById('wd-qty').value) || 0;
+  const qty = parseInt(document.getElementById('wd-qty').value);
 
-  if (qty <= 0) {
+  // ✅ invalid input
+  if (!qty || isNaN(qty)) {
     showToast('Enter a valid quantity','t-error');
+    return;
+  }
+
+  // ✅ cannot be 0 or negative
+  if (qty <= 0) {
+    showToast('Quantity must be greater than 0','t-error');
+    return;
+  }
+
+  // ✅ cannot exceed stock 🔥
+  if (qty > currentItemStock) {
+    showToast('Not enough stock','t-error');
     return;
   }
 

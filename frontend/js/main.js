@@ -607,7 +607,12 @@ async function renderOrders() {
 
     let status = o.status;
 
-    if (status !== "DELIVERED" && o.expected_delivery_date) {
+    // ✅ DO NOT override if final states
+    if (
+      status !== "DELIVERED" &&
+      status !== "CANCELLED" && 
+      o.expected_delivery_date
+    ) {
       const eta = new Date(o.expected_delivery_date);
       const etaDate = new Date(eta.getFullYear(), eta.getMonth(), eta.getDate());
 
@@ -615,6 +620,7 @@ async function renderOrders() {
         status = "DELAYED";
       }
     }
+    
 
 
     // ✅ THEN USE IT
@@ -714,6 +720,7 @@ function savePO() {
     })
   })
   .then(() => {
+    showToast("Purchase order created", "t-success");
     closeM("m-add-po");
     renderOrders();
     renderPO();
@@ -747,7 +754,9 @@ function deletePO(id) {
   if (!o || !confirm(`Delete ${o.poNum}?`)) return;
   poItems = poItems.filter(x => x.id !== id);
   addLog('DELETE','Purchase Orders',`Deleted PO: ${o.poNum} — "${o.item}"`,o.poNum);
-  closeDP(); renderOrders(); showToast('PO deleted','t-warning');
+  closeDP(); 
+  renderOrders(); 
+  showToast('PO deleted','t-warning');
 }
 
 function markDelivered(id) {
@@ -761,6 +770,7 @@ function markDelivered(id) {
     })
   })
   .then(() => {
+    showToast("Delivery confirmed", "t-success");
     renderOrders();
     renderInventory();
     closeDP();
@@ -778,7 +788,9 @@ function cancelOrder(id) {
     })
   })
   .then(() => {
+    showToast("Order cancelled", "t-warning");
     renderOrders();
+    renderInventory();
     closeDP();
   });
 }
