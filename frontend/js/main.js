@@ -723,39 +723,36 @@ function deletePO(id) {
 /* ──────────────────────────────────────────────────────────────
    VEHICLES
 ────────────────────────────────────────────────────────────── */
-let vehicles = [
-  { id:1, name:'Toyota Vios 2022',       type:'Car',        plate:'ABC 1234', assigned:'Pedro Cruz',     status:'Active',        nextMaint:'2026-06-15', year:2022, orcr:'2027-03-01', maintHistory:[{date:'2026-01-10',type:'Oil Change',odo:15000,cost:2500,next:'2026-06-15',remarks:'Castrol GTX 10W-40'}] },
-  { id:2, name:'Honda Click 125i 2023',  type:'Motorcycle', plate:'XYZ 5678', assigned:'Marco Bautista', status:'Active',        nextMaint:'2026-07-01', year:2023, orcr:'2027-06-15', maintHistory:[{date:'2026-02-20',type:'General Checkup',odo:8500,cost:1200,next:'2026-07-01',remarks:'All good. Chain lubricated.'}] },
-  { id:3, name:'Toyota Hiace 2020',      type:'Van',        plate:'DEF 9012', assigned:'Company Pool',   status:'For Maintenance',nextMaint:'2026-05-20', year:2020, orcr:'2026-08-30', maintHistory:[{date:'2025-11-15',type:'Brake Service',odo:72000,cost:8500,next:'2026-05-20',remarks:'Front pads replaced. Rear adjusted.'}] },
-];
-let vehId = 4;
-let currentVehId = null;
 
-function renderVehicles() {
-  const isAdmin = currentUser.role === 'admin';
+async function renderVehicles() {
+  const res = await fetch(`${API_URL}/api/vehicle`);
+  const data = await res.json();
+
   const tbody = document.getElementById('veh-tbody');
   tbody.innerHTML = '';
-  vehicles.forEach(v => {
-    const sCls = {Active:'b-green','For Maintenance':'b-amber','Out of Service':'b-red'}[v.status]||'b-slate';
-    const typeIcon = {Car:'🚗',Motorcycle:'🏍️',Van:'🚐',Truck:'🚛'}[v.type]||'🚗';
-    const now = new Date(); now.setHours(0,0,0,0);
-    const maintDue = v.nextMaint && new Date(v.nextMaint) <= now;
+
+  data.forEach(v => {
     const tr = document.createElement('tr');
-    tr.className = 'tr-clickable' + (maintDue ? ' tr-warn' : '');
+
+    tr.className = 'tr-clickable';
+
     tr.innerHTML = `
-      <td class="td-strong">${typeIcon} ${v.name}</td>
+      <td>${v.vehicle_name}</td>
       <td>${v.type}</td>
-      <td class="td-mono">${v.plate}</td>
-      <td>${v.assigned}</td>
-      <td>${badge(v.status, sCls)}</td>
-      <td class="td-mono ${maintDue?'text-red-600':''}">${v.nextMaint||'—'}</td>
-      <td>
-        ${isAdmin ? `<div class="flex-gap"><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();openVehMaint(${v.id})">🔧</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteVeh(${v.id})">🗑️</button></div>` : '<span class="td-muted">View only</span>'}
-      </td>`;
-    tr.addEventListener('click', () => openDP('vehicle', v.id, tr));
+      <td>${v.plate_number}</td>
+      <td>${v.status}</td>
+      <td>${v.purchase_date || '-'}</td>
+    `;
+
+    tr.addEventListener('click', () => {
+      openDP('vehicle', v.vehicle_id, tr);
+    });
+
     tbody.appendChild(tr);
   });
-  document.getElementById('veh-ct').textContent = `${vehicles.length} vehicles`;
+
+  document.getElementById('veh-ct').textContent =
+    data.length + " vehicles";
 }
 
 async function dpVehicle(id) {
@@ -785,13 +782,10 @@ async function dpVehicle(id) {
 }
 
 function saveVehicle() {
-  constElementById("veh-f-name").value;
+  const name = document.getElementById("veh-f-name").value;
   const type = document.getElementById("veh-f-type").value;
   const plate = document.getElementById("veh-f-plate").value;
   const status = document.getElementById("veh-f-status").value;
-  const date = document.getElementById("veh-f-bought")?.value;
-  const price = document.getElementById("veh-f-price")?.value;
-  const remarks = document.getElementById("veh-f-remarks")?.value;
 
   console.log({ name, type, plate, status }); // ✅ DEBUG
 
@@ -804,10 +798,7 @@ function saveVehicle() {
       vehicle_name: name,
       plate_number: plate,
       type,
-      purchase_date: date,
-      status,
-      price,
-      remarks
+      status
     })
   })
   .then(res => {
@@ -817,7 +808,7 @@ function saveVehicle() {
   .then(() => {
     showToast("Vehicle added ✅", "t-success");
     closeM("m-add-veh");
-    renderVehicles(); // ✅ IMPORTANT
+    renderVehicles();
   })
   .catch(err => {
     console.error(err);
@@ -825,47 +816,6 @@ function saveVehicle() {
   });
 }
 
-
-function openVehMaint(id) {
-  const v = vehicles.find(x => x.id === id);
-  if (!v) return;
-  currentVehId = id;
-  document.getElementById('veh-maint-name').textContent = v.name;
-  document.getElementById('vm-date').value = todayStr();
-  document.getElementById('vm-odo').value  = '';
-  document.getElementById('vm-cost').value = '';
-  document.getElementById('vm-next').value = '';
-  document.getElementById('vm-remarks').value = '';
-  openM('m-veh-maint');
-}
-
-function saveVehicleMaint() {
-  const v = vehicles.find(x => x.id === currentVehId);
-  if (!v) return;
-  const date    = document.getElementById('vm-date').value;
-  const odo     = parseInt(document.getElementById('vm-odo').value)||0;
-  const type    = document.getElementById('vm-type').value;
-  const cost    = parseFloat(document.getElementById('vm-cost').value)||0;
-  const next    = document.getElementById('vm-next').value;
-  const remarks = document.getElementById('vm-remarks').value.trim();
-  if (!v.maintHistory) v.maintHistory = [];
-  v.maintHistory.push({ date,odo,type,cost,next,remarks });
-  if (next) v.nextMaint = next;
-  if (v.status === 'For Maintenance') v.status = 'Active';
-  closeM('m-veh-maint');
-  addLog('UPDATE','Vehicles',`Maintenance: "${v.name}" — ${type}. Next: ${next||'TBD'}`,v.plate);
-  renderVehicles();
-  if (dpOpen && dpCurrentType==='vehicle' && dpCurrentId===v.id) dpVehicle(v.id);
-  showToast(`Maintenance saved for ${v.name}`,'t-success');
-}
-
-function deleteVeh(id) {
-  const v = vehicles.find(x => x.id === id);
-  if (!v || !confirm(`Delete "${v.name}"?`)) return;
-  vehicles = vehicles.filter(x => x.id !== id);
-  addLog('DELETE','Vehicles',`Deleted vehicle: "${v.name}" (${v.plate})`,v.plate);
-  closeDP(); renderVehicles(); showToast('Vehicle deleted','t-warning');
-}
 
 /* ──────────────────────────────────────────────────────────────
    GLOBE MOBILE PLANS
