@@ -808,7 +808,7 @@ async function renderVehicles() {
 
     // ✅ compute inside loop
     const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
-    const needsMaint = kmUsed >= (v.maintenance_threshold || 1000);
+    const needsMaint = v.status !== "UNDER_MAINTENANCE" && kmUsed >= (v.maintenance_threshold || 1000);
 
     // ✅ apply highlight
     if (needsMaint) {
@@ -824,9 +824,11 @@ async function renderVehicles() {
 
       <td>
         ${
-          needsMaint
-            ? '<span class="badge b-red">⚠️ Needs Maintenance</span>'
-            : v.status
+          v.status === "UNDER_MAINTENANCE"
+            ? '<span class="badge b-amber">🛠 Under Maintenance</span>'
+            : needsMaint
+              ? '<span class="badge b-red">⚠️ Needs Maintenance</span>'
+              : v.status
         }
       </td>
 
@@ -843,32 +845,6 @@ async function renderVehicles() {
 
   document.getElementById('veh-ct').textContent =
     data.length + " vehicles";
-}
-
-async function dpVehicle(id) {
-  const res = await fetch(`${API_URL}/api/vehicle`);
-  const data = await res.json();
-
-  const v = data.find(x => x.vehicle_id === id);
-  if (!v) return;
-
-  setDPHeader('🚗', '#ecfeff', v.vehicle_name, "Vehicle Details");
-
-  const html = `
-    <div class="dp-section">
-      <div class="dp-section-hd">Vehicle Info</div>
-      <div class="dp-grid">
-        ${dpField("Plate Number", v.plate_number)}
-        ${dpField("Type", v.type)}
-        ${dpField("Status", v.status)}
-        ${dpField("Purchase Date", v.purchase_date)}
-        ${dpField("Price", v.price)}
-        ${dpField("Remarks", v.remarks || '-')}
-      </div>
-    </div>
-  `;
-
-  document.getElementById("dp-body").innerHTML = html;
 }
 
 function saveVehicle() {
@@ -926,27 +902,22 @@ function saveVehicle() {
 
 let currentVehId = null;
 
-function openVehMaint(id) {
+function openVehMaint(id, currentKM) {
   currentVehId = id;
 
   document.getElementById("veh-maint-name").textContent = "Vehicle #" + id;
 
-  // clear fields
   document.getElementById("vm-date").value = "";
-  document.getElementById("vm-odo").value = "";
   document.getElementById("vm-cost").value = "";
-  document.getElementById("vm-next").value = "";
   document.getElementById("vm-remarks").value = "";
 
-  // ✅ open modal
+  // ✅ placeholder + value
+  const odoInput = document.getElementById("vm-odo");
+  odoInput.value = currentKM || 0;
+  odoInput.placeholder = currentKM + " km";
+
   openM("m-veh-maint");
-
-  // ✅ update status → UNDER MAINTENANCE
-  fetch(`${API_URL}/api/vehicle/start-maint/${id}`, {
-    method: "PUT"
-  }).catch(err => console.error(err));
 }
-
 
 async function dpVehicle(id) {
   const res = await fetch(`${API_URL}/api/vehicle`);
@@ -964,15 +935,25 @@ async function dpVehicle(id) {
   if (maintData.length === 0) {
     maintHTML = `<div class="td-muted">No maintenance records</div>`;
   } else {
-    maintHTML = maintData.map(m => `
-      <div class="dp-item">
-        <div><b>${m.service_type}</b></div>
-        <div>Date: ${m.maintenance_date}</div>
-        <div>KM: ${m.odometer}</div>
-        <div>Cost: ₱${m.maintenance_cost}</div>
-        <div>${m.remarks || ''}</div>
+  maintHTML = maintData.map(m => `
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-hd">
+        <div class="card-title">🔧 ${m.service_type}</div>
+        <span class="badge b-slate">${m.maintenance_date}</span>
       </div>
-    `).join('');
+
+      <div class="dp-grid">
+        ${dpField("Odometer", m.odometer + " km")}
+        ${dpField("Cost", "₱ " + m.maintenance_cost)}
+      </div>
+
+      ${m.remarks ? `
+        <div style="margin:8px; font-size:12px; color:#64748b">
+          📝 ${m.remarks}
+        </div>
+      ` : ""}
+    </div>
+  `).join('');
   }
 
   // ✅ NOW build HTML (after maintHTML is ready)
@@ -984,6 +965,7 @@ async function dpVehicle(id) {
         ${dpField("Type", v.type)}
         ${dpField("Status", v.status)}
         ${dpField("Odometer", (v.odometer || 0) + " km")}
+        ${dpField("Last Maintenance KM", (v.last_maintenance_km || 0) + " km")}
         ${dpField("Maintenance Limit", v.maintenance_threshold + " km")}
         ${dpField("Purchase Date", v.purchase_date || '-')}
         ${dpField("Price", v.price || '-')}
@@ -992,21 +974,33 @@ async function dpVehicle(id) {
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">🔧 Maintenance History</div>
-      ${maintHTML}
+      <div class="dp-action-row">
+          ${
+            v.status !== "UNDER_MAINTENANCE"
+              ? `<button class="btn btn-primary btn-sm"
+                  onclick="openVehMaint(${v.vehicle_id}, ${v.odometer})">
+                  🔧 Place Under Maintenance
+                </button>           
+                <button class="btn btn-outline btn-sm"
+                  onclick="openUpdateOdo(${v.vehicle_id}, ${v.odometer})">
+                  📊 Update Odometer
+                </button>
+                `
+              : `<button class="btn btn-green btn-sm"
+                  onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer})">
+                  ✅ Complete Maintenance
+                </button>`
+          }
+          <button class="btn btn-red btn-sm"
+            onclick="deleteVehicle(${v.vehicle_id})">
+            🗑️ Delete Vehicle
+          </button>
+      </div>
     </div>
 
     <div class="dp-section">
-      <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm"
-          onclick="openVehMaint(${v.vehicle_id})">
-          🔧 Add Maintenance
-        </button>
-        <button class="btn btn-green btn-sm"
-          onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer})">
-          ✅ Complete Maintenance
-        </button>
-      </div>
+      <div class="dp-section-hd">🔧 Maintenance History</div>
+      ${maintHTML}
     </div>
   `;
 
@@ -1027,6 +1021,7 @@ function completeMaintenance(id, currentKM) {
   .then(() => {
     showToast("Maintenance completed ✅", "t-success");
     renderVehicles();
+    dpVehicle(id);
   })
   .catch(err => console.error(err));
 }
@@ -1063,14 +1058,70 @@ function saveVehicleMaint() {
   .then(res => {
     if (!res.ok) throw new Error("Failed");
 
+    // ✅ update status AFTER saving
+    return fetch(`${API_URL}/api/vehicle/start-maint/${currentVehId}`, {
+      method: "PUT"
+    });
+  })
+  .then(() => {
     showToast("Maintenance saved ✅", "t-success");
     closeM("m-veh-maint");
-
-    renderVehicles(); 
+    renderVehicles();
+    dpVehicle(currentVehId);
   })
   .catch(err => {
     console.error(err);
     showToast("Error saving maintenance ❌", "t-error");
+  });
+}
+
+function checkMonthlyOdoReminder() {
+  const today = new Date();
+  const day = today.getDate();
+  const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+
+  // ✅ first working day logic
+  const isWorkingDay = dayOfWeek !== 0 && dayOfWeek !== 6;
+
+  if (day <= 3 && isWorkingDay) {
+    showToast("📊 Monthly Odometer Update Required", "t-warning");
+  }
+}
+
+let odoVehId = null;
+
+function openUpdateOdo(id, currentKM) {
+  odoVehId = id;
+  document.getElementById("uo-km").value = currentKM;
+  openM("m-update-odo");
+}
+
+function saveOdoUpdate() {
+  const km = document.getElementById("uo-km").value;
+
+  fetch(`${API_URL}/api/vehicle/update-odo/${odoVehId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ odometer: km })
+  })
+  .then(() => {
+    showToast("Odometer updated ✅", "t-success");
+    closeM("m-update-odo");
+    renderVehicles();
+  });
+}
+
+function deleteVehicle(id) {
+  if (!confirm("Delete this vehicle?")) return;
+
+  fetch(`${API_URL}/api/vehicle/${id}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    showToast("Vehicle deleted ✅", "t-warning");
+
+    closeDP();
+    renderVehicles();
   });
 }
 
@@ -1313,6 +1364,15 @@ function deleteM365(id) {
   closeDP(); renderM365(); showToast('License deleted','t-warning');
 }
 
+
+
+
+
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    SYSTEM LOGS
 ────────────────────────────────────────────────────────────── */
@@ -1503,6 +1563,7 @@ function initAllModules() {
   renderLogs();
   renderUsers();
   renderVehicles()
+  checkMonthlyOdoReminder();
   refreshDashboard();
   refreshPageActions('dashboard');
 

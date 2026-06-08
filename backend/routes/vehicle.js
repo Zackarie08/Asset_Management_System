@@ -127,4 +127,24 @@ router.put("/complete-maint/:id", async (req, res) => {
   }
 });
 
+router.put("/update-odo/:id", async (req, res) => {
+  const { odometer } = req.body;
+
+  await pool.query(
+    "UPDATE vehicle SET odometer = $1 WHERE vehicle_id = $2",
+    [odometer, req.params.id]
+  );
+
+  res.sendStatus(200);
+});
+
+router.delete("/:id", async (req, res) => {
+  await pool.query(
+    "DELETE FROM vehicle WHERE vehicle_id = $1",
+    [req.params.id]
+  );
+
+  res.sendStatus(200);
+});
+
 module.exports = router;

@@ -884,9 +884,8 @@
         <div class="form-grp">
           <label>Status</label>
           <select class="form-ctrl" id="veh-f-status">
-            <option>Active</option>
-            <option>Under Maintenance</option>
-            <option>Out of Service</option>
+            <option>ACTIVE</option>
+            <option>OUT_OF_SERVICE</option>
           </select>
         </div>
       </div>
@@ -945,7 +944,6 @@
         </select>
       </div>
       <div class="form-grp"><label>Cost (₱)</label><input class="form-ctrl" id="vm-cost" type="number" placeholder="0.00"/></div>
-      <div class="form-grp"><label>Next Maintenance Date</label><input class="form-ctrl" id="vm-next" type="date"/></div>
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-veh-maint')">Cancel</button>
@@ -1181,6 +1179,28 @@
   </div>
 </div>
 
+<!-- Update Odometer -->
+<div class="modal-overlay" id="m-update-odo">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📊 Update Odometer</div>
+      <button onclick="closeM('m-update-odo')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grp">
+        <label>New Odometer (KM)</label>
+        <input id="uo-km" type="number" class="form-ctrl">
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-update-odo')">Cancel</button>
+        <button class="btn btn-green" onclick="saveOdoUpdate()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-wrap" id="toast-wrap"></div>
 
@@ -1190,7 +1210,6 @@
 <script src="js/nav.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/orders.js"></script>
-<script src="js/vehicle.js"></script>
 <script src="js/main.js"></script>
 <script src="js/users.js"></script>
 
