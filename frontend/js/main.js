@@ -787,6 +787,9 @@ function saveVehicle() {
   const plate = document.getElementById("veh-f-plate").value;
   const status = document.getElementById("veh-f-status").value;
   const odometer = document.getElementById("veh-f-odometer").value;
+  const date = document.getElementById("veh-f-date").value;
+  const price = document.getElementById("veh-f-price").value;
+  const remarks = document.getElementById("veh-f-remarks").value;
 
 
   console.log({ name, type, plate, status, odometer }); // ✅ DEBUG
@@ -800,7 +803,10 @@ function saveVehicle() {
       vehicle_name: name,
       plate_number: plate,
       type,
+      purchase_date: date,
       status,
+      price,
+      remarks,
       odometer
     })
   })
@@ -1326,7 +1332,39 @@ async function dpVehicle(id) {
         ${dpField("Remarks", v.remarks || '-')}
       </div>
     </div>
+    <div class="dp-section">
+      <div class="dp-section-hd">🔧 Maintenance History</div>
+      ${maintHTML}
+    </div>
+    <div class="dp-section">
+      <div class="dp-action-row">
+        <button class="btn btn-primary btn-sm"
+          onclick="openVehMaint(${v.vehicle_id})">
+          🔧 Add Maintenance
+        </button>
+      </div>
+    </div>
   `;
+
+  // fetch maintenance records
+  const maintRes = await fetch(`${API_URL}/api/vehicle/maintenance/${id}`);
+  const maintData = await maintRes.json();
+
+  let maintHTML = '';
+
+  if (maintData.length === 0) {
+    maintHTML = `<div class="td-muted">No maintenance records</div>`;
+  } else {
+    maintHTML = maintData.map(m => `
+      <div class="dp-item">
+        <div><b>${m.service_type}</b></div>
+        <div>Date: ${m.maintenance_date}</div>
+        <div>KM: ${m.odometer}</div>
+        <div>Cost: ₱${m.maintenance_cost}</div>
+        <div>${m.remarks || ''}</div>
+      </div>
+    `).join('');
+  }
 
   document.getElementById("dp-body").innerHTML = html;
 }

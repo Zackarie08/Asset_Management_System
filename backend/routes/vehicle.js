@@ -71,4 +71,15 @@ router.post("/maintenance", async (req, res) => {
   res.sendStatus(200);
 });
 
+router.get("/maintenance/:id", async (req, res) => {
+  const result = await pool.query(
+    `SELECT * FROM vehicle_maintenance 
+     WHERE vehicle_id = $1
+     ORDER BY maintenance_date DESC`,
+    [req.params.id]
+  );
+
+  res.json(result.rows);
+});
+
 module.exports = router;
