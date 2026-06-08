@@ -143,7 +143,6 @@ router.delete("/:id", async (req, res) => {
     "DELETE FROM vehicle WHERE vehicle_id = $1",
     [req.params.id]
   );
-
   res.sendStatus(200);
 });
 

@@ -1201,6 +1201,32 @@
   </div>
 </div>
 
+<!-- Confirm Delete Vehicle -->
+<div class="modal-overlay" id="m-confirm-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Confirm Delete</div>
+      <button onclick="closeM('m-confirm-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete this vehicle?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline"
+          onclick="closeM('m-confirm-del')">
+          Cancel
+        </button>
+
+        <button class="btn btn-red"
+          onclick="confirmDeleteVehicle()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-wrap" id="toast-wrap"></div>
 

@@ -922,9 +922,13 @@ function openVehMaint(id, currentKM) {
 async function dpVehicle(id) {
   const res = await fetch(`${API_URL}/api/vehicle`);
   const data = await res.json();
-
   const v = data.find(x => x.vehicle_id === id);
   if (!v) return;
+
+  // ✅ MOVE HERE (AFTER v is defined)
+  const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
+  const threshold = v.maintenance_threshold || 1000;
+  const percent = Math.min(100, Math.round((kmUsed / threshold) * 100));
 
   // ✅ fetch maintenance FIRST
   const maintRes = await fetch(`${API_URL}/api/vehicle/maintenance/${id}`);
@@ -970,6 +974,32 @@ async function dpVehicle(id) {
         ${dpField("Purchase Date", v.purchase_date || '-')}
         ${dpField("Price", v.price || '-')}
         ${dpField("Remarks", v.remarks || '-')}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">📊 Maintenance Usage</div>
+
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-labels">
+          <span>Usage</span>
+          <span>${kmUsed} / ${threshold} km</span>
+        </div>
+
+        <div class="prog-bar-track">
+          <div class="prog-bar-fill"
+            style="
+              width: ${percent}%;
+              background: ${
+                percent >= 100
+                  ? '#ef4444'   // RED
+                  : percent >= 70
+                    ? '#f59e0b' // ORANGE
+                    : '#22c55e' // GREEN
+              };
+            ">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1108,23 +1138,36 @@ function saveOdoUpdate() {
     showToast("Odometer updated ✅", "t-success");
     closeM("m-update-odo");
     renderVehicles();
+    dpVehicle(odoVehId);
   });
 }
+
+let deleteVehId = null;
 
 function deleteVehicle(id) {
-  if (!confirm("Delete this vehicle?")) return;
-
-  fetch(`${API_URL}/api/vehicle/${id}`, {
-    method: "DELETE"
-  })
-  .then(() => {
-    showToast("Vehicle deleted ✅", "t-warning");
-
-    closeDP();
-    renderVehicles();
-  });
+  deleteVehId = id;
+  openM("m-confirm-del");
 }
 
+function confirmDeleteVehicle() {
+  fetch(`${API_URL}/api/vehicle/${deleteVehId}`, {
+    method: "DELETE"
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Delete failed");
+
+    showToast("Vehicle deleted ✅", "t-warning");
+
+    closeM("m-confirm-del");
+    closeDP();
+
+    renderVehicles();
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error deleting ❌", "t-error");
+  });
+}
 
 
 
