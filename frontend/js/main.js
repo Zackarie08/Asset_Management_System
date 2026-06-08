@@ -851,7 +851,7 @@ function saveVehicle() {
   const name = document.getElementById("veh-f-name").value;
   const type = document.getElementById("veh-f-type").value;
   const plate = document.getElementById("veh-f-plate").value;
-  const status = document.getElementById("veh-f-status").value;
+  const status = "ACTIVE";
   const date = document.getElementById("veh-f-date").value;
   const price = document.getElementById("veh-f-price").value;
   const remarks = document.getElementById("veh-f-remarks").value;
@@ -880,7 +880,7 @@ function saveVehicle() {
       price,
       remarks,
       odometer,
-      last_maintenance_km: odometer, 
+      last_maintenance_km: 0, 
       maintenance_threshold: threshold
     })
 
@@ -894,16 +894,32 @@ function saveVehicle() {
     closeM("m-add-veh");
     renderVehicles();
   })
-  .catch(err => {
+  .then(() => {
+    showToast("Vehicle added ✅", "t-success");
+
+    addLog(
+      "CREATE",
+      "Vehicle",
+      `Added vehicle: "${name}" (Plate No. ${plate})`,
+      "VEH-" + plate
+    );
+
+    closeM("m-add-veh");
+    renderVehicles();
+  })
+    .catch(err => {
     console.error(err);
     showToast("Error saving vehicle ❌", "t-error");
   });
+  
 }
 
 let currentVehId = null;
+let currentVehPlate = null;
 
-function openVehMaint(id, currentKM) {
+function openVehMaint(id, currentKM, plate) {
   currentVehId = id;
+  currentVehPlate = plate;
 
   document.getElementById("veh-maint-name").textContent = "Vehicle #" + id;
 
@@ -1008,21 +1024,21 @@ async function dpVehicle(id) {
           ${
             v.status !== "UNDER_MAINTENANCE"
               ? `<button class="btn btn-primary btn-sm"
-                  onclick="openVehMaint(${v.vehicle_id}, ${v.odometer})">
+                  onclick="openVehMaint(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
                   🔧 Place Under Maintenance
                 </button>           
                 <button class="btn btn-outline btn-sm"
-                  onclick="openUpdateOdo(${v.vehicle_id}, ${v.odometer})">
+                  onclick="openUpdateOdo(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
                   📊 Update Odometer
                 </button>
                 `
               : `<button class="btn btn-green btn-sm"
-                  onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer})">
+                  onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
                   ✅ Complete Maintenance
                 </button>`
           }
           <button class="btn btn-red btn-sm"
-            onclick="deleteVehicle(${v.vehicle_id})">
+            onclick="deleteVehicle(${v.vehicle_id}, '${v.plate_number}')">
             🗑️ Delete Vehicle
           </button>
       </div>
@@ -1038,7 +1054,7 @@ async function dpVehicle(id) {
 }
 
 
-function completeMaintenance(id, currentKM) {
+function completeMaintenance(id, currentKM, plate) {
   fetch(`${API_URL}/api/vehicle/complete-maint/${id}`, {
     method: "PUT",
     headers: {
@@ -1048,8 +1064,18 @@ function completeMaintenance(id, currentKM) {
       odometer: currentKM
     })
   })
-  .then(() => {
+  .then(res => {
+    if (!res.ok) throw new Error("Failed");
+
     showToast("Maintenance completed ✅", "t-success");
+
+    addLog(
+      "UPDATE",
+      "VEHICLE",
+      `Maintenance completed at ${currentKM} km (Plate No. ${plate})`,
+      "VEH-" + plate
+    );
+
     renderVehicles();
     dpVehicle(id);
   })
@@ -1063,17 +1089,7 @@ function saveVehicleMaint() {
   const cost = document.getElementById("vm-cost").value;
   const remarks = document.getElementById("vm-remarks").value;
 
-  // ✅ IMPORTANT DEBUG
-  console.log({
-    vehicle_id: currentVehId,
-    date,
-    odo,
-    type,
-    cost,
-    remarks
-  });
-
-  fetch(`${API_URL}/api/vehicle/maintenance`, { 
+  fetch(`${API_URL}/api/vehicle/maintenance`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -1088,13 +1104,21 @@ function saveVehicleMaint() {
   .then(res => {
     if (!res.ok) throw new Error("Failed");
 
-    // ✅ update status AFTER saving
+    // ✅ update status AFTER SAVE
     return fetch(`${API_URL}/api/vehicle/start-maint/${currentVehId}`, {
       method: "PUT"
     });
   })
   .then(() => {
     showToast("Maintenance saved ✅", "t-success");
+
+    addLog(
+      "UPDATE",
+      "VEHICLE",
+      `Maintenance added (${type}) - ${odo} km (Plate No. ${currentVehPlate})`,
+      "VEH-" + currentVehPlate
+    );
+
     closeM("m-veh-maint");
     renderVehicles();
     dpVehicle(currentVehId);
@@ -1120,12 +1144,15 @@ function checkMonthlyOdoReminder() {
 
 let odoVehId = null;
 
-function openUpdateOdo(id, currentKM) {
+function openUpdateOdo(id, km, plate) {
   odoVehId = id;
-  document.getElementById("uo-km").value = currentKM;
+  odoVehPlate = plate;
+
+  document.getElementById("uo-km").value = km;
   openM("m-update-odo");
 }
 
+let odoVehPlate = null;
 function saveOdoUpdate() {
   const km = document.getElementById("uo-km").value;
 
@@ -1134,18 +1161,33 @@ function saveOdoUpdate() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ odometer: km })
   })
-  .then(() => {
+  .then(res => {
+    if (!res.ok) throw new Error("Failed");
+
     showToast("Odometer updated ✅", "t-success");
+
+    addLog(
+      "UPDATE",
+      "VEHICLE",
+      `Updated odometer to ${km} km (Plate No. ${odoVehPlate})`,
+      "VEH-" + odoVehPlate
+    );
+
     closeM("m-update-odo");
     renderVehicles();
     dpVehicle(odoVehId);
-  });
+  })
+  .catch(err => console.error(err));
 }
 
-let deleteVehId = null;
 
-function deleteVehicle(id) {
+let deleteVehId = null;
+let deleteVehPlate = null;
+
+function deleteVehicle(id, plate) {
   deleteVehId = id;
+  deleteVehPlate = plate;
+
   openM("m-confirm-del");
 }
 
@@ -1161,6 +1203,20 @@ function confirmDeleteVehicle() {
     closeM("m-confirm-del");
     closeDP();
 
+    renderVehicles();
+  })
+  .then(() => {
+    showToast("Vehicle deleted ✅", "t-warning");
+
+    addLog(
+      "DELETE",
+      "VEHICLE",
+      `Deleted Vehicle (Plate No. ${deleteVehPlate})`,
+      "VEH-" + deleteVehPlate
+    );
+
+    closeM("m-confirm-del");
+    closeDP();
     renderVehicles();
   })
   .catch(err => {

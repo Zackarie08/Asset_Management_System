@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
     // ✅ FIXED LOG
     await logAction({
       user_id,                      // ✅ REAL USER
-      action_type: "ADD",
+      action_type: "CREATE",
       module: "INVENTORY",
       description: `Added ${name}`,
       quantity: qty,
@@ -61,7 +61,7 @@ router.post("/withdraw", async (req, res) => {
 
     await logAction({
       user_id,
-      action_type: "WITHDRAW",
+      action_type: "UPDATE",
       module: "INVENTORY",
       description: `Withdraw ${qty}`,
       quantity: qty,
