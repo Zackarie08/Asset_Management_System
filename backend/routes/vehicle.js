@@ -43,4 +43,31 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.post("/maintenance", async (req, res) => {
+  const {
+    vehicle_id,
+    service_type,
+    maintenance_date,
+    maintenance_cost,
+    odometer,
+    remarks
+  } = req.body;
+
+  // ✅ insert maintenance record
+  await pool.query(
+    `INSERT INTO vehicle_maintenance 
+    (vehicle_id, service_type, maintenance_date, maintenance_cost, odometer, remarks)
+    VALUES ($1,$2,$3,$4,$5,$6)`,
+    [vehicle_id, service_type, maintenance_date, maintenance_cost, odometer, remarks]
+  );
+
+  // ✅ update vehicle current KM
+  await pool.query(
+    `UPDATE vehicle SET odometer = $1 WHERE vehicle_id = $2`,
+    [odometer, vehicle_id]
+  );
+
+  res.sendStatus(200);
+});
+
 module.exports = router;

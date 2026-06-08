@@ -346,10 +346,17 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr>
-                <th>Vehicle Name</th><th>Type</th><th>Plate Number</th>
-                <th>Assigned To</th><th>Status</th><th>Next Maintenance</th><th>Actions</th>
-              </tr></thead>
+              <thead>
+                <tr>
+                  <th>Vehicle Name</th>
+                  <th>Type</th>
+                  <th>Plate Number</th>
+                  <th>Odometer (KM)</th>
+                  <th>Status</th>
+                  <th>Purchase Date</th>
+                  <th>Price</th>
+                </tr>
+              </thead>
               <tbody id="veh-tbody"></tbody>
             </table>
           </div>
@@ -852,28 +859,53 @@
     </div>
     <div class="modal-body">
       <div class="form-row">
-        <div class="form-grp"><label>Vehicle Name *</label><input class="form-ctrl" id="veh-f-name" placeholder="e.g. Toyota Vios 2022"/></div>
-        <div class="form-grp"><label>Type</label>
+        <div class="form-grp">
+          <label>Vehicle Name *</label>
+          <input class="form-ctrl" id="veh-f-name">
+        </div>
+
+        <div class="form-grp">
+          <label>Type</label>
           <select class="form-ctrl" id="veh-f-type">
-            <option>Car</option><option>Motorcycle</option><option>Van</option><option>Truck</option>
+            <option>Car</option>
+            <option>Motorcycle</option>
+            <option>Van</option>
+            <option>Truck</option>
           </select>
         </div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>Plate Number</label><input class="form-ctrl" id="veh-f-plate" placeholder="AAA 1234"/></div>
-        <div class="form-grp"><label>Assigned To</label><input class="form-ctrl" id="veh-f-assigned" placeholder="Driver name"/></div>
-      </div>
-      <div class="form-row">
-        <div class="form-grp"><label>Status</label>
+        <div class="form-grp">
+          <label>Plate Number</label>
+          <input class="form-ctrl" id="veh-f-plate">
+        </div>
+
+        <div class="form-grp">
+          <label>Status</label>
           <select class="form-ctrl" id="veh-f-status">
-            <option>Active</option><option>For Maintenance</option><option>Out of Service</option>
+            <option>Active</option>
+            <option>Under Maintenance</option>
+            <option>Out of Service</option>
           </select>
         </div>
-        <div class="form-grp"><label>Next Maintenance Date</label><input class="form-ctrl" id="veh-f-maint" type="date"/></div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>Year Model</label><input class="form-ctrl" id="veh-f-year" type="number" placeholder="2023"/></div>
-        <div class="form-grp"><label>OR/CR Expiry</label><input class="form-ctrl" id="veh-f-orcr" type="date"/></div>
+        <div class="form-grp">
+          <label>Purchase Date</label>
+          <input class="form-ctrl" id="veh-f-date" type="date">
+        </div>
+
+        <div class="form-grp">
+          <label>Price</label>
+          <input class="form-ctrl" id="veh-f-price" type="number">
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="veh-f-remarks"></textarea>
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-veh')">Cancel</button>
