@@ -548,16 +548,6 @@ function deleteLaptop(id) {
 /* ──────────────────────────────────────────────────────────────
    PURCHASE ORDERS
 ────────────────────────────────────────────────────────────── */
-let poItems = [
-  { id:1, poNum:'PO-2026-0001', item:'Bond Paper (Short)',       cat:'Office Supplies', qty:20, unit:'Ream',   supplier:'PaperWorld Inc.',    price:280,  orderDate:'2026-05-14', eta:'2026-05-22', status:'IN TRANSIT', notes:'Urgent. Deliver to storage room A.',    delivered:null },
-  { id:2, poNum:'PO-2026-0002', item:'Office Chairs (Mesh)',     cat:'Furniture',       qty:5,  unit:'Piece',  supplier:'OfficePro PH',       price:4200, orderDate:'2026-04-28', eta:'2026-05-10', status:'ORDERED',    notes:'Replacement for worn chairs.',          delivered:null },
-  { id:3, poNum:'PO-2026-0003', item:'HP Toner CF280A',         cat:'IT Supplies',     qty:6,  unit:'Piece',  supplier:'HP Philippines',     price:3500, orderDate:'2026-05-16', eta:'2026-05-25', status:'ORDERED',    notes:'Request official receipt.',             delivered:null },
-  { id:4, poNum:'PO-2026-0004', item:'Coffee 3-in-1 Sachet',    cat:'Pantry Supplies', qty:10, unit:'Box',    supplier:'Nestle Distributor', price:350,  orderDate:'2026-04-25', eta:'2026-05-01', status:'ORDERED',    notes:'',                                     delivered:null },
-  { id:5, poNum:'PO-2026-0005', item:'Bandage Rolls',           cat:'First Aid Kit',   qty:20, unit:'Roll',   supplier:'Mercury Drug',       price:40,   orderDate:'2026-05-17', eta:'2026-05-30', status:'ORDERED',    notes:'Emergency restock.',                   delivered:null },
-  { id:6, poNum:'PO-2026-0006', item:'USB-C Cables 2m',         cat:'IT Supplies',     qty:15, unit:'Piece',  supplier:'TechHub Supplies',   price:280,  orderDate:'2026-04-10', eta:'2026-04-20', status:'DELIVERED',  notes:'',                                     delivered:'2026-04-19' },
-  { id:7, poNum:'PO-2026-0007', item:'Mineral Water 500mL',     cat:'Pantry Supplies', qty:100,unit:'Bottle', supplier:'Selecta Distributor',price:20,   orderDate:'2026-05-01', eta:'2026-05-05', status:'DELIVERED',  notes:'Weekly restock.',                       delivered:'2026-05-04' },
-];
-let poId = 8;
 
 async function renderOrders() {
   const res = await fetch(`${API_URL}/api/po`);
@@ -727,9 +717,14 @@ function deletePO(id) {
 async function renderVehicles() {
   const res = await fetch(`${API_URL}/api/vehicle`);
   const data = await res.json();
+  const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
+  const needsMaint = kmUsed >= (v.maintenance_threshold || 1000);
 
   const tbody = document.getElementById('veh-tbody');
   tbody.innerHTML = '';
+  if (needsMaint) {
+    tr.classList.add("tr-warn");
+  }
 
   data.forEach(v => {
     const tr = document.createElement('tr');
@@ -740,7 +735,13 @@ async function renderVehicles() {
       <td>${v.vehicle_name}</td>
       <td>${v.type}</td>
       <td>${v.plate_number}</td>
-      <td>${v.status}</td>
+      <td>
+        ${
+          needsMaint
+            ? '<span class="badge b-red">⚠️ Needs Maintenance</span>'
+            : v.status
+        }
+      </td>
       <td>${v.purchase_date || '-'}</td>
     `;
 
@@ -786,10 +787,16 @@ function saveVehicle() {
   const type = document.getElementById("veh-f-type").value;
   const plate = document.getElementById("veh-f-plate").value;
   const status = document.getElementById("veh-f-status").value;
-  const odometer = document.getElementById("veh-f-odometer").value;
   const date = document.getElementById("veh-f-date").value;
   const price = document.getElementById("veh-f-price").value;
   const remarks = document.getElementById("veh-f-remarks").value;
+  const odometer = document.getElementById("veh-f-odometer").value || 0;
+  let threshold = 1000;
+  if (type === "Motorcycle") threshold = 1500;
+  if (type === "Car") threshold = 5000;
+  if (type === "Van") threshold = 8000;
+  if (type === "Truck") threshold = 10000;
+
 
 
   console.log({ name, type, plate, status, odometer }); // ✅ DEBUG
@@ -807,8 +814,11 @@ function saveVehicle() {
       status,
       price,
       remarks,
-      odometer
+      odometer,
+      last_maintenance_km: odometer, 
+      maintenance_threshold: threshold
     })
+
   })
   .then(res => {
     if (!res.ok) throw new Error("Failed to save");
@@ -824,6 +834,30 @@ function saveVehicle() {
     showToast("Error saving vehicle ❌", "t-error");
   });
 }
+
+let currentVehId = null;
+
+function openVehMaint(id) {
+  currentVehId = id;
+
+  document.getElementById("veh-maint-name").textContent = "Vehicle #" + id;
+
+  // clear fields
+  document.getElementById("vm-date").value = "";
+  document.getElementById("vm-odo").value = "";
+  document.getElementById("vm-cost").value = "";
+  document.getElementById("vm-next").value = "";
+  document.getElementById("vm-remarks").value = "";
+
+  // ✅ open modal
+  openM("m-veh-maint");
+
+  // ✅ update status → UNDER MAINTENANCE
+  fetch(`${API_URL}/api/vehicle/start-maint/${id}`, {
+    method: "PUT"
+  }).catch(err => console.error(err));
+}
+
 
 
 /* ──────────────────────────────────────────────────────────────
@@ -1317,36 +1351,7 @@ async function dpVehicle(id) {
   const v = data.find(x => x.vehicle_id === id);
   if (!v) return;
 
-  setDPHeader('🚗', '#ecfeff', v.vehicle_name, "Vehicle Details");
-
-  const html = `
-    <div class="dp-section">
-      <div class="dp-section-hd">Vehicle Info</div>
-      <div class="dp-grid">
-        ${dpField("Plate Number", v.plate_number)}
-        ${dpField("Type", v.type)}
-        ${dpField("Status", v.status)}
-        ${dpField("Odometer", (v.odometer || 0) + " km")}
-        ${dpField("Purchase Date", v.purchase_date)}
-        ${dpField("Price", v.price)}
-        ${dpField("Remarks", v.remarks || '-')}
-      </div>
-    </div>
-    <div class="dp-section">
-      <div class="dp-section-hd">🔧 Maintenance History</div>
-      ${maintHTML}
-    </div>
-    <div class="dp-section">
-      <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm"
-          onclick="openVehMaint(${v.vehicle_id})">
-          🔧 Add Maintenance
-        </button>
-      </div>
-    </div>
-  `;
-
-  // fetch maintenance records
+  // ✅ fetch maintenance FIRST
   const maintRes = await fetch(`${API_URL}/api/vehicle/maintenance/${id}`);
   const maintData = await maintRes.json();
 
@@ -1365,6 +1370,41 @@ async function dpVehicle(id) {
       </div>
     `).join('');
   }
+
+  // ✅ NOW build HTML (after maintHTML is ready)
+  const html = `
+    <div class="dp-section">
+      <div class="dp-section-hd">Vehicle Info</div>
+      <div class="dp-grid">
+        ${dpField("Plate Number", v.plate_number)}
+        ${dpField("Type", v.type)}
+        ${dpField("Status", v.status)}
+        ${dpField("Odometer", (v.odometer || 0) + " km")}
+        ${dpField("Maintenance Limit", v.maintenance_threshold + " km")}
+        ${dpField("Purchase Date", v.purchase_date || '-')}
+        ${dpField("Price", v.price || '-')}
+        ${dpField("Remarks", v.remarks || '-')}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">🔧 Maintenance History</div>
+      ${maintHTML}
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-action-row">
+        <button class="btn btn-primary btn-sm"
+          onclick="openVehMaint(${v.vehicle_id})">
+          🔧 Add Maintenance
+        </button>
+        <button class="btn btn-green btn-sm"
+          onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer})">
+          ✅ Complete Maintenance
+        </button>
+      </div>
+    </div>
+  `;
 
   document.getElementById("dp-body").innerHTML = html;
 }

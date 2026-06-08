@@ -26,14 +26,27 @@ router.post('/', async (req, res) => {
       status,
       price,
       remarks,
-      odometer
+      odometer,
+      last_maintenance_km,
+      maintenance_threshold
     } = req.body;
 
     await pool.query(
       `INSERT INTO vehicle 
-       (vehicle_name, plate_number, type, purchase_date, status, price, remarks, odometer)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [vehicle_name, plate_number, type, purchase_date, status, price, remarks, odometer]
+      (vehicle_name, plate_number, type, purchase_date, status, price, remarks, odometer, last_maintenance_km, maintenance_threshold)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [
+        vehicle_name,
+        plate_number,
+        type,
+        purchase_date,
+        status,
+        price,
+        remarks,
+        odometer,
+        last_maintenance_km,
+        maintenance_threshold
+      ]
     );
 
     res.sendStatus(200);
@@ -46,12 +59,16 @@ router.post('/', async (req, res) => {
 
 router.post("/maintenance", async (req, res) => {
   const {
-    vehicle_id,
-    service_type,
-    maintenance_date,
-    maintenance_cost,
+    vehicle_name,
+    plate_number,
+    type,
+    purchase_date,
+    status,
+    price,
+    remarks,
     odometer,
-    remarks
+    last_maintenance_km,
+    maintenance_threshold
   } = req.body;
 
   // ✅ insert maintenance record
@@ -80,6 +97,39 @@ router.get("/maintenance/:id", async (req, res) => {
   );
 
   res.json(result.rows);
+});
+
+router.put("/start-maint/:id", async (req, res) => {
+  try {
+    await pool.query(
+      "UPDATE vehicle SET status = 'UNDER_MAINTENANCE' WHERE vehicle_id = $1",
+      [req.params.id]
+    );
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error updating status");
+  }
+});
+
+router.put("/complete-maint/:id", async (req, res) => {
+  try {
+    const { odometer } = req.body;
+
+    await pool.query(
+      `UPDATE vehicle 
+       SET status = 'ACTIVE',
+           last_maintenance_km = $1
+       WHERE vehicle_id = $2`,
+      [odometer, req.params.id]
+    );
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error completing maintenance");
+  }
 });
 
 module.exports = router;
