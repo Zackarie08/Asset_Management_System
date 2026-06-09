@@ -1,6 +1,3 @@
-let currentOrderItemId = null; // make sure this exists globally
-
-
 // ✅ LOAD / DISPLAY PO
 async function renderPO() {
   const res = await fetch(`${API_URL}/api/po`);

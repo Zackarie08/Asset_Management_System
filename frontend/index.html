@@ -651,42 +651,63 @@
   </div>
 </div>
 
-<!-- Add Furniture -->
+<!-- Add / Edit Furniture -->
 <div class="modal-overlay" id="m-add-fur">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🪑 Add Furniture</div>
+      <div class="modal-title">🪑 Furniture</div>
       <button class="modal-close" onclick="closeM('m-add-fur')">✕</button>
     </div>
+
     <div class="modal-body">
+
+      <!-- Row 1 -->
       <div class="form-row">
-        <div class="form-grp"><label>Asset Name *</label><input class="form-ctrl" id="fur-f-name" placeholder="e.g. Executive Chair"/></div>
-        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="fur-f-qty" type="number" min="1" placeholder="1"/></div>
-      </div>
-      <div class="form-row">
-        <div class="form-grp"><label>Date Purchased</label><input class="form-ctrl" id="fur-f-date" type="date"/></div>
-        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="fur-f-supplier" placeholder="Supplier name"/></div>
-      </div>
-      <div class="form-row">
-        <div class="form-grp"><label>Price / Unit (₱)</label><input class="form-ctrl" id="fur-f-price" type="number" placeholder="0.00"/></div>
-        <div class="form-grp"><label>Location</label><input class="form-ctrl" id="fur-f-loc" placeholder="Office location"/></div>
-      </div>
-      <div class="form-row">
-        <div class="form-grp"><label>Condition</label>
-          <select class="form-ctrl" id="fur-f-cond">
-            <option>New</option>
-            <option>Good</option>
-            <option>Fair</option>
-            <option>For Repair</option>
-          </select>
+        <div class="form-grp">
+          <label>Asset Name *</label>
+          <input class="form-ctrl" id="fur-f-name" placeholder="e.g. Office Chair"/>
         </div>
-        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="fur-f-contact" placeholder="email or phone"/></div>
+
+        <div class="form-grp">
+          <label>Quantity *</label>
+          <input class="form-ctrl" id="fur-f-qty" type="number" min="1" placeholder="1"/>
+        </div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
+
+      <!-- Row 2 -->
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Date Purchased</label>
+          <input class="form-ctrl" id="fur-f-date" type="date"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Price (₱)</label>
+          <input class="form-ctrl" id="fur-f-price" type="number" placeholder="0.00"/>
+        </div>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Location *</label>
+          <!-- ✅ CHANGED TO SELECT -->
+          <select class="form-ctrl" id="fur-f-loc"></select>
+        </div>
+      </div>
+
+      <!-- Remarks -->
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Optional notes..."></textarea>
+      </div>
+
+      <!-- Footer -->
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-fur')">Cancel</button>
-        <button class="btn btn-green" onclick="saveFurniture()">✅ Add Furniture</button>
+        <button class="btn btn-green" onclick="saveFurniture()">✅ Save</button>
       </div>
+
     </div>
   </div>
 </div>
@@ -1232,6 +1253,29 @@
 
         <button class="btn btn-red"
           onclick="confirmDeleteUser()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Furniture -->
+<div class="modal-overlay" id="m-confirm-fur-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Furniture</div>
+      <button onclick="closeM('m-confirm-fur-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete this furniture?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-fur-del')">
+          Cancel
+        </button>
+        <button class="btn btn-red" onclick="confirmDeleteFur()">
           🗑️ Delete
         </button>
       </div>

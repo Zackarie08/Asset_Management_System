@@ -114,6 +114,8 @@ function setDPHeader(icon, iconBg, title, sub) {
    OFFICE FURNITURE
 ────────────────────────────────────────────────────────────── */
 
+let furEditId = null;
+
 async function renderFurniture() {
   const res = await fetch(`${API_URL}/api/furniture`);
   const data = await res.json();
@@ -135,7 +137,7 @@ async function renderFurniture() {
       <td>${f.remarks || '-'}</td>
       <td>
         <button onclick="event.stopPropagation(); editFur(${f.office_furniture_id})">✏️</button>
-        <button onclick="event.stopPropagation(); deleteFur(${f.office_furniture_id})">🗑️</button>
+        <button onclick="event.stopPropagation(); deleteFur(${f.office_furniture_id}, '${f.furniture_name}')">🗑️</button>
       </td>
     `;
 
@@ -147,39 +149,44 @@ async function renderFurniture() {
   });
 }
 
-function dpFurniture(id) {
-  const f = furItems.find(x => x.id === id);
-  if (!f) return;
-  const isAdmin = currentUser.role === 'admin';
-  const condCls = {New:'b-blue',Good:'b-green',Fair:'b-amber','For Repair':'b-red'}[f.condition]||'b-slate';
-  setDPHeader('🪑','#fffbeb', f.name, 'Office Furniture');
-  let html = `
-    <div class="dp-status-row">${badge(f.condition,condCls)}<span class="dp-status-label">Condition status</span></div>
-    <div class="dp-section">
-      <div class="dp-section-hd">📦 Asset Information</div>
-      <div class="dp-grid">
-        ${dpFieldFull('Asset Name',`<strong>${f.name}</strong>`)}
-        ${dpField('Quantity', f.qty)}
-        ${dpField('Location', f.loc)}
-        ${dpField('Date Purchased', f.date, 'mono')}
-        ${dpField('Price / Unit', '₱'+f.price.toLocaleString())}
-        ${dpField('Total Value', '₱'+(f.price*f.qty).toLocaleString())}
-      </div>
-    </div>
-    <div class="dp-section">
-      <div class="dp-section-hd">🏪 Supplier</div>
-      <div class="supplier-card">
-        <div class="sc-name">🏢 ${f.supplier||'—'}</div>
-        <div class="sc-note">Contact supplier for additional units or maintenance support</div>
-        <span class="sc-link" onclick="showToast('Contacting ${f.supplier}…','t-info')">🔗 View Supplier</span>
-      </div>
-      <div class="dp-grid" style="margin-top:9px">${dpField('Contact',f.contact)}</div>
-    </div>
-    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes',f.remarks)}</div></div>` : ''}`;
+async function dpFurniture(id) {
+  const res = await fetch(`${API_URL}/api/furniture`);
+  const data = await res.json();
 
-  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-primary btn-sm" onclick="editFur(${f.id})">✏️ Edit</button><button class="btn btn-red btn-sm" onclick="deleteFur(${f.id})">🗑️ Delete</button></div></div>`;
-  document.getElementById('dp-body').innerHTML = html;
-  document.getElementById('dp-footer').style.display = 'none';
+  const f = data.find(x => x.office_furniture_id === id);
+  if (!f) return;
+
+  setDPHeader('🪑','#fffbeb', f.furniture_name, 'Office Furniture');
+
+  const html = `
+    <div class="dp-section">
+      <div class="dp-section-hd">📦 Furniture Details</div>
+      <div class="dp-grid">
+        ${dpField("Name", f.furniture_name)}
+        ${dpField("Quantity", f.quantity)}
+        ${dpField("Date Purchased", f.date_of_purchase || '-')}
+        ${dpField("Price", f.price ? '₱' + f.price : '-')}
+        ${dpField("Location", f.location_name || '-')}
+        ${dpField("Remarks", f.remarks || '-')}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-action-row">
+        <button class="btn btn-primary btn-sm"
+          onclick="editFur(${f.office_furniture_id})">
+          ✏️ Edit
+        </button>
+
+        <button class="btn btn-red btn-sm"
+          onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name}')">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("dp-body").innerHTML = html;
 }
 
 function saveFurniture() {
@@ -191,64 +198,118 @@ function saveFurniture() {
   const remarks = document.getElementById('fur-f-remarks').value;
 
   if (!name || !qty || !loc) {
-    showToast("Fill required fields ❌", "t-error");
+    showToast("Fill required fields", "t-error");
     return;
   }
 
-  fetch(`${API_URL}/api/furniture`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      furniture_name: name,
-      quantity: qty,
-      date_of_purchase: date,
-      price,
-      remarks,
-      current_location: loc
+  // ✅ EDIT MODE
+  if (furEditId) {
+    fetch(`${API_URL}/api/furniture/${furEditId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        furniture_name: name,
+        quantity: qty,
+        date_of_purchase: date,
+        price,
+        remarks,
+        current_location: loc
+      })
     })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("Failed");
+    .then(res => {
+      if (!res.ok) throw new Error("Update failed");
 
-    showToast("Furniture added ✅", "t-success");
+      showToast("Furniture updated", "t-success");
 
-    addLog(
-      "CREATE",
-      "FURNITURE",
-      `Added furniture: ${name} (Qty: ${qty})`,
-      name
-    );
+      addLog(
+        "UPDATE",
+        "FURNITURE",
+        `Updated furniture: ${name}`,
+        name
+      );
 
-    closeM('m-add-fur');
-    renderFurniture();
-  })
-  .catch(err => {
-    console.error(err);
-    showToast("Error saving ❌", "t-error");
-  });
+      furEditId = null;
+      closeM("m-add-fur");
+      renderFurniture();
+    });
+
+  } else {
+    // ✅ ADD MODE
+    fetch(`${API_URL}/api/furniture`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        furniture_name: name,
+        quantity: qty,
+        date_of_purchase: date,
+        price,
+        remarks,
+        current_location: loc
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed");
+
+      showToast("Furniture added", "t-success");
+
+      addLog(
+        "CREATE",
+        "FURNITURE",
+        `Added furniture: ${name} (Qty: ${qty})`,
+        name
+      );
+
+      closeM("m-add-fur");
+      renderFurniture();
+    });
+  }
 }
 
-function editFur(id) {
-  const f = furItems.find(x => x.id === id);
+async function editFur(id) {
+  const res = await fetch(`${API_URL}/api/furniture`);
+  const data = await res.json();
+
+  const f = data.find(x => x.office_furniture_id === id);
   if (!f) return;
-  document.getElementById('fur-f-name').value     = f.name;
-  document.getElementById('fur-f-qty').value      = f.qty;
-  document.getElementById('fur-f-date').value     = f.date;
-  document.getElementById('fur-f-supplier').value = f.supplier;
-  document.getElementById('fur-f-price').value    = f.price;
-  document.getElementById('fur-f-loc').value      = f.loc;
-  document.getElementById('fur-f-cond').value     = f.condition;
-  document.getElementById('fur-f-contact').value  = f.contact||'';
-  document.getElementById('fur-f-remarks').value  = f.remarks||'';
-  // simple overwrite approach
-  furItems = furItems.filter(x => x.id !== id);
+
+  furEditId = id;
+
   openM('m-add-fur');
+
+  await loadFurLocations();
+
+  document.getElementById('fur-f-name').value = f.furniture_name;
+  document.getElementById('fur-f-qty').value = f.quantity;
+  let dateVal = "";
+
+  if (f.date_of_purchase) {
+    const d = new Date(f.date_of_purchase);
+    dateVal = d.toISOString().split("T")[0];
+  }
+
+  document.getElementById('fur-f-date').value = dateVal;
+  document.getElementById('fur-f-price').value = f.price || "";
+  document.getElementById('fur-f-loc').value = f.current_location;
+  document.getElementById('fur-f-remarks').value = f.remarks || "";
 }
 
-function deleteFur(id) {
-  fetch(`${API_URL}/api/furniture/${id}`, {
+
+let deleteFurId = null;
+let deleteFurName = "";
+
+function deleteFur(id, name) {
+  deleteFurId = id;
+  deleteFurName = name;
+
+  openM("m-confirm-fur-del");
+}
+
+function confirmDeleteFur() {
+  fetch(`${API_URL}/api/furniture/${deleteFurId}`, {
     method: "DELETE"
   })
   .then(res => {
@@ -259,16 +320,38 @@ function deleteFur(id) {
     addLog(
       "DELETE",
       "FURNITURE",
-      `Deleted furniture ID ${id}`,
-      "FUR-" + id
+      `Deleted furniture: ${deleteFurName}`,
+      deleteFurName
     );
 
+    closeM("m-confirm-fur-del");
     closeDP();
     renderFurniture();
   })
   .catch(err => console.error(err));
 }
 
+
+async function loadFurLocations() {
+  const res = await fetch(`${API_URL}/api/location`);
+  const data = await res.json();
+
+  const select = document.getElementById("fur-f-loc");
+  select.innerHTML = "";
+
+  data.forEach(loc => {
+    const opt = document.createElement("option");
+    opt.value = loc.location_id;
+    opt.textContent = loc.location_name;
+    select.appendChild(opt);
+  });
+}
+
+function openAddFurniture() {
+  furEditId = null;
+  openM('m-add-fur');
+  loadFurLocations();
+}
 
 
 
@@ -1743,6 +1826,7 @@ function initAllModules() {
   renderLogs();
   renderUsers();
   renderVehicles()
+  loadFurLocations();
   checkMonthlyOdoReminder();
   refreshDashboard();
   refreshPageActions('dashboard');
