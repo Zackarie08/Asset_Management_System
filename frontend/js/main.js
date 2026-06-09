@@ -43,6 +43,7 @@ const PAGE_META = {
   globe:      { title:'Globe Mobile Plans',parent:'Asset Management System' },
   m365:       { title:'M365 Licenses',     parent:'Asset Management System' },
   logs:       { title:'System Logs',       parent:'Asset Management System' },
+  users:      { title:'Users',             parent:'Asset Management System' },
 };
 
 let currentPage = 'dashboard';
@@ -112,38 +113,38 @@ function setDPHeader(icon, iconBg, title, sub) {
 /* ──────────────────────────────────────────────────────────────
    OFFICE FURNITURE
 ────────────────────────────────────────────────────────────── */
-let furItems = [
-  { id:1, name:'Executive Office Chair',   qty:10, date:'2024-01-15', supplier:'OfficePro PH',  contact:'sales@officepro.ph',  price:4500,  loc:'3F Executive Wing',  condition:'Good',   remarks:'Leather upholstery, lumbar support.' },
-  { id:2, name:'Steel Filing Cabinet 4D',  qty:6,  date:'2024-03-20', supplier:'StoreAll Inc.', contact:'orders@storeall.ph',  price:6800,  loc:'Storage Room A',     condition:'Good',   remarks:'' },
-  { id:3, name:'Conference Table (8-pax)', qty:2,  date:'2023-11-05', supplier:'Furni Corp PH', contact:'furni@furnicorp.ph',  price:28000, loc:'2F Conference Room', condition:'Good',   remarks:'Solid wood, foldable legs.' },
-  { id:4, name:'Standing Desk (ErgoLift)', qty:5,  date:'2025-02-10', supplier:'ErgoDesk PH',   contact:'info@ergodesk.ph',   price:12500, loc:'IT Department',      condition:'New',    remarks:'Height adjustable 72–120cm.' },
-  { id:5, name:'Visitor Chair (Padded)',   qty:20, date:'2024-06-01', supplier:'OfficePro PH',  contact:'sales@officepro.ph',  price:1800,  loc:'Reception & Lobby',  condition:'Fair',   remarks:'2 units need reupholstering.' },
-];
-let furId = 6;
 
-function renderFurniture() {
-  const isAdmin = currentUser.role === 'admin';
+async function renderFurniture() {
+  const res = await fetch(`${API_URL}/api/furniture`);
+  const data = await res.json();
+
   const tbody = document.getElementById('fur-tbody');
   tbody.innerHTML = '';
-  furItems.forEach(f => {
-    const condCls = {New:'b-blue',Good:'b-green',Fair:'b-amber','For Repair':'b-red'}[f.condition]||'b-slate';
+
+  data.forEach(f => {
     const tr = document.createElement('tr');
+
     tr.className = 'tr-clickable';
+
     tr.innerHTML = `
-      <td class="td-strong">${f.name}</td>
-      <td>${f.qty}</td>
-      <td class="td-mono">${f.date}</td>
-      <td>${f.supplier}</td>
-      <td>₱${f.price.toLocaleString()}</td>
-      <td class="td-muted">${f.loc}</td>
-      <td>${badge(f.condition, condCls)}</td>
+      <td>${f.furniture_name}</td>
+      <td>${f.quantity}</td>
+      <td>${f.date_of_purchase || '-'}</td>
+      <td>₱${f.price?.toLocaleString() || 0}</td>
+      <td>${f.location_name || '-'}</td>
+      <td>${f.remarks || '-'}</td>
       <td>
-        ${isAdmin ? `<div class="flex-gap"><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editFur(${f.id})">✏️</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteFur(${f.id})">🗑️</button></div>` : '<span class="td-muted">View only</span>'}
-      </td>`;
-    tr.addEventListener('click', () => openDP('furniture', f.id, tr));
+        <button onclick="event.stopPropagation(); editFur(${f.office_furniture_id})">✏️</button>
+        <button onclick="event.stopPropagation(); deleteFur(${f.office_furniture_id})">🗑️</button>
+      </td>
+    `;
+
+    tr.addEventListener('click', () => {
+      openDP('furniture', f.office_furniture_id, tr);
+    });
+
     tbody.appendChild(tr);
   });
-  document.getElementById('fur-ct').textContent = `${furItems.length} items`;
 }
 
 function dpFurniture(id) {
@@ -182,21 +183,51 @@ function dpFurniture(id) {
 }
 
 function saveFurniture() {
-  const name     = document.getElementById('fur-f-name').value.trim();
-  const qty      = parseInt(document.getElementById('fur-f-qty').value)||1;
-  const date     = document.getElementById('fur-f-date').value||todayStr();
-  const supplier = document.getElementById('fur-f-supplier').value.trim()||'N/A';
-  const price    = parseFloat(document.getElementById('fur-f-price').value)||0;
-  const loc      = document.getElementById('fur-f-loc').value.trim();
-  const condition= document.getElementById('fur-f-cond').value;
-  const contact  = document.getElementById('fur-f-contact').value.trim();
-  const remarks  = document.getElementById('fur-f-remarks').value.trim();
-  if (!name) { showToast('Asset name required','t-error'); return; }
-  furItems.push({ id:furId++, name,qty,date,supplier,contact,price,loc,condition,remarks });
-  closeM('m-add-fur');
-  clearForm(['fur-f-name','fur-f-qty','fur-f-date','fur-f-supplier','fur-f-price','fur-f-loc','fur-f-contact','fur-f-remarks']);
-  addLog('CREATE','Furniture',`Added furniture: "${name}" (x${qty}) at ${loc}`,`FUR-${furId-1}`);
-  renderFurniture(); showToast(`"${name}" added`,'t-success');
+  const name = document.getElementById('fur-f-name').value;
+  const qty = document.getElementById('fur-f-qty').value;
+  const date = document.getElementById('fur-f-date').value;
+  const price = document.getElementById('fur-f-price').value;
+  const loc = document.getElementById('fur-f-loc').value;
+  const remarks = document.getElementById('fur-f-remarks').value;
+
+  if (!name || !qty || !loc) {
+    showToast("Fill required fields ❌", "t-error");
+    return;
+  }
+
+  fetch(`${API_URL}/api/furniture`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      furniture_name: name,
+      quantity: qty,
+      date_of_purchase: date,
+      price,
+      remarks,
+      current_location: loc
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed");
+
+    showToast("Furniture added ✅", "t-success");
+
+    addLog(
+      "CREATE",
+      "FURNITURE",
+      `Added furniture: ${name} (Qty: ${qty})`,
+      name
+    );
+
+    closeM('m-add-fur');
+    renderFurniture();
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error saving ❌", "t-error");
+  });
 }
 
 function editFur(id) {
@@ -217,11 +248,25 @@ function editFur(id) {
 }
 
 function deleteFur(id) {
-  const f = furItems.find(x => x.id === id);
-  if (!f || !confirm(`Delete "${f.name}"?`)) return;
-  furItems = furItems.filter(x => x.id !== id);
-  addLog('DELETE','Furniture',`Deleted: "${f.name}"`,`FUR-${id}`);
-  closeDP(); renderFurniture(); showToast('Furniture deleted','t-warning');
+  fetch(`${API_URL}/api/furniture/${id}`, {
+    method: "DELETE"
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Delete failed");
+
+    showToast("Furniture deleted ✅", "t-warning");
+
+    addLog(
+      "DELETE",
+      "FURNITURE",
+      `Deleted furniture ID ${id}`,
+      "FUR-" + id
+    );
+
+    closeDP();
+    renderFurniture();
+  })
+  .catch(err => console.error(err));
 }
 
 

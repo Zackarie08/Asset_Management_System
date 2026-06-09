@@ -38,3 +38,6 @@ app.use("/api/po", poRoutes);
 
 const vehicleRoutes = require('./routes/vehicle');
 app.use('/api/vehicle', vehicleRoutes);
+
+
+app.use("/api/furniture", require("./routes/furniture"));

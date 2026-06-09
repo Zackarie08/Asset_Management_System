@@ -106,7 +106,7 @@ CREATE TABLE office_furniture (
   date_of_purchase DATE,
   price NUMERIC(12,2),
   remarks TEXT,
-  current_location INT REFERENCES location(location_id),
+  current_location INT REFERENCES location(location_id)
 );
 
 -- =========================

@@ -37,7 +37,7 @@ function navigate(page, navEl) {
   if (navEl) navEl.classList.add('active');
 
   const meta = PAGE_META[page] || {};
-  document.getElementById('tb-parent').textContent = meta.parent || 'AssetCore';
+  document.getElementById('tb-parent').textContent = meta.parent || 'Asset Management System';
   document.getElementById('tb-current').textContent = meta.title || page;
 
   currentPage = page;
