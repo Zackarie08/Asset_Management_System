@@ -93,6 +93,21 @@ router.put("/:id", async (req, res) => {
   res.sendStatus(200);
 });
 
+// ✅ DELETE
+router.delete("/:id", async (req, res) => {
+  try {
+    await pool.query(
+      "DELETE FROM globe_mobile_plan WHERE plan_id = $1",
+      [req.params.id]
+    );
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Delete failed");
+  }
+});
+
 
 
 module.exports = router;

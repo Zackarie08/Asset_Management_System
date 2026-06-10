@@ -1455,6 +1455,30 @@
   </div>
 </div>
 
+<!-- Confirm Delete Globe Plan -->
+<div class="modal-overlay" id="m-confirm-globe-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Plan</div>
+      <button onclick="closeM('m-confirm-globe-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Delete this mobile plan?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-globe-del')">
+          Cancel
+        </button>
+        <button class="btn btn-red" onclick="confirmDeleteGlobe()">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+``
+
 <!-- Toast -->
 <div class="toast-wrap" id="toast-wrap"></div>
 
