@@ -63,3 +63,46 @@ const LIMITS = {
   PASSWORD: 50,
   REMARKS: 255
 };
+
+const selectState = {}; 
+
+function makeSearchable(inputId, listId, items) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+
+  if (!input || !list) return; 
+
+  selectState[inputId] = false;
+
+  input.addEventListener("input", () => {
+    selectState[inputId] = false;
+
+    const val = input.value.toLowerCase();
+    list.innerHTML = "";
+
+    const filtered = items.filter(i =>
+      i.toLowerCase().includes(val)
+    );
+
+    filtered.forEach(name => {
+      const div = document.createElement("div");
+      div.textContent = name;
+      div.className = "select-item";
+
+      div.onclick = () => {
+        input.value = name;
+        list.innerHTML = "";
+        selectState[inputId] = true;
+      };
+
+      list.appendChild(div);
+    });
+  });
+
+  // ✅ prevent Enter submit
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+    }
+  });
+}

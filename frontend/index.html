@@ -529,8 +529,12 @@
         <input class="form-ctrl" id="wd-qty" type="number" min="1" placeholder="e.g. 5"/>
       </div>
       <div class="form-grp">
-        <label>Withdrawn By</label>
-        <select class="form-ctrl" id="wd-by" placeholder="Employee name"></select>
+        <label>Performed by</label>
+
+        <div class="search-select">
+          <input id="wd-by" class="form-ctrl" placeholder="Type user name..." />
+          <div id="wd-list" class="select-list"></div>
+        </div>
       </div>
       <div class="form-grp">
         <label>Purpose / Remarks</label>
@@ -586,7 +590,21 @@
       </div>
       <div class="form-row">
         <div class="form-grp"><label>Location</label><select class="form-ctrl" id="inv-f-loc"  placeholder="Storage location"></select></div>
-        <div class="form-grp"><label>Performed by</label><select class="form-ctrl" id="inv-f-performed"></select></div>
+        <div class="form-grp">
+          <label>Performed by</label>
+
+          <div class="search-select">
+            <!-- ✅ INPUT (text type) -->
+            <input 
+              id="inv-f-performed" 
+              class="form-ctrl" 
+              placeholder="Type user name..." 
+            />
+
+            <!-- ✅ DROPDOWN LIST -->
+            <div id="inv-f-list" class="select-list"></div>
+          </div>
+        </div>
       </div>
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="inv-f-remarks" rows="2" placeholder="Optional notes..." maxlength="255"></textarea></div>
       <div class="form-footer">
@@ -635,7 +653,14 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-grp"><label>Performed by</label><select class="form-ctrl" id="po-f-performed"></select></div>
+      <div class="form-grp">
+        <label>Performed by</label>
+
+        <div class="search-select">
+          <input id="po-f-performed" class="form-ctrl" placeholder="Type user name..." />
+          <div id="po-list" class="select-list"></div>
+        </div>
+      </div>
         <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-f-price" type="number" placeholder="0.00" readonly/></div>
       </div>
       <div class="form-row">

@@ -830,6 +830,11 @@ function savePO() {
   const eta   = document.getElementById("po-f-eta").value;
   const notes = document.getElementById("po-f-notes").value;
 
+  if (!selectState["po-f-performed"]) {
+    showToast("Select a valid user", "t-error");
+    return;
+  }
+
   fetch(`${API_URL}/api/po`, {
     method: "POST",
     headers: {
@@ -1038,12 +1043,12 @@ function saveVehicle() {
     return res.text();
   })
   .then(() => {
-    showToast("Vehicle added ✅", "t-success");
+    showToast("Vehicle added", "t-success");
     closeM("m-add-veh");
     renderVehicles();
   })
   .then(() => {
-    showToast("Vehicle added ✅", "t-success");
+    showToast("Vehicle added", "t-success");
 
     addLog(
       "CREATE",

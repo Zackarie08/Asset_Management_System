@@ -773,3 +773,36 @@ textarea.form-ctrl { resize: vertical; line-height: 1.5; }
    VEHICLE MODULE EXTRAS
 ═══════════════════════════════════════════ */
 .vehicle-type-icon { font-size: 20px; }
+
+
+/* ═══════════════════════════════════════════
+   DROP DOWNS
+═══════════════════════════════════════════ */
+.search-select {
+  position: relative;
+}
+
+.select-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.select-item {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.select-item:hover {
+  background: #ffffff;
+}
+
+.search-select .form-ctrl {
+  width: 100%;
+}

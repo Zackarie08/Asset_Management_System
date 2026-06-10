@@ -57,6 +57,12 @@ function saveInvItem() {
     showToast("Please fill all required fields", "t-error");
     return;
   }
+  
+  if (!selectState["inv-f-performed"]) {
+    showToast("Select a valid user", "t-error");
+    return;
+  }
+
 
   // ✅ CHECK MODE FIRST
   if (invEditId) {
@@ -114,7 +120,10 @@ function saveInvItem() {
 
 function withdrawItem(id, qty) {
 
-  
+  if (!selectState["wd-by"]) {
+    showToast("Select a valid user", "t-error");
+    return;
+  }
   fetch(`${API_URL}/api/inventory/withdraw`, {
     method: "POST",
     headers: {
@@ -124,10 +133,11 @@ function withdrawItem(id, qty) {
       id,
       qty,
       user_id: currentUser.user_id,         // ✅ ADD THIS
-      performed_by: document.getElementById("inv-f-performed").value      // ✅ ADD THIS
+      performed_by: document.getElementById("wd-by").value      // ✅ ADD THIS
     })
   })
   .then(() => {
+    showToast("Item withdrawn", "t-success");
     renderInventory();
   });
 }
@@ -137,6 +147,7 @@ function deleteItem(id) {
     method: "DELETE"
   })
   .then(() => {
+    showToast("Item deleted", "t-warning");
     renderInventory();
   });
 }
@@ -151,8 +162,9 @@ async function openWithdraw(id) {
   currentItemStock = item.current_quantity;
   document.getElementById('wd-item-name').textContent = item.item_name;
   document.getElementById('wd-current').textContent   = `${item.current_quantity} ${item.unit}`;
-  document.getElementById('wd-qty').value     = '';
-  document.getElementById('wd-by').value      = currentUser.name;
+  document.getElementById('wd-qty').value     = '';  
+  document.getElementById('wd-by').value = "";
+  selectState["wd-by"] = false; 
   document.getElementById('wd-remarks').value = '';
   openM('m-withdraw');
   loadUsersDropdown();
@@ -160,6 +172,16 @@ async function openWithdraw(id) {
 
 function doWithdraw() {
   const qty = parseInt(document.getElementById('wd-qty').value);
+
+  
+  const userVal = document.getElementById("wd-by").value;
+
+  // extra validation
+  if (!selectState["wd-by"] || !userVal) {
+    showToast("Select a valid user", "t-error");
+    return;
+  }
+
 
   // ✅ invalid input
   if (!qty || isNaN(qty)) {
@@ -334,15 +356,16 @@ function filterInventory(cat, btn) {
 }
 
 async function loadUsersDropdown() {
+
   const res = await fetch(`${API_URL}/api/auth/users`);
   const users = await res.json();
 
-  // ✅ target BOTH dropdowns
-  const selects = [
-    document.getElementById("inv-f-performed"),
-    document.getElementById("po-f-performed"),
-    document.getElementById("wd-by")
-  ];
+  const names = users.map(u => u.name);
+
+  makeSearchable("inv-f-performed", "inv-f-list", names);
+  makeSearchable("wd-by", "wd-list", names);
+  makeSearchable("po-f-performed", "po-list", names);
+
 
   selects.forEach(select => {
     if (!select) return;
@@ -353,7 +376,11 @@ async function loadUsersDropdown() {
       const opt = document.createElement("option");
       opt.value = u.name;
       opt.textContent = u.name;
-      select.appendChild(opt);
+      const names = users.map(u => u.name);
+
+      makeSearchable("inv-f-performed", "inv-f-list", names);
+      makeSearchable("wd-by", "wd-list", names);
+      makeSearchable("po-f-performed", "po-list", names);
     });
 
     select.value = currentUser.name; // default selection
