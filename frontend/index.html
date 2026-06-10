@@ -1308,6 +1308,56 @@
   </div>
 </div>
 
+<!-- Edit User -->
+<div class="modal-overlay" id="m-edit-user">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">✏️ Edit User</div>
+      <button class="modal-close" onclick="closeM('m-edit-user')">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="form-grp">
+        <label>Name *</label>
+        <input id="e-name" class="form-ctrl" />
+      </div>
+
+      <div class="form-grp">
+        <label>Email *</label>
+        <input id="e-email" class="form-ctrl" />
+      </div>
+
+      <div class="form-grp">
+        <label>Department *</label>
+          <select class="form-ctrl" id="e-dept">
+            <option value="">Select Department</option>
+            <option>Internal Organization</option>
+            <option>Chamber Services</option>
+            <option>Trade Promotion</option>
+            <option>Dual Education & Training</option>
+            <option>Government Affairs</option>
+            <option>Communications</option>
+          </select>
+      </div>
+
+      <div class="form-grp" id="e-role-wrap">
+        <label>Role *</label>
+        <select id="e-role" class="form-ctrl">
+          <option value="admin">Admin</option>
+          <option value="employee">Employee</option>
+        </select>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-edit-user')">Cancel</button>
+        <button class="btn btn-green" onclick="updateUser()">Save Changes</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-wrap" id="toast-wrap"></div>
 

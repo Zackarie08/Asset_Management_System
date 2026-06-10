@@ -1,7 +1,17 @@
 function buildSidebar() {
   const nav = document.getElementById('sb-nav');
   nav.innerHTML = '';
-  const items = currentUser.role === 'admin' ? ADMIN_NAV : ADMIN_NAV.filter(n => EMP_NAV.includes(n.id));
+  let items;
+
+  if (currentUser.role === "super_admin") {
+    // ✅ full access
+    items = ADMIN_NAV;
+
+  } else {
+    // ✅ admin + employee (NO users page)
+    items = ADMIN_NAV.filter(n => n.id !== "users")
+                    .filter(n => EMP_NAV.includes(n.id) || currentUser.role === "admin");
+  }
 
   items.forEach(item => {
     const div = document.createElement('div');
@@ -21,6 +31,12 @@ function navigate(page, navEl) {
   // ✅ remove active first
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+
+  if (page === "users" && currentUser.role !== "super_admin") {
+    showToast("Access denied", "t-error");
+    return;
+  }
+
 
   // ✅ auto highlight when refresh (no navEl)
   if (!navEl) {

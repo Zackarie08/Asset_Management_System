@@ -27,10 +27,13 @@ async function renderUsers() {
             Edit User
         </button>
 
-        <button class="btn btn-red btn-xs"
-          onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}')">
-          Delete User
-        </button>
+        ${u.role !== "super_admin"
+          ? `<button class="btn btn-red btn-xs"
+                onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')">
+                Delete User
+            </button>`
+          : `<span class="btn btn-muted btn-xs">Protected</span>`
+        }
       </td>
     `;
 
@@ -149,12 +152,17 @@ let deleteUserId = null;
 let deleteUserName = "";
 let deleteUserEmail = "";
 
-function deleteUser(id, name, email) {
+function deleteUser(id, name, email, role) {
+  if (role === "super_admin") {
+    showToast("Cannot delete super admin", "t-error");
+    return;
+  }
+
   deleteUserId = id;
   deleteUserName = name;
   deleteUserEmail = email;
 
-  openM("m-confirm-user-del"); 
+  openM("m-confirm-user-del");
 }
 
 
@@ -243,16 +251,66 @@ function editUser(id) {
       const u = data.find(x => x.user_id === id);
       if (!u) return;
 
-      userEditId = id;
+      editUserId = id;
 
-      document.getElementById("u-name").value = u.name;
-      document.getElementById("u-email").value = u.email;
-      document.getElementById("u-role").value = u.role;
-      document.getElementById("u-dept").value = u.department || "";
+      document.getElementById("e-name").value = u.name;
+      document.getElementById("e-email").value = u.email;
+      document.getElementById("e-dept").value = u.department || "";
+      document.getElementById("e-role").value = u.role;
 
-      // ❌ DO NOT TOUCH PASSWORD
-      document.getElementById("u-password").value = "";
+      // ✅ 🔥 SUPER ADMIN PROTECTION
+      if (u.role === "super_admin") {
+        document.getElementById("e-role").disabled = true;
 
-      openM("m-add-user");
+        showToast("Super admin role cannot be changed", "t-warning");
+      } else {
+        document.getElementById("e-role").disabled = false;
+      }
+
+      openM("m-edit-user");
     });
+}
+
+function updateUser() {
+  const name = document.getElementById("e-name").value;
+  const email = document.getElementById("e-email").value;
+  const department = document.getElementById("e-dept").value;
+  const role = document.getElementById("e-role").value;
+
+  if (!name || !email || !department || !role) {
+    showToast("Fill all required fields ❌", "t-error");
+    return;
+  }
+
+  fetch(`${API_URL}/api/auth/users/${editUserId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name,
+      email,
+      department,
+      role
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Update failed");
+
+    showToast("User updated", "t-success");
+
+    addLog(
+      "UPDATE",
+      "USER",
+      `Updated user: ${name} (${email})`,
+      email
+    );
+
+    closeM("m-edit-user");
+    renderUsers();
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error updating user", "t-error");
+  });
 }

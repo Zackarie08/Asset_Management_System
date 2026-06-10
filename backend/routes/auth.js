@@ -65,18 +65,21 @@ router.post("/users", async (req, res) => {
 });
 
 router.delete("/users/:id", async (req, res) => {
-  try {
-    await pool.query(
-      "DELETE FROM users WHERE user_id = $1",
-      [req.params.id]
-    );
+  const user = await pool.query(
+    "SELECT role FROM users WHERE user_id = $1",
+    [req.params.id]
+  );
 
-    res.sendStatus(200);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error deleting user");
+  if (user.rows[0]?.role === "super_admin") {
+    return res.status(403).send("Cannot delete super admin");
   }
+
+  await pool.query(
+    "DELETE FROM users WHERE user_id = $1",
+    [req.params.id]
+  );
+
+  res.sendStatus(200);
 });
 
 router.put("/users/reset-password/:id", async (req, res) => {
@@ -97,7 +100,16 @@ router.put("/users/reset-password/:id", async (req, res) => {
 });
 
 router.put("/users/:id", async (req, res) => {
-  const { name, email, role, department } = req.body;
+  const existing = await pool.query(
+    "SELECT role FROM users WHERE user_id=$1",
+    [req.params.id]
+  );
+
+  const isSuper = existing.rows[0]?.role === "super_admin";
+
+  if (isSuper && req.body.role !== "super_admin") {
+    return res.status(403).send("Cannot modify super admin role");
+  }
 
   await pool.query(
     `
@@ -105,9 +117,8 @@ router.put("/users/:id", async (req, res) => {
     SET name=$1, email=$2, role=$3, department=$4
     WHERE user_id=$5
     `,
-    [name, email, role, department, req.params.id]
+    [req.body.name, req.body.email, req.body.role, req.body.department, req.params.id]
   );
 
   res.sendStatus(200);
 });
-``
