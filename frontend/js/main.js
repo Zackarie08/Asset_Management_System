@@ -109,6 +109,11 @@ function setDPHeader(icon, iconBg, title, sub) {
 
 
 
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    OFFICE FURNITURE
 ────────────────────────────────────────────────────────────── */
@@ -351,6 +356,11 @@ function openAddFurniture() {
   openM('m-add-fur');
   loadFurLocations();
 }
+
+
+
+
+
 
 
 
@@ -646,6 +656,13 @@ function openAddIT() {
 
 
 
+
+
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    LAPTOPS
 ────────────────────────────────────────────────────────────── */
@@ -843,6 +860,11 @@ function deleteLaptop(id) {
   addLog('DELETE','Laptops',`Deleted laptop: "${lp.desc}" (${lp.assetNo})`,lp.assetNo);
   closeDP(); renderLaptops(); showToast('Laptop deleted','t-warning');
 }
+
+
+
+
+
 
 
 
@@ -1068,6 +1090,12 @@ function cancelOrder(id) {
     closeDP();
   });
 }
+
+
+
+
+
+
 
 
 
@@ -1542,6 +1570,11 @@ function confirmDeleteVehicle() {
 
 
 
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    GLOBE MOBILE PLANS
 ────────────────────────────────────────────────────────────── */
@@ -1840,6 +1873,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
+
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    M365 LICENSES
 ────────────────────────────────────────────────────────────── */
@@ -1954,6 +1993,11 @@ function deleteM365(id) {
 
 
 
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    SYSTEM LOGS
 ────────────────────────────────────────────────────────────── */
@@ -2008,6 +2052,11 @@ function clearLogs() {
   renderLogs();
   showToast('Logs cleared','t-warning');
 }
+
+
+
+
+
 
 
 
@@ -2096,6 +2145,11 @@ async function refreshDashboard() {
 
 
 
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    INIT
 ────────────────────────────────────────────────────────────── */
@@ -2165,6 +2219,11 @@ function initAllModules() {
     }
   });
 }
+
+
+
+
+
 
 
 

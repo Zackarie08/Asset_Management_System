@@ -10,6 +10,15 @@
 </head>
 <body>
 
+
+
+
+
+
+
+
+
+
 <!-- ══════════════════════════════════════════════════════════
      LOGIN SCREEN
 ══════════════════════════════════════════════════════════ -->
@@ -36,6 +45,17 @@
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
   </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
 
 <!-- ══════════════════════════════════════════════════════════
      APP SHELL
@@ -91,9 +111,23 @@
     </div>
   </header>
 
-  <!-- MAIN BODY -->
+
+
+
+
+
+
+
+
+  
+<!-- ══════════════════════════════════════════════════════════
+     MAIN BODY
+══════════════════════════════════════════════════════════ -->
+
   <div class="app-body" id="app-body">
     <div class="main-content">
+
+
 
       <!-- ════════════════ DASHBOARD ════════════════ -->
       <section class="page active" id="page-dashboard">
@@ -177,6 +211,8 @@
         </div>
       </section>
 
+
+
       <!-- ════════════════ INVENTORY MANAGEMENT ════════════════ -->
       <section class="page" id="page-inventory">
         <div class="pg-header">
@@ -219,6 +255,8 @@
         </div>
       </section>
 
+
+
       <!-- ════════════════ OFFICE FURNITURE ════════════════ -->
       <section class="page" id="page-furniture">
         <div class="pg-header">
@@ -244,6 +282,8 @@
           </div>
         </div>
       </section>
+
+
 
       <!-- ════════════════ IT SUPPLIES ════════════════ -->
       <section class="page" id="page-itsupplies">
@@ -274,6 +314,8 @@
         </div>
       </section>
 
+
+
       <!-- ════════════════ LAPTOPS ════════════════ -->
       <section class="page" id="page-laptops">
         <div class="pg-header">
@@ -300,6 +342,8 @@
         </div>
       </section>
 
+
+      
       <!-- ════════════════ PURCHASE ORDERS ════════════════ -->
       <section class="page" id="page-orders">
         <div class="pg-header">
@@ -328,6 +372,8 @@
           </div>
         </div>
       </section>
+
+
 
       <!-- ════════════════ VEHICLE MANAGEMENT ════════════════ -->
       <section class="page" id="page-vehicles">
@@ -362,6 +408,8 @@
         </div>
       </section>
 
+
+
       <!-- ════════════════ GLOBE MOBILE PLAN ════════════════ -->
       <section class="page" id="page-globe">
         <div class="pg-header">
@@ -390,6 +438,8 @@
           </div>
         </div>
       </section>
+
+
 
       <!-- ════════════════ M365 LICENSES ════════════════ -->
       <section class="page" id="page-m365">
@@ -420,6 +470,8 @@
         </div>
       </section>
 
+
+
       <!-- ════════════════ SYSTEM LOGS ════════════════ -->
       <section class="page" id="page-logs">
         <div class="pg-header">
@@ -448,6 +500,8 @@
           </div>
         </div>
       </section>
+
+
 
             <!-- ════════════════ USER MANAGEMENT ════════════════ -->
       <section class="page" id="page-users">
@@ -490,6 +544,8 @@
     </div><!-- end main-content -->
   </div><!-- end app-body -->
 
+
+
   <!-- ════════════════ DETAIL PANEL ════════════════ -->
   <aside class="detail-panel" id="detail-panel">
     <div class="dp-topbar">
@@ -531,6 +587,10 @@
 <!-- ══════════════════════════════════════════════════════════
      MODALS
 ══════════════════════════════════════════════════════════ -->
+
+
+
+<!-- ════════════════ INVENTORY MODALS ════════════════ -->
 
 <!-- Withdraw Inventory -->
 <div class="modal-overlay" id="m-withdraw">
@@ -696,6 +756,10 @@
   </div>
 </div>
 
+
+
+<!-- ════════════════ OFFICE FURNITURE MODULE ════════════════ -->
+
 <!-- Add / Edit Furniture -->
 <div class="modal-overlay" id="m-add-fur">
   <div class="modal">
@@ -756,6 +820,33 @@
     </div>
   </div>
 </div>
+
+<!-- Confirm Delete Furniture -->
+<div class="modal-overlay" id="m-confirm-fur-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Furniture</div>
+      <button onclick="closeM('m-confirm-fur-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete this furniture?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-fur-del')">
+          Cancel
+        </button>
+        <button class="btn btn-red" onclick="confirmDeleteFur()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ════════════════ IT SUPPLY MODULE ════════════════ -->
 
 <!-- Add IT Supply -->
 <div class="modal-overlay" id="m-add-it">
@@ -833,10 +924,38 @@
         <button class="btn btn-outline" onclick="closeM('m-add-it')">Cancel</button>
         <button class="btn btn-green" onclick="saveITSupply()">✅ Save</button>
       </div>
-
+      
     </div>
   </div>
 </div>
+
+<!-- Confirm Delete IT Supply -->
+<div class="modal-overlay" id="m-confirm-it-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete IT Supply</div>
+      <button onclick="closeM('m-confirm-it-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete this item?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-it-del')">
+          Cancel
+        </button>
+        <button class="btn btn-red" onclick="confirmDeleteIT()">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- ════════════════ LAPTOP MODULE ════════════════ -->
 
 <!-- Add Laptop -->
 <div class="modal-overlay" id="m-add-lp">
@@ -961,6 +1080,10 @@
   </div>
 </div>
 
+
+
+<!-- ════════════════ VEHICLE MODULE ════════════════ -->
+
 <!-- Add Vehicle -->
 <div class="modal-overlay" id="m-add-veh">
   <div class="modal">
@@ -1053,6 +1176,58 @@
   </div>
 </div>
 
+<!-- Update Odometer -->
+<div class="modal-overlay" id="m-update-odo">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📊 Update Odometer</div>
+      <button onclick="closeM('m-update-odo')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grp">
+        <label>New Odometer (KM)</label>
+        <input id="uo-km" type="number" class="form-ctrl">
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-update-odo')">Cancel</button>
+        <button class="btn btn-green" onclick="saveOdoUpdate()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Vehicle -->
+<div class="modal-overlay" id="m-confirm-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Confirm Delete</div>
+      <button onclick="closeM('m-confirm-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete this vehicle?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline"
+          onclick="closeM('m-confirm-del')">
+          Cancel
+        </button>
+
+        <button class="btn btn-red"
+          onclick="confirmDeleteVehicle()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ════════════════ GLOBE MOBILE PLAN MODULE ════════════════ -->
+
 <!-- Globe Mobile Plan Modal -->
 <div class="modal-overlay" id="m-add-globe">
   <div class="modal">
@@ -1118,6 +1293,33 @@
   </div>
 </div>
 
+<!-- Confirm Delete Globe Plan -->
+<div class="modal-overlay" id="m-confirm-globe-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Plan</div>
+      <button onclick="closeM('m-confirm-globe-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Delete this mobile plan?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-globe-del')">
+          Cancel
+        </button>
+        <button class="btn btn-red" onclick="confirmDeleteGlobe()">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ════════════════ M365 MODULE ════════════════ -->
+
 <!-- M365 License Modal -->
 <div class="modal-overlay" id="m-add-m365">
   <div class="modal">
@@ -1158,6 +1360,10 @@
     </div>
   </div>
 </div>
+
+
+
+<!-- ════════════════ USER MANAGEMENT MODULE ════════════════ -->
 
 <!-- Add User -->
 <div class="modal-overlay" id="m-add-user">
@@ -1311,103 +1517,6 @@
   </div>
 </div>
 
-<!-- Update Odometer -->
-<div class="modal-overlay" id="m-update-odo">
-  <div class="modal">
-    <div class="modal-hd">
-      <div class="modal-title">📊 Update Odometer</div>
-      <button onclick="closeM('m-update-odo')">✕</button>
-    </div>
-
-    <div class="modal-body">
-      <div class="form-grp">
-        <label>New Odometer (KM)</label>
-        <input id="uo-km" type="number" class="form-ctrl">
-      </div>
-
-      <div class="form-footer">
-        <button class="btn btn-outline" onclick="closeM('m-update-odo')">Cancel</button>
-        <button class="btn btn-green" onclick="saveOdoUpdate()">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Confirm Delete Vehicle -->
-<div class="modal-overlay" id="m-confirm-del">
-  <div class="modal">
-    <div class="modal-hd">
-      <div class="modal-title">⚠️ Confirm Delete</div>
-      <button onclick="closeM('m-confirm-del')">✕</button>
-    </div>
-
-    <div class="modal-body">
-      <p>Are you sure you want to delete this vehicle?</p>
-
-      <div class="form-footer">
-        <button class="btn btn-outline"
-          onclick="closeM('m-confirm-del')">
-          Cancel
-        </button>
-
-        <button class="btn btn-red"
-          onclick="confirmDeleteVehicle()">
-          🗑️ Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Confirm Delete User -->
-<div class="modal-overlay" id="m-confirm-user-del">
-  <div class="modal">
-    <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete User</div>
-      <button onclick="closeM('m-confirm-user-del')">✕</button>
-    </div>
-
-    <div class="modal-body">
-      <p>Are you sure you want to delete this user?</p>
-
-      <div class="form-footer">
-        <button class="btn btn-outline"
-          onclick="closeM('m-confirm-user-del')">
-          Cancel
-        </button>
-
-        <button class="btn btn-red"
-          onclick="confirmDeleteUser()">
-          🗑️ Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Confirm Delete Furniture -->
-<div class="modal-overlay" id="m-confirm-fur-del">
-  <div class="modal">
-    <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Furniture</div>
-      <button onclick="closeM('m-confirm-fur-del')">✕</button>
-    </div>
-
-    <div class="modal-body">
-      <p>Are you sure you want to delete this furniture?</p>
-
-      <div class="form-footer">
-        <button class="btn btn-outline" onclick="closeM('m-confirm-fur-del')">
-          Cancel
-        </button>
-        <button class="btn btn-red" onclick="confirmDeleteFur()">
-          🗑️ Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Edit User -->
 <div class="modal-overlay" id="m-edit-user">
   <div class="modal">
@@ -1458,52 +1567,34 @@
   </div>
 </div>
 
-<!-- Confirm Delete IT Supply -->
-<div class="modal-overlay" id="m-confirm-it-del">
+<!-- Confirm Delete User -->
+<div class="modal-overlay" id="m-confirm-user-del">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete IT Supply</div>
-      <button onclick="closeM('m-confirm-it-del')">✕</button>
+      <div class="modal-title">⚠️ Delete User</div>
+      <button onclick="closeM('m-confirm-user-del')">✕</button>
     </div>
 
     <div class="modal-body">
-      <p>Are you sure you want to delete this item?</p>
+      <p>Are you sure you want to delete this user?</p>
 
       <div class="form-footer">
-        <button class="btn btn-outline" onclick="closeM('m-confirm-it-del')">
+        <button class="btn btn-outline"
+          onclick="closeM('m-confirm-user-del')">
           Cancel
         </button>
-        <button class="btn btn-red" onclick="confirmDeleteIT()">
-          Delete
+
+        <button class="btn btn-red"
+          onclick="confirmDeleteUser()">
+          🗑️ Delete
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Confirm Delete Globe Plan -->
-<div class="modal-overlay" id="m-confirm-globe-del">
-  <div class="modal">
-    <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Plan</div>
-      <button onclick="closeM('m-confirm-globe-del')">✕</button>
-    </div>
 
-    <div class="modal-body">
-      <p>Delete this mobile plan?</p>
-
-      <div class="form-footer">
-        <button class="btn btn-outline" onclick="closeM('m-confirm-globe-del')">
-          Cancel
-        </button>
-        <button class="btn btn-red" onclick="confirmDeleteGlobe()">
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-``
+<!-- ════════════════ TOAST/OTHERS ════════════════ -->
 
 <!-- Toast -->
 <div class="toast-wrap" id="toast-wrap"></div>
