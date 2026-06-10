@@ -110,7 +110,7 @@ CREATE TABLE office_furniture (
 );
 
 -- =========================
--- IT SUPPLIES
+-- IT SUPPLIES ----- DONE
 -- =========================
 CREATE TABLE it_supplies (
   it_supplies_id SERIAL PRIMARY KEY,
@@ -172,7 +172,7 @@ CREATE TABLE laptop_maintenance (
 -- =========================
 CREATE TABLE globe_mobile_plan (
   plan_id SERIAL PRIMARY KEY,
-  employee_name TEXT,
+  user_id INT REFERENCES users(user_id),
   mobile_number TEXT,
   account_number TEXT,
   plan_name TEXT,

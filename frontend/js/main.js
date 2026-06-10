@@ -1545,46 +1545,57 @@ function confirmDeleteVehicle() {
 /* ──────────────────────────────────────────────────────────────
    GLOBE MOBILE PLANS
 ────────────────────────────────────────────────────────────── */
-let globePlans = [
-  { id:1, name:'Maria Alonzo',   num:'0917-123-4567', acct:'GLOBE-ACC-001', plan:'Globe Postpaid Plan 999', cost:999,  data:'50GB',  credit:1500, renew:'2026-06-01', status:'Active',   remarks:'Admin line.' },
-  { id:2, name:'Juan Reyes',     num:'0917-234-5678', acct:'GLOBE-ACC-002', plan:'Globe Postpaid Plan 799', cost:799,  data:'30GB',  credit:1000, renew:'2026-06-01', status:'Active',   remarks:'' },
-  { id:3, name:'Ana Cruz',       num:'0917-345-6789', acct:'GLOBE-ACC-003', plan:'Globe Postpaid Plan 599', cost:599,  data:'20GB',  credit:800,  renew:'2026-05-25', status:'Active',   remarks:'Renewal in 3 days.' },
-  { id:4, name:'Carlos Santos',  num:'0918-456-7890', acct:'GLOBE-ACC-004', plan:'Globe Postpaid Plan 999', cost:999,  data:'50GB',  credit:1500, renew:'2026-07-01', status:'Active',   remarks:'' },
-  { id:5, name:'Rosa Flores',    num:'0917-567-8901', acct:'GLOBE-ACC-005', plan:'Globe Postpaid Plan 399', cost:399,  data:'10GB',  credit:500,  renew:'2025-12-01', status:'For Renewal',remarks:'Lapsed. Contact Globe.' },
-];
-let globeId = 6;
 
-function renderGlobe() {
+async function renderGlobe() {
+  const res = await fetch(`${API_URL}/api/globe`);
+  const data = await res.json();
+
   const tbody = document.getElementById('globe-tbody');
   tbody.innerHTML = '';
+
   let renewSoon = 0;
-  const now = new Date(); now.setHours(0,0,0,0);
-  globePlans.forEach(g => {
-    const renewDate = new Date(g.renew);
-    const daysLeft  = Math.ceil((renewDate - now) / 86400000);
-    if (daysLeft <= 30 && g.status !== 'Inactive') renewSoon++;
-    const sCls = g.status==='Active'?'b-green':g.status==='For Renewal'?'b-red':'b-slate';
+  const today = new Date();
+
+  data.forEach(g => {
+    const renewDate = new Date(g.renewal_date);
+    const diffDays = (renewDate - today) / (1000 * 60 * 60 * 24);
+
+    if (diffDays <= 30 && g.status !== 'Inactive') {
+      renewSoon++;
+    }
+
+    const sCls =
+      g.status === 'Active' ? 'b-green' :
+      g.status === 'For Renewal' ? 'b-red' :
+      'b-slate';
+
     const tr = document.createElement('tr');
     tr.className = 'tr-clickable';
+
     tr.innerHTML = `
-      <td class="td-strong">${g.name}</td>
-      <td class="td-mono">${g.num}</td>
-      <td>${g.plan}</td>
-      <td>₱${g.cost.toLocaleString()}/mo</td>
-      <td class="td-mono">${g.renew}</td>
+      <td>${g.employee_name}</td>
+      <td>${g.mobile_number || '-'}</td>
+      <td>${g.plan_name || '-'}</td>
+      <td>₱${g.monthly_cost || 0}</td>
+      <td>${g.renewal_date || '-'}</td>
       <td>${badge(g.status, sCls)}</td>
       <td>
-        <div class="flex-gap">
-          <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editGlobe(${g.id})">✏️</button>
-          <button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteGlobe(${g.id})">🗑️</button>
-        </div>
-      </td>`;
-    tr.addEventListener('click', () => openDP('globe', g.id, tr));
+        <button onclick="event.stopPropagation(); editGlobe(${g.plan_id})">✏️</button>
+        <button onclick="event.stopPropagation(); deleteGlobe(${g.plan_id}, '${g.employee_name}')">🗑️</button>
+      </td>
+    `;
+
+    tr.addEventListener('click', () => {
+      openDP('globe', g.plan_id, tr);
+    });
+
     tbody.appendChild(tr);
   });
-  document.getElementById('globe-ct').textContent        = `${globePlans.length} plans`;
-  document.getElementById('globe-renew-ct').textContent  = `${renewSoon} renewing soon`;
+
+  document.getElementById('globe-ct').textContent = `${data.length} plans`;
+  document.getElementById('globe-renew-ct').textContent = `${renewSoon} renewing soon`;
 }
+
 
 function dpGlobe(id) {
   const g = globePlans.find(x => x.id === id);
@@ -1618,47 +1629,97 @@ function dpGlobe(id) {
 }
 
 function saveGlobe() {
-  const name   = document.getElementById('globe-f-name').value.trim();
-  const num    = document.getElementById('globe-f-num').value.trim()||'—';
-  const acct   = document.getElementById('globe-f-acct').value.trim()||'—';
-  const plan   = document.getElementById('globe-f-plan').value.trim()||'—';
-  const cost   = parseFloat(document.getElementById('globe-f-cost').value)||0;
-  const data   = document.getElementById('globe-f-data').value.trim()||'—';
-  const renew  = document.getElementById('globe-f-renew').value||'—';
-  const credit = parseFloat(document.getElementById('globe-f-credit').value)||0;
-  const remarks= document.getElementById('globe-f-remarks').value.trim();
-  if (!name) { showToast('Employee name required','t-error'); return; }
-  globePlans.push({ id:globeId++, name,num,acct,plan,cost,data,renew,credit,status:'Active',remarks });
-  closeM('m-add-globe');
-  clearForm(['globe-f-name','globe-f-num','globe-f-acct','globe-f-plan','globe-f-cost','globe-f-data','globe-f-renew','globe-f-credit','globe-f-remarks']);
-  addLog('CREATE','Globe Mobile Plans',`Added mobile plan for ${name}: ${plan}`,acct);
-  renderGlobe(); showToast(`Plan added for ${name}`,'t-success');
+
+  const userName = document.getElementById("globe-f-user").value;
+
+  if (!selectState["globe-f-user"]) {
+    showToast("Select valid user", "t-error");
+    return;
+  }
+
+  const payload = {
+    user_id: globeUserMap[userName],
+    mobile_number: document.getElementById("globe-f-num").value,
+    account_number: document.getElementById("globe-f-acct").value,
+    plan_name: document.getElementById("globe-f-plan").value,
+    data_allocation: document.getElementById("globe-f-data").value,
+    monthly_cost: document.getElementById("globe-f-cost").value,
+    credit_limit: document.getElementById("globe-f-credit").value,
+    renewal_date: document.getElementById("globe-f-renew").value,
+    status: "Active",
+    remarks: document.getElementById("globe-f-remarks").value
+  };
+
+  fetch(`${API_URL}/api/globe`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    showToast("Plan added", "t-success");
+    closeM("m-add-globe");
+    renderGlobe();
+  });
 }
 
-function editGlobe(id) {
-  const g = globePlans.find(x => x.id === id);
+async function editGlobe(id) {
+  const res = await fetch(`${API_URL}/api/globe`);
+  const data = await res.json();
+
+  const g = data.find(x => x.plan_id === id);
   if (!g) return;
-  document.getElementById('globe-f-name').value    = g.name;
-  document.getElementById('globe-f-num').value     = g.num;
-  document.getElementById('globe-f-acct').value    = g.acct;
-  document.getElementById('globe-f-plan').value    = g.plan;
-  document.getElementById('globe-f-cost').value    = g.cost;
-  document.getElementById('globe-f-data').value    = g.data;
-  document.getElementById('globe-f-renew').value   = g.renew;
-  document.getElementById('globe-f-credit').value  = g.credit;
-  document.getElementById('globe-f-remarks').value = g.remarks||'';
-  globePlans = globePlans.filter(x => x.id !== id);
+
+  globeEditId = id;
+
+  document.getElementById('globe-f-name').value    = g.employee_name;
+  document.getElementById('globe-f-num').value     = g.mobile_number;
+  document.getElementById('globe-f-acct').value    = g.account_number;
+  document.getElementById('globe-f-plan').value    = g.plan_name;
+  document.getElementById('globe-f-cost').value    = g.monthly_cost;
+  document.getElementById('globe-f-data').value    = g.data_allocation;
+  document.getElementById('globe-f-renew').value   = g.renewal_date || "";
+  document.getElementById('globe-f-credit').value  = g.credit_limit;
+  document.getElementById('globe-f-remarks').value = g.remarks || "";
+
   openM('m-add-globe');
 }
 
-function deleteGlobe(id) {
-  const g = globePlans.find(x => x.id === id);
-  if (!g || !confirm(`Delete plan for "${g.name}"?`)) return;
-  globePlans = globePlans.filter(x => x.id !== id);
-  addLog('DELETE','Globe Mobile Plans',`Deleted plan for ${g.name}`,g.acct);
-  closeDP(); renderGlobe(); showToast('Plan deleted','t-warning');
+function deleteGlobe(id, name) {
+  if (!confirm(`Delete plan for "${name}"?`)) return;
+
+  fetch(`${API_URL}/api/globe/${id}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    showToast("Plan deleted", "t-warning");
+    closeDP();
+    renderGlobe();
+  });
 }
 
+let globeUserMap = {};
+
+async function loadGlobeUsers() {
+  const res = await fetch(`${API_URL}/api/auth/users`);
+  const users = await res.json();
+
+  const names = users.map(u => u.name);
+
+  makeSearchable("globe-f-user", "globe-f-user-list", names);
+
+  globeUserMap = {};
+  users.forEach(u => {
+    globeUserMap[u.name] = u.user_id;
+  });
+}
+
+function openAddGlobe() {
+  globeEditId = null;
+  openM("m-add-globe");
+  loadGlobeUsers();
+}
 
 
 

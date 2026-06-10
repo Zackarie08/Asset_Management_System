@@ -101,7 +101,7 @@ function refreshPageActions(page) {
     },
     globe:      () => {
       const el = document.getElementById('globe-actions');
-      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-globe')">➕ Add Plan</button>`;
+      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddGlobe()">➕ Add Plan</button>`;
     },
     m365:       () => {
       const el = document.getElementById('m365-actions');
