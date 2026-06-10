@@ -364,46 +364,38 @@ function openAddFurniture() {
 /* ──────────────────────────────────────────────────────────────
    IT SUPPLIES
 ────────────────────────────────────────────────────────────── */
-let itItems = [
-  { id:1, name:'HP Toner CF280A',      serial:'TON-HP-280A',    qty:1,  reorder:3,  warranty:'2027-06-01', supplier:'HP Philippines',   contact:'hp-ph@support.com',  website:'https://hp.com',   remarks:'For HP LaserJet Pro 400.' },
-  { id:2, name:'Thermal Paper Rolls',  serial:'TPR-80MM-STD',   qty:2,  reorder:10, warranty:'N/A',        supplier:'PrintMart PH',     contact:'sales@printmart.ph', website:'',                 remarks:'POS receipt paper.' },
-  { id:3, name:'USB-C Cables 2m',      serial:'USB-C-2M-BLK',   qty:3,  reorder:5,  warranty:'N/A',        supplier:'TechHub Supplies',  contact:'orders@techhub.ph',  website:'',                 remarks:'' },
-  { id:4, name:'Network Switch 8-Port',serial:'TP-LINK-TL-SG108',qty:2,  reorder:1,  warranty:'2028-01-15', supplier:'TP-Link Philippines',contact:'ph@tp-link.com',    website:'https://tp-link.com',remarks:'Unmanaged gigabit switch.' },
-  { id:5, name:'Wireless Mouse M185',  serial:'LOG-M185-GRY',   qty:8,  reorder:3,  warranty:'2026-12-01', supplier:'Logitech PH',      contact:'ph@logitech.com',    website:'https://logitech.com',remarks:'USB nano receiver included.' },
-  { id:6, name:'HDMI Cable 3m',        serial:'HDMI-3M-BLK',    qty:12, reorder:5,  warranty:'N/A',        supplier:'CablePro Supplies', contact:'info@cablepro.ph',   website:'',                 remarks:'' },
-];
-let itId = 7;
 
-function renderITSupplies() {
-  const isAdmin =
-    currentUser.role === 'admin' ||
-    currentUser.role === 'super_admin';
-  const tbody = document.getElementById('it-tbody');
-  tbody.innerHTML = '';
-  let low = 0;
-  itItems.forEach(s => {
-    const isLow = s.qty <= s.reorder;
-    if (isLow) low++;
-    const tr = document.createElement('tr');
-    tr.className = 'tr-clickable' + (isLow ? ' tr-warn' : '');
+async function renderITSupplies() {
+  const res = await fetch(`${API_URL}/api/it-supplies`);
+  const data = await res.json();
+
+  const tbody = document.getElementById("it-tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(it => {
+    const tr = document.createElement("tr");
+
+    tr.className = "tr-clickable";
+
     tr.innerHTML = `
-      <td class="td-strong">${s.name}</td>
-      <td class="td-mono">${s.serial}</td>
-      <td>${s.qty}</td>
-      <td>${s.reorder}</td>
-      <td class="td-mono">${s.warranty}</td>
-      <td>${s.supplier}</td>
-      <td>${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}</td>
+      <td>${it.asset_name}</td>
+      <td>${it.serial_number || '-'}</td>
+      <td>${it.quantity}</td>
+      <td>${it.warranty_end_date || '-'}</td>
+      <td>${it.location_name || '-'}</td>
+      <td>${it.status || '-'}</td>
       <td>
-        ${isAdmin ? `<div class="flex-gap"><button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editIT(${s.id})">✏️</button><button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteIT(${s.id})">🗑️</button></div>` : '<span class="td-muted">View only</span>'}
-      </td>`;
-    tr.addEventListener('click', () => openDP('itsupply', s.id, tr));
+        <button onclick="event.stopPropagation(); editIT(${it.it_supplies_id})">✏️</button>
+        <button onclick="event.stopPropagation(); deleteIT(${it.it_supplies_id}, '${it.asset_name}')">🗑️</button>
+      </td>
+    `;
+
+    tr.addEventListener("click", () => {
+      openDP("itsupplies", it.it_supplies_id, tr);
+    });
+
     tbody.appendChild(tr);
   });
-  document.getElementById('it-total-ct').textContent = `${itItems.length} items`;
-  document.getElementById('it-low-ct').textContent   = `${low} low stock`;
-  const nb = document.getElementById('nb-it');
-  if (nb) { nb.textContent = low; nb.style.display = low ? '' : 'none'; }
 }
 
 function dpITSupply(id) {
@@ -462,22 +454,63 @@ function openCreatePOForIT(id) {
   openM('m-add-po');
 }
 
+let itEditId = null;
+
 function saveITSupply() {
-  const name     = document.getElementById('it-f-name').value.trim();
-  const serial   = document.getElementById('it-f-serial').value.trim()||'N/A';
-  const qty      = parseInt(document.getElementById('it-f-qty').value)||0;
-  const reorder  = parseInt(document.getElementById('it-f-reorder').value)||5;
-  const warranty = document.getElementById('it-f-warranty').value||'N/A';
-  const supplier = document.getElementById('it-f-supplier').value.trim()||'N/A';
-  const contact  = document.getElementById('it-f-contact').value.trim();
-  const website  = document.getElementById('it-f-website').value.trim();
-  const remarks  = document.getElementById('it-f-remarks').value.trim();
-  if (!name) { showToast('Asset name required','t-error'); return; }
-  itItems.push({ id:itId++, name,serial,qty,reorder,warranty,supplier,contact,website,remarks });
-  closeM('m-add-it');
-  clearForm(['it-f-name','it-f-serial','it-f-qty','it-f-reorder','it-f-warranty','it-f-supplier','it-f-contact','it-f-website','it-f-remarks']);
-  addLog('CREATE','IT Supplies',`Added IT supply: "${name}" (SN: ${serial})`,`IT-${itId-1}`);
-  renderITSupplies(); showToast(`"${name}" added`,'t-success');
+  const name = document.getElementById("it-f-name").value;
+  const serial = document.getElementById("it-f-serial").value;
+  const qty = document.getElementById("it-f-qty").value;
+  const date = document.getElementById("it-f-date").value;
+  const price = document.getElementById("it-f-price").value;
+  const warranty = document.getElementById("it-f-warranty").value;
+  const loc = document.getElementById("it-f-loc").value;
+  const status = document.getElementById("it-f-status").value;
+  const remarks = document.getElementById("it-f-remarks").value;
+
+  if (!name || !qty || !loc) {
+    showToast("Fill required fields", "t-error");
+    return;
+  }
+
+  const payload = {
+    asset_name: name,
+    serial_number: serial,
+    quantity: qty,
+    date_of_purchase: date,
+    price,
+    warranty_end_date: warranty,
+    location_id: loc,
+    status,
+    remarks
+  };
+
+  const url = itEditId
+    ? `${API_URL}/api/it-supplies/${itEditId}`
+    : `${API_URL}/api/it-supplies`;
+
+  const method = itEditId ? "PUT" : "POST";
+
+  fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed");
+
+    showToast(itEditId ? "Updated IT Supply" : "Added IT Supply", "t-success");
+
+    addLog(
+      itEditId ? "UPDATE" : "CREATE",
+      "IT SUPPLY",
+      `${itEditId ? "Updated IT Supply" : "Added IT Supply"} ${name}`,
+      name
+    );
+
+    itEditId = null;
+    closeM("m-add-it");
+    renderITSupplies();
+  });
 }
 
 function editIT(id) {
@@ -504,6 +537,26 @@ function deleteIT(id) {
   closeDP(); renderITSupplies(); showToast('IT supply deleted','t-warning');
 }
 
+async function loadITLocations() {
+  const res = await fetch(`${API_URL}/api/location`);
+  const data = await res.json();
+
+  const select = document.getElementById("it-f-loc");
+  select.innerHTML = "";
+
+  data.forEach(loc => {
+    const opt = document.createElement("option");
+    opt.value = loc.location_id;
+    opt.textContent = loc.location_name;
+    select.appendChild(opt);
+  });
+}
+
+function openAddIT() {
+  itEditId = null;
+  openM("m-add-it");
+  loadITLocations();
+}
 
 
 

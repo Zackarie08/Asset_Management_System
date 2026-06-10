@@ -41,3 +41,5 @@ app.use('/api/vehicle', vehicleRoutes);
 
 
 app.use("/api/furniture", require("./routes/furniture"));
+
+app.use("/api/it-supplies", require("./routes/itSupplies"));

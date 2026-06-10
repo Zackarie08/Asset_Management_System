@@ -741,31 +741,79 @@
 <div class="modal-overlay" id="m-add-it">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🖨️ Add IT Supply</div>
+      <div class="modal-title">🖨️ IT Supply</div>
       <button class="modal-close" onclick="closeM('m-add-it')">✕</button>
     </div>
+
     <div class="modal-body">
+
+      <!-- Row 1 -->
       <div class="form-row">
-        <div class="form-grp"><label>Asset Name *</label><input class="form-ctrl" id="it-f-name" placeholder="e.g. HP Toner CF280A"/></div>
-        <div class="form-grp"><label>Serial / Model *</label><input class="form-ctrl" id="it-f-serial" placeholder="SN or model no."/></div>
+        <div class="form-grp">
+          <label>Asset Name *</label>
+          <input class="form-ctrl" id="it-f-name" />
+        </div>
+
+        <div class="form-grp">
+          <label>Serial / Model</label>
+          <input class="form-ctrl" id="it-f-serial" />
+        </div>
       </div>
+
+      <!-- Row 2 -->
       <div class="form-row">
-        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="it-f-qty" type="number" min="0" placeholder="0"/></div>
-        <div class="form-grp"><label>Reorder Level</label><input class="form-ctrl" id="it-f-reorder" type="number" min="0" placeholder="5"/></div>
+        <div class="form-grp">
+          <label>Quantity *</label>
+          <input class="form-ctrl" id="it-f-qty" type="number" min="1"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Price (₱)</label>
+          <input class="form-ctrl" id="it-f-price" type="number"/>
+        </div>
       </div>
+
+      <!-- Row 3 -->
       <div class="form-row">
-        <div class="form-grp"><label>Warranty Expiry</label><input class="form-ctrl" id="it-f-warranty" type="date"/></div>
-        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="it-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp">
+          <label>Date Purchased</label>
+          <input class="form-ctrl" id="it-f-date" type="date"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Warranty End</label>
+          <input class="form-ctrl" id="it-f-warranty" type="date"/>
+        </div>
       </div>
+
+      <!-- Row 4 -->
       <div class="form-row">
-        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="it-f-contact" placeholder="email or phone"/></div>
-        <div class="form-grp"><label>Supplier Website</label><input class="form-ctrl" id="it-f-website" placeholder="https://..."/></div>
+        <div class="form-grp">
+          <label>Location *</label>
+          <select id="it-f-loc" class="form-ctrl"></select>
+        </div>
+
+        <div class="form-grp">
+          <label>Status</label>
+          <select id="it-f-status" class="form-ctrl">
+            <option>AVAILABLE</option>
+            <option>IN_USE</option>
+            <option>DAMAGED</option>
+          </select>
+        </div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="it-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
+
+      <!-- Remarks -->
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea id="it-f-remarks" class="form-ctrl"></textarea>
+      </div>
+
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-it')">Cancel</button>
-        <button class="btn btn-green" onclick="saveITSupply()">✅ Add Supply</button>
+        <button class="btn btn-green" onclick="saveITSupply()">✅ Save</button>
       </div>
+
     </div>
   </div>
 </div>
