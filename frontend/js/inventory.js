@@ -226,7 +226,9 @@ async function dpInventory(id) {
 
   const item = items.find(i => i.inventory_gen_id === id);
   if (!item) return;
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin =
+    currentUser.role === 'admin' ||
+    currentUser.role === 'super_admin';
   const isLow = item.current_quantity <= item.reorder_level;
   setDPHeader('📦','#eff6ff', item.item_name, item.category);
 

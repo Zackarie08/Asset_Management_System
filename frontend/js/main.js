@@ -375,7 +375,9 @@ let itItems = [
 let itId = 7;
 
 function renderITSupplies() {
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin =
+    currentUser.role === 'admin' ||
+    currentUser.role === 'super_admin';
   const tbody = document.getElementById('it-tbody');
   tbody.innerHTML = '';
   let low = 0;
@@ -407,7 +409,9 @@ function renderITSupplies() {
 function dpITSupply(id) {
   const s = itItems.find(x => x.id === id);
   if (!s) return;
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin =
+    currentUser.role === 'admin' ||
+    currentUser.role === 'super_admin';
   const isLow = s.qty <= s.reorder;
   const progress = Math.min(100, Math.round((s.qty/Math.max(s.reorder*2,1))*100));
   setDPHeader('🖨️', isLow ? '#fef2f2':'#eff6ff', s.name, 'IT Supply');
@@ -524,7 +528,9 @@ let lpId = 7;
 let currentLpId = null;
 
 function renderLaptops() {
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin =
+    currentUser.role === 'admin' ||
+    currentUser.role === 'super_admin';
   const tbody = document.getElementById('lp-tbody');
   tbody.innerHTML = '';
   let active = 0;
@@ -560,7 +566,9 @@ function renderLaptops() {
 function dpLaptop(id) {
   const lp = laptops.find(x => x.id === id);
   if (!lp) return;
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin =
+    currentUser.role === 'admin' ||
+    currentUser.role === 'super_admin';
   const statusColor = {Active:'#f0fdf4','For Repair':'#fef2f2',Disposed:'#f8fafc'}[lp.status]||'#f8fafc';
   const sCls = {Active:'b-green','For Repair':'b-red',Disposed:'b-slate'}[lp.status]||'b-slate';
   const mCls = lp.maint==='GOOD'?'b-green':lp.maint==='NEEDS REPAIR'?'b-red':'b-amber';

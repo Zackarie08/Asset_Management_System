@@ -97,7 +97,7 @@ CREATE TABLE vehicle_maintenance (
 );
 
 -- =========================
--- OFFICE FURNITURE
+-- OFFICE FURNITURE ----- DONE
 -- =========================
 CREATE TABLE office_furniture (
   office_furniture_id SERIAL PRIMARY KEY,

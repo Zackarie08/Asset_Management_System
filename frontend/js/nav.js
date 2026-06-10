@@ -65,7 +65,9 @@ function navigate(page, navEl) {
 
 
 function refreshPageActions(page) {
-  const isAdmin = currentUser.role === 'admin';
+    const isAdmin =
+      currentUser.role === 'admin' ||
+      currentUser.role === 'super_admin';
 
   const actions = {
     inventory:  () => {
