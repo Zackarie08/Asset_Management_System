@@ -1080,8 +1080,27 @@
         <div class="form-grp"><label>Data Allocation</label><input class="form-ctrl" id="globe-f-data" placeholder="e.g. 50GB"/></div>
       </div>
       <div class="form-row">
-        <div class="form-grp"><label>Renewal Date</label><input class="form-ctrl" id="globe-f-renew" type="date"/></div>
+        <div class="form-grp">
+          <label>Start Date</label>
+          <input id="globe-f-start" type="date" class="form-ctrl" />
+        </div>
+
+        <div class="form-grp">
+          <label>Renewal Date</label>
+          <input id="globe-f-renew" type="date" class="form-ctrl" />
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-grp"><label>Credit Limit (₱)</label><input class="form-ctrl" id="globe-f-credit" type="number" placeholder="0"/></div>
+        <div class="form-grp">
+          <label>Status</label>
+          <select id="globe-f-status" class="form-ctrl">
+            <option value="Active">Active</option>
+            <option value="For Renewal">For Renewal</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
       </div>
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="globe-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
       <div class="form-footer">

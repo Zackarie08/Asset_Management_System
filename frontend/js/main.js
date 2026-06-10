@@ -1633,6 +1633,7 @@ async function dpGlobe(id) {
         ${dpField("Monthly", g.monthly_cost ? '₱' + g.monthly_cost : '-')}
         ${dpField("Data", g.data_allocation || '-')}
         ${dpField("Credit Limit", g.credit_limit ? '₱' + g.credit_limit : '-')}
+        ${dpField("Start Date", g.start_date || '-')}
         ${dpField("Renewal", g.renewal_date || '-')}
       </div>
     </div>
@@ -1676,15 +1677,16 @@ function saveGlobe() {
 
   const payload = {
     user_id: globeUserMap[userName],
-    mobile_number: document.getElementById("globe-f-num").value,
-    account_number: document.getElementById("globe-f-acct").value,
-    plan_name: document.getElementById("globe-f-plan").value,
-    data_allocation: document.getElementById("globe-f-data").value,
-    monthly_cost: document.getElementById("globe-f-cost").value,
-    credit_limit: document.getElementById("globe-f-credit").value,
-    renewal_date: document.getElementById("globe-f-renew").value,
-    status: "Active",
-    remarks: document.getElementById("globe-f-remarks").value
+    mobile_number: document.getElementById('globe-f-num').value,
+    account_number: document.getElementById('globe-f-acct').value,
+    plan_name: document.getElementById('globe-f-plan').value,
+    data_allocation: document.getElementById('globe-f-data').value,
+    monthly_cost: document.getElementById('globe-f-cost').value,
+    credit_limit: document.getElementById('globe-f-credit').value,
+    start_date: document.getElementById('globe-f-start').value,
+    renewal_date: document.getElementById('globe-f-renew').value,
+    status: document.getElementById('globe-f-status').value, 
+    remarks: document.getElementById('globe-f-remarks').value
   };
 
   const url = globeEditId
@@ -1741,6 +1743,8 @@ async function editGlobe(id) {
   document.getElementById("globe-f-renew").value = g.renewal_date || "";
   document.getElementById("globe-f-credit").value = g.credit_limit || "";
   document.getElementById("globe-f-remarks").value = g.remarks || "";
+  document.getElementById("globe-f-start").value = g.start_date || "";
+  document.getElementById("globe-f-status").value = g.status || "Active"; 
 }
 
 let deleteGlobeId = null;
