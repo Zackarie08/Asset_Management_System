@@ -1669,9 +1669,26 @@ let globeEditId = null;
 
 function saveGlobe() {
   const userName = document.getElementById("globe-f-user").value;
+  const plan     = document.getElementById("globe-f-plan").value.trim();
+  const renew    = document.getElementById("globe-f-renew").value;
+
+  if (!userName || !mobile || !plan || !renew) {
+    showToast("Fill required fields", "t-error");
+    return;
+  }
 
   if (!selectState["globe-f-user"]) {
     showToast("Select valid user", "t-error");
+    return;
+  }
+
+  const mobile = document.getElementById("globe-f-num").value.trim();
+
+  // ✅ PH mobile format
+  const mobilePattern = /^09\d{2}-\d{3}-\d{4}$/;
+
+  if (mobile && !mobilePattern.test(mobile)) {
+    showToast("Invalid mobile format", "t-error");
     return;
   }
 
@@ -1796,6 +1813,24 @@ function openAddGlobe() {
   openM("m-add-globe");
   loadGlobeUsers();
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("globe-f-num");
+
+  if (!input) return;
+
+  input.addEventListener("input", (e) => {
+    let val = e.target.value.replace(/\D/g, ""); // numbers only
+
+    if (val.length > 4 && val.length <= 7) {
+      val = val.replace(/(\d{4})(\d+)/, "$1-$2");
+    } else if (val.length > 7) {
+      val = val.replace(/(\d{4})(\d{3})(\d+)/, "$1-$2-$3");
+    }
+
+    e.target.value = val;
+  });
+});
 
 
 
