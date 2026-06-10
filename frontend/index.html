@@ -690,7 +690,7 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Asset Name *</label>
-          <input class="form-ctrl" id="fur-f-name" placeholder="e.g. Office Chair"/>
+          <input class="form-ctrl" id="fur-f-name" placeholder="e.g. Office Chair" maxlength="50"/>
         </div>
 
         <div class="form-grp">
@@ -724,7 +724,7 @@
       <!-- Remarks -->
       <div class="form-grp">
         <label>Remarks</label>
-        <textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Optional notes..."></textarea>
+        <textarea class="form-ctrl" id="fur-f-remarks" rows="2" placeholder="Optional notes..." maxlength="255"></textarea>
       </div>
 
       <!-- Footer -->
@@ -751,12 +751,12 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Asset Name *</label>
-          <input class="form-ctrl" id="it-f-name" />
+          <input class="form-ctrl" id="it-f-name" maxlength="50" placeholder="e. g. Keyboard"/>
         </div>
 
         <div class="form-grp">
           <label>Serial / Model</label>
-          <input class="form-ctrl" id="it-f-serial" />
+          <input class="form-ctrl" id="it-f-serial" maxlength="50" placeholder="Serial number or model"/>
         </div>
       </div>
 
@@ -764,12 +764,12 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Quantity *</label>
-          <input class="form-ctrl" id="it-f-qty" type="number" min="1"/>
+          <input class="form-ctrl" id="it-f-qty" type="number" min="1" placeholder="1"/>
         </div>
 
         <div class="form-grp">
           <label>Price (₱)</label>
-          <input class="form-ctrl" id="it-f-price" type="number"/>
+          <input class="form-ctrl" id="it-f-price" type="number" placeholder="0.00"/>
         </div>
       </div>
 
@@ -796,9 +796,9 @@
         <div class="form-grp">
           <label>Status</label>
           <select id="it-f-status" class="form-ctrl">
-            <option>AVAILABLE</option>
-            <option>IN_USE</option>
-            <option>DAMAGED</option>
+            <option>Available</option>
+            <option>In Use</option>
+            <option>Damaged</option>
           </select>
         </div>
       </div>
@@ -806,7 +806,7 @@
       <!-- Remarks -->
       <div class="form-grp">
         <label>Remarks</label>
-        <textarea id="it-f-remarks" class="form-ctrl"></textarea>
+        <textarea id="it-f-remarks" class="form-ctrl" maxlength="255" placeholder="Optional notes..."></textarea>
       </div>
 
       <div class="form-footer">
@@ -1368,12 +1368,12 @@
 
       <div class="form-grp">
         <label>Name *</label>
-        <input id="e-name" class="form-ctrl" />
+        <input id="e-name" class="form-ctrl" maxlength="50"/>
       </div>
 
       <div class="form-grp">
         <label>Email *</label>
-        <input id="e-email" class="form-ctrl" />
+        <input id="e-email" class="form-ctrl" maxlength="50"/>
       </div>
 
       <div class="form-grp">
@@ -1402,6 +1402,29 @@
         <button class="btn btn-green" onclick="updateUser()">Save Changes</button>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete IT Supply -->
+<div class="modal-overlay" id="m-confirm-it-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete IT Supply</div>
+      <button onclick="closeM('m-confirm-it-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Are you sure you want to delete this item?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-it-del')">
+          Cancel
+        </button>
+        <button class="btn btn-red" onclick="confirmDeleteIT()">
+          Delete
+        </button>
+      </div>
     </div>
   </div>
 </div>

@@ -82,7 +82,7 @@ function refreshPageActions(page) {
     },
     itsupplies: () => {
       const el = document.getElementById('it-actions');
-      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-it')">➕ Add IT Supply</button>`;
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddIT()">➕ Add IT Supply</button>`;
       else el.innerHTML = '';
     },
     laptops:    () => {
@@ -113,13 +113,10 @@ function refreshPageActions(page) {
   if (page === "logs") {
     renderLogs();
   }
-  if (page === 'page-users') {
+  if (page === "users") {
     renderUsers();
   }
   if (page === "page-vehicles") {
-  renderVehicles();
-  if (page === "page-vehicles") {
-  renderVehicles();
-}
-}
+    renderVehicles();
+  }
 }

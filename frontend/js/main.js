@@ -74,7 +74,7 @@ function openDP(type, id, row) {
   const renderers = {
     inventory: dpInventory,
     furniture: dpFurniture,
-    itsupply:  dpITSupply,
+    itsupplies: dpITSupplies,
     laptop:    dpLaptop,
     order:     dpOrder,
     vehicle:   dpVehicle,
@@ -83,7 +83,6 @@ function openDP(type, id, row) {
     log:       dpLog,
   };
   if (renderers[type]) renderers[type](id);
-  if (type === "vehicle") dpVehicle(id);
   if (type === "vehicle") dpVehicle(id);
 }
 
@@ -361,6 +360,11 @@ function openAddFurniture() {
 
 
 
+
+
+
+
+
 /* ──────────────────────────────────────────────────────────────
    IT SUPPLIES
 ────────────────────────────────────────────────────────────── */
@@ -377,11 +381,34 @@ async function renderITSupplies() {
 
     tr.className = "tr-clickable";
 
+    const today = new Date();
+    let warrantyStatus = "OK";
+
+    if (it.warranty_end_date) {
+      const w = new Date(it.warranty_end_date);
+      const diffDays = (w - today) / (1000 * 60 * 60 * 24);
+
+      if (w < today) {
+        warrantyStatus = "EXPIRED";
+      } else if (diffDays < 30) {
+        warrantyStatus = "EXPIRING";
+      }
+    }
+
     tr.innerHTML = `
       <td>${it.asset_name}</td>
       <td>${it.serial_number || '-'}</td>
       <td>${it.quantity}</td>
-      <td>${it.warranty_end_date || '-'}</td>
+      <td>
+        ${it.warranty_end_date || '-'} <br/>
+        ${
+          warrantyStatus === "EXPIRED"
+            ? '<span class="badge b-red">Expired</span>'
+            : warrantyStatus === "EXPIRING"
+            ? '<span class="badge b-amber">Soon</span>'
+            : '<span class="badge b-green">OK</span>'
+        }
+      </td>
       <td>${it.location_name || '-'}</td>
       <td>${it.status || '-'}</td>
       <td>
@@ -398,60 +425,63 @@ async function renderITSupplies() {
   });
 }
 
-function dpITSupply(id) {
-  const s = itItems.find(x => x.id === id);
-  if (!s) return;
-  const isAdmin =
-    currentUser.role === 'admin' ||
-    currentUser.role === 'super_admin';
-  const isLow = s.qty <= s.reorder;
-  const progress = Math.min(100, Math.round((s.qty/Math.max(s.reorder*2,1))*100));
-  setDPHeader('🖨️', isLow ? '#fef2f2':'#eff6ff', s.name, 'IT Supply');
-  let html = `
-    ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Below reorder level. Contact supplier to replenish.</span></div>` : ''}
-    <div class="dp-status-row">${isLow?badge('LOW STOCK','b-red'):badge('OK','b-green')}<span class="dp-status-label">Qty: <strong>${s.qty}</strong> / Reorder at: <strong>${s.reorder}</strong></span></div>
-    <div class="prog-bar-wrap">
-      <div class="prog-bar-labels"><span>Stock Level</span><span>${s.qty} units</span></div>
-      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${isLow?'#ef4444':'#22c55e'}"></div></div>
-    </div>
+async function dpITSupplies(id) {
+  const res = await fetch(`${API_URL}/api/it-supplies`);
+  const data = await res.json();
+
+  const it = data.find(x => x.it_supplies_id === id);
+  if (!it) return;
+
+  setDPHeader('🖨️', '#eef2ff', it.asset_name, 'IT Supply');
+
+  const today = new Date();
+  let warrantyStatus = "OK";
+
+  if (it.warranty_end_date) {
+    const w = new Date(it.warranty_end_date);
+    const diffDays = (w - today) / (1000 * 60 * 60 * 24);
+
+    if (w < today) {
+      warrantyStatus = "EXPIRED";
+    } else if (diffDays < 30) {
+      warrantyStatus = "EXPIRING";
+    }
+  }
+
+  const html = `
     <div class="dp-section">
-      <div class="dp-section-hd">💻 Asset Details</div>
+      <div class="dp-section-hd">📦 Supply Details</div>
       <div class="dp-grid">
-        ${dpFieldFull('Asset Name',`<strong>${s.name}</strong>`)}
-        ${dpField('Serial / Model', s.serial, 'mono')}
-        ${dpField('Warranty Expiry', s.warranty, 'mono')}
-        ${dpField('Quantity', s.qty)}
-        ${dpField('Reorder Level', s.reorder)}
+        ${dpField("Asset Name", it.asset_name)}
+        ${dpField("Serial / Model", it.serial_number || '-')}
+        ${dpField("Quantity", it.quantity)}
+        ${dpField("Date Purchased", it.date_of_purchase || '-')}
+        ${dpField("Warranty",
+          (it.warranty_end_date || '-') + " (" + warrantyStatus + ")"
+        )}
+        ${dpField("Price", it.price ? '₱' + it.price : '-')}
+        ${dpField("Location", it.location_name || '-')}
+        ${dpField("Status", it.status || '-')}
+        ${dpField("Remarks", it.remarks || '-')}
       </div>
     </div>
+
     <div class="dp-section">
-      <div class="dp-section-hd">🏪 Supplier Information</div>
-      <div class="supplier-card">
-        <div class="sc-name">🏢 ${s.supplier}</div>
-        <div class="sc-note">Contact supplier to place replenishment order</div>
-        <span class="sc-link" onclick="showToast('Contacting ${s.supplier}…','t-info')">🔗 Visit Supplier</span>
+      <div class="dp-action-row">
+        <button class="btn btn-primary btn-sm"
+          onclick="editIT(${it.it_supplies_id})">
+          ✏️ Edit
+        </button>
+
+        <button class="btn btn-red btn-sm"
+          onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name}')">
+          🗑️ Delete
+        </button>
       </div>
-      <div class="dp-grid" style="margin-top:9px">
-        ${dpField('Contact', s.contact)}
-        ${dpField('Website', s.website || null)}
-      </div>
-      <div class="dp-alert info" style="margin-top:10px">📋 <span class="dp-alert-text">To restock: Contact supplier above, then create a Purchase Order in the PO module.</span></div>
     </div>
-    ${s.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes',s.remarks)}</div></div>` : ''}`;
+  `;
 
-  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-supplier btn-sm" onclick="showToast('Contacting ${s.supplier}…','t-info')">🔗 Supplier</button><button class="btn btn-primary btn-sm" onclick="openCreatePOForIT(${s.id})">📦 Create PO</button><button class="btn btn-outline btn-sm" onclick="editIT(${s.id})">✏️ Edit</button><button class="btn btn-red btn-sm" onclick="deleteIT(${s.id})">🗑️ Delete</button></div></div>`;
-  document.getElementById('dp-body').innerHTML = html;
-  document.getElementById('dp-footer').style.display = 'none';
-}
-
-function openCreatePOForIT(id) {
-  const s = itItems.find(x => x.id === id);
-  if (!s) return;
-  document.getElementById('po-f-item').value     = s.name;
-  document.getElementById('po-f-supplier').value = s.supplier||'';
-  document.getElementById('po-f-cat').value      = 'IT Supplies';
-  document.getElementById('po-f-date').value     = todayStr();
-  openM('m-add-po');
+  document.getElementById("dp-body").innerHTML = html;
 }
 
 let itEditId = null;
@@ -507,35 +537,86 @@ function saveITSupply() {
       name
     );
 
-    itEditId = null;
-    closeM("m-add-it");
-    renderITSupplies();
+  itEditId = null;
+  closeM("m-add-it");
+  renderITSupplies();
+
+  // ✅ REFRESH DETAIL PANEL (NO CLOSE)
+  if (dpCurrentType === "itsupplies") {
+    dpITSupplies(dpCurrentId);
+  }
   });
 }
 
-function editIT(id) {
-  const s = itItems.find(x => x.id === id);
-  if (!s) return;
-  document.getElementById('it-f-name').value     = s.name;
-  document.getElementById('it-f-serial').value   = s.serial;
-  document.getElementById('it-f-qty').value      = s.qty;
-  document.getElementById('it-f-reorder').value  = s.reorder;
-  document.getElementById('it-f-warranty').value = s.warranty !== 'N/A' ? s.warranty : '';
-  document.getElementById('it-f-supplier').value = s.supplier;
-  document.getElementById('it-f-contact').value  = s.contact||'';
-  document.getElementById('it-f-website').value  = s.website||'';
-  document.getElementById('it-f-remarks').value  = s.remarks||'';
-  itItems = itItems.filter(x => x.id !== id);
-  openM('m-add-it');
+async function editIT(id) {
+  const res = await fetch(`${API_URL}/api/it-supplies`);
+  const data = await res.json();
+
+  const it = data.find(x => x.it_supplies_id === id);
+  if (!it) return;
+
+  itEditId = id;
+
+  openM("m-add-it");
+  await loadITLocations();
+
+  document.getElementById("it-f-name").value = it.asset_name;
+  document.getElementById("it-f-serial").value = it.serial_number || "";
+  document.getElementById("it-f-qty").value = it.quantity;
+
+  let dateVal = "";
+  if (it.date_of_purchase) {
+    dateVal = new Date(it.date_of_purchase).toISOString().split("T")[0];
+  }
+  document.getElementById("it-f-date").value = dateVal;
+
+  document.getElementById("it-f-price").value = it.price || "";
+
+  let warrantyVal = "";
+  if (it.warranty_end_date) {
+    warrantyVal = new Date(it.warranty_end_date).toISOString().split("T")[0];
+  }
+  document.getElementById("it-f-warranty").value = warrantyVal;
+
+  document.getElementById("it-f-loc").value = it.location_id;
+  document.getElementById("it-f-status").value = it.status || "AVAILABLE";
+  document.getElementById("it-f-remarks").value = it.remarks || "";
+}
+``
+
+let deleteITId = null;
+let deleteITName = "";
+
+function deleteIT(id, name) {
+  deleteITId = id;
+  deleteITName = name;
+
+  openM("m-confirm-it-del"); // (make modal later)
 }
 
-function deleteIT(id) {
-  const s = itItems.find(x => x.id === id);
-  if (!s || !confirm(`Delete "${s.name}"?`)) return;
-  itItems = itItems.filter(x => x.id !== id);
-  addLog('DELETE','IT Supplies',`Deleted: "${s.name}"`,`IT-${id}`);
-  closeDP(); renderITSupplies(); showToast('IT supply deleted','t-warning');
+function confirmDeleteIT() {
+  fetch(`${API_URL}/api/it-supplies/${deleteITId}`, {
+    method: "DELETE"
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Delete failed");
+
+    showToast("IT Supply deleted ✅", "t-warning");
+
+    addLog(
+      "DELETE",
+      "IT SUPPLY",
+      `Deleted IT Supply: ${deleteITName}`,
+      deleteITName
+    );
+
+    closeM("m-confirm-it-del");
+    closeDP();
+    renderITSupplies();
+  })
+  .catch(err => console.error(err));
 }
+
 
 async function loadITLocations() {
   const res = await fetch(`${API_URL}/api/location`);
@@ -557,7 +638,6 @@ function openAddIT() {
   openM("m-add-it");
   loadITLocations();
 }
-
 
 
 
