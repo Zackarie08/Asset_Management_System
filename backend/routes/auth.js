@@ -95,3 +95,19 @@ router.put("/users/reset-password/:id", async (req, res) => {
     res.status(500).send("Error resetting password");
   }
 });
+
+router.put("/users/:id", async (req, res) => {
+  const { name, email, role, department } = req.body;
+
+  await pool.query(
+    `
+    UPDATE users
+    SET name=$1, email=$2, role=$3, department=$4
+    WHERE user_id=$5
+    `,
+    [name, email, role, department, req.params.id]
+  );
+
+  res.sendStatus(200);
+});
+``

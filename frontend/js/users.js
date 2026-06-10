@@ -1,4 +1,5 @@
 let resetUserEmail = "";
+let userEditId = null;
 
 async function renderUsers() {
   const res = await fetch(`${API_URL}/api/auth/users`);
@@ -21,9 +22,14 @@ async function renderUsers() {
             onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')">
             Reset Password
         </button>
+        <button class="btn btn-outline btn-xs"
+          onclick="editUser(${u.user_id})">
+            Edit User
+        </button>
+
         <button class="btn btn-red btn-xs"
-            onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}')">
-            Delete User
+          onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}')">
+          Delete User
         </button>
       </td>
     `;
@@ -39,8 +45,14 @@ function saveUser() {
   const role = document.getElementById("u-role").value;
   const department = document.getElementById("u-dept").value;
 
-  if (!name || !email || !role || !password || !department) {
+  if (!name || !email || !role || !department) {
     showToast("Please fill all required fields", "t-error");
+    return;
+  }
+
+  // ✅ password only required if ADD mode
+  if (!userEditId && (!password || password.length < 6)) {
+    showToast("Password must be at least 6 characters", "t-error");
     return;
   }
 
@@ -61,38 +73,76 @@ function saveUser() {
     return;
   }
 
-  fetch(`${API_URL}/api/auth/users`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      name,
-      email,
-      password,
-      role,
-      department
+  if (userEditId) {
+    // ✅ EDIT MODE
+    fetch(`${API_URL}/api/auth/users/${userEditId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        role,
+        department
+      })
     })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("Failed");
+    .then(res => {
+      if (!res.ok) throw new Error("Update failed");
 
-    showToast("User added ✅", "t-success");
+      showToast("User updated", "t-success");
 
-    addLog(
-      "CREATE",
-      "USER",
-      `Added user: ${name} (${email})`,
-      email
-    );
+      addLog(
+        "UPDATE",
+        "USER",
+        `Updated user: ${name} (${email})`,
+        email
+      );
 
-    closeM("m-add-user");
-    renderUsers();
-  })
-  .catch(err => {
-    console.error(err);
-    showToast("Error adding user ❌", "t-error");
-  });
+      userEditId = null;
+      closeM("m-add-user");
+      renderUsers();
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Error updating user", "t-error");
+    });
+
+  } else {
+    // ✅ ADD MODE (your current code)
+    fetch(`${API_URL}/api/auth/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role,
+        department
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed");
+
+      showToast("User added", "t-success");
+
+      addLog(
+        "CREATE",
+        "USER",
+        `Added user: ${name} (${email})`,
+        email
+      );
+
+      closeM("m-add-user");
+      renderUsers();
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Error adding user", "t-error");
+    });
+  }
 }
 
 let deleteUserId = null;
@@ -149,7 +199,7 @@ function confirmResetPassword() {
     })
   })
   .then(() => {
-    showToast("Password reset ✅", "t-success");
+    showToast("Password reset", "t-success");
     addLog(
       "UPDATE",
       "USER",
@@ -168,7 +218,7 @@ function confirmDeleteUser() {
   .then(res => {
     if (!res.ok) throw new Error("Delete failed");
 
-    showToast("User deleted ✅", "t-warning");
+    showToast("User deleted", "t-warning");
 
     addLog(
       "DELETE",
@@ -182,6 +232,27 @@ function confirmDeleteUser() {
   })
   .catch(err => {
     console.error(err);
-    showToast("Error deleting user ❌", "t-error");
+    showToast("Error deleting user", "t-error");
   });
+}
+
+function editUser(id) {
+  fetch(`${API_URL}/api/auth/users`)
+    .then(res => res.json())
+    .then(data => {
+      const u = data.find(x => x.user_id === id);
+      if (!u) return;
+
+      userEditId = id;
+
+      document.getElementById("u-name").value = u.name;
+      document.getElementById("u-email").value = u.email;
+      document.getElementById("u-role").value = u.role;
+      document.getElementById("u-dept").value = u.department || "";
+
+      // ❌ DO NOT TOUCH PASSWORD
+      document.getElementById("u-password").value = "";
+
+      openM("m-add-user");
+    });
 }

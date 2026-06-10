@@ -172,8 +172,6 @@ async function openWithdraw(id) {
 
 function doWithdraw() {
   const qty = parseInt(document.getElementById('wd-qty').value);
-
-  
   const userVal = document.getElementById("wd-by").value;
 
   // extra validation
@@ -181,7 +179,6 @@ function doWithdraw() {
     showToast("Select a valid user", "t-error");
     return;
   }
-
 
   // ✅ invalid input
   if (!qty || isNaN(qty)) {
