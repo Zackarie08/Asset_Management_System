@@ -168,7 +168,7 @@ CREATE TABLE laptop_maintenance (
 );
 
 -- =========================
--- GLOBE MOBILE PLAN
+-- GLOBE MOBILE PLAN ----- DONE
 -- =========================
 CREATE TABLE globe_mobile_plan (
   plan_id SERIAL PRIMARY KEY,
@@ -186,14 +186,13 @@ CREATE TABLE globe_mobile_plan (
 );
 
 -- =========================
--- M365 LICENSES
+-- M365 LICENSES ----- DONE
 -- =========================
 CREATE TABLE m365 (
   license_id SERIAL PRIMARY KEY,
   assigned_email TEXT,
   license_type TEXT,
   category TEXT,
-  supplier TEXT,
   license_cost NUMERIC(12,2),
   start_date DATE,
   expiry_date DATE,

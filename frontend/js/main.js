@@ -1656,6 +1656,7 @@ async function dpGlobe(id) {
         ${dpField("Employee", g.employee_name)}
         ${dpField("Mobile", g.mobile_number || '-')}
         ${dpField("Account", g.account_number || '-')}
+        ${dpField("Status", g.status || 'N/A')} 
       </div>
     </div>
 
@@ -1882,43 +1883,32 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ──────────────────────────────────────────────────────────────
    M365 LICENSES
 ────────────────────────────────────────────────────────────── */
-let m365Items = [
-  { id:1, email:'maria.alonzo@company.ph',  type:'Microsoft 365 Business Premium', cat:'Subscription', expiry:'2027-01-01', cost:1850, supplier:'Microsoft Direct', status:'Active',      remarks:'Admin account with full suite.' },
-  { id:2, email:'juan.reyes@company.ph',    type:'Microsoft 365 Business Standard', cat:'Subscription', expiry:'2027-01-01', cost:1200, supplier:'Microsoft Direct', status:'Active',      remarks:'' },
-  { id:3, email:'ana.cruz@company.ph',      type:'Microsoft 365 Business Basic',   cat:'Subscription', expiry:'2025-06-01', cost:550,  supplier:'CDRKing',         status:'Expired',     remarks:'Needs renewal.' },
-  { id:4, email:'carlos.santos@company.ph', type:'Microsoft 365 Apps',             cat:'Subscription', expiry:'2026-12-01', cost:950,  supplier:'Microsoft Direct', status:'Active',      remarks:'' },
-  { id:5, email:'rosa.flores@company.ph',   type:'Office 2021 (Perpetual)',        cat:'Perpetual',    expiry:'N/A',        cost:8000, supplier:'PC Express',      status:'Active',      remarks:'One-time purchase. No renewal.' },
-  { id:6, email:'temp.account@company.ph',  type:'Microsoft 365 Business Basic',   cat:'Trial',        expiry:'2026-03-01', cost:0,    supplier:'Microsoft Direct', status:'Not Renewed', remarks:'Trial expired.' },
-];
-let m365Id = 7;
 
-function renderM365() {
+async function renderM365() {
+  const res = await fetch(`${API_URL}/api/m365`);
+  const data = await res.json();
+
   const tbody = document.getElementById('m365-tbody');
-  tbody.innerHTML = '';
-  let expired = 0;
-  m365Items.forEach(m => {
-    const sCls = {Active:'b-green',Expired:'b-red','Not Renewed':'b-amber','No License':'b-slate'}[m.status]||'b-slate';
-    if (m.status==='Expired') expired++;
-    const tr = document.createElement('tr');
-    tr.className = 'tr-clickable' + (m.status==='Expired'?' tr-danger':'');
+  tbody.innerHTML = "";
+
+  data.forEach(m => {
+    const tr = document.createElement("tr");
+
     tr.innerHTML = `
-      <td class="td-mono">${m.email}</td>
-      <td>${m.type}</td>
-      <td>${badge(m.cat,'b-slate b-none')}</td>
-      <td class="td-mono">${m.expiry}</td>
-      <td>${m.cost?'₱'+m.cost.toLocaleString()+'/mo':'One-time'}</td>
-      <td>${badge(m.status, sCls)}</td>
+      <td>${m.assigned_email}</td>
+      <td>${m.license_type}</td>
+      <td>${m.category}</td>
+      <td>${m.expiry_date || '-'}</td>
+      <td>${m.license_cost || '-'}</td>
+      <td>${m.status || '-'}</td>
       <td>
-        <div class="flex-gap">
-          <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editM365(${m.id})">✏️</button>
-          <button class="btn btn-xs btn-red" onclick="event.stopPropagation();deleteM365(${m.id})">🗑️</button>
-        </div>
-      </td>`;
-    tr.addEventListener('click', () => openDP('m365', m.id, tr));
+        <button onclick="editM365(${m.license_id})">✏️</button>
+        <button onclick="deleteM365(${m.license_id})">🗑️</button>
+      </td>
+    `;
+
     tbody.appendChild(tr);
   });
-  document.getElementById('m365-ct').textContent    = `${m365Items.length} licenses`;
-  document.getElementById('m365-exp-ct').textContent = `${expired} expired`;
 }
 
 function dpM365(id) {
@@ -1946,20 +1936,51 @@ function dpM365(id) {
   document.getElementById('dp-footer').style.display = 'none';
 }
 
+let m365EditId = null;
+
 function saveM365() {
-  const email    = document.getElementById('m365-f-email').value.trim();
-  const type     = document.getElementById('m365-f-type').value;
-  const cat      = document.getElementById('m365-f-cat').value;
-  const expiry   = document.getElementById('m365-f-expiry').value||'N/A';
-  const cost     = parseFloat(document.getElementById('m365-f-cost').value)||0;
-  const supplier = document.getElementById('m365-f-supplier').value.trim()||'Microsoft';
-  const remarks  = document.getElementById('m365-f-remarks').value.trim();
-  if (!email) { showToast('Email required','t-error'); return; }
-  m365Items.push({ id:m365Id++, email,type,cat,expiry,cost,supplier,status:'Active',remarks });
-  closeM('m-add-m365');
-  clearForm(['m365-f-email','m365-f-expiry','m365-f-cost','m365-f-supplier','m365-f-remarks']);
-  addLog('CREATE','M365 Licenses',`Added M365 license for ${email}: ${type}`,email);
-  renderM365(); showToast(`License added for ${email}`,'t-success');
+  const email = document.getElementById('m365-f-email').value.trim();
+  const type = document.getElementById('m365-f-type').value;
+  const cat = document.getElementById('m365-f-cat').value;
+  const expiry = document.getElementById('m365-f-expiry').value;
+  const cost = parseFloat(document.getElementById('m365-f-cost').value) || 0;
+  const remarks = document.getElementById('m365-f-remarks').value;
+
+  if (!email || !type) {
+    showToast("Fill required fields", "t-error");
+    return;
+  }
+
+  const payload = {
+    assigned_email: email,
+    license_type: type,
+    category: cat,
+    license_cost: cost,
+    start_date: todayStr(),
+    expiry_date: expiry,
+    renewal_date: expiry,
+    status: "Active",
+    remarks
+  };
+
+  const url = m365EditId
+    ? `${API_URL}/api/m365/${m365EditId}`
+    : `${API_URL}/api/m365`;
+
+  const method = m365EditId ? "PUT" : "POST";
+
+  fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    showToast("Saved M365", "t-success");
+
+    m365EditId = null;
+    closeM("m-add-m365");
+    renderM365();
+  });
 }
 
 function editM365(id) {

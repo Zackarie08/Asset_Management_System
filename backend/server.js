@@ -45,3 +45,5 @@ app.use("/api/furniture", require("./routes/furniture"));
 app.use("/api/it-supplies", require("./routes/itSupplies"));
 
 app.use("/api/globe", require("./routes/globe"));
+
+app.use("/api/m365", require("./routes/m365"));

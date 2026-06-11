@@ -41,7 +41,11 @@ function badge(text, cls) { return `<span class="badge ${cls}">${text}</span>`; 
 function openM(id)  { document.getElementById(id).classList.add('open'); }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  o.addEventListener('click', e => {
+    if (e.target === o) {
+      e.stopPropagation();
+    }
+  });
 });
 
 function togglePassword(inputId, icon) {
