@@ -2,45 +2,225 @@ let currentItemStock = 0;
 
 async function renderInventory() {
   const res = await fetch(`${API_URL}/api/inventory`);
-  const items = await res.json();
+  const allItems = await res.json();
+
+  // ── Step 1: Search ──
+  let filtered = searchQuery
+    ? allItems.filter(item =>
+        item.item_name.toLowerCase().includes(searchQuery) ||
+        item.category.toLowerCase().includes(searchQuery) ||
+        (item.location_name && item.location_name.toLowerCase().includes(searchQuery))
+      )
+    : allItems;
+
+  // ── Step 2: Category filter ──
+  if (activeCategory !== 'all') {
+    filtered = filtered.filter(item => item.category === activeCategory);
+  }
+
+  // ── Step 3: Unit filter ──
+  if (activeUnit !== 'all') {
+    filtered = filtered.filter(item => item.unit === activeUnit);
+  }
+
+  // ── Step 4: Status filter ──
+  if (activeStatus === 'low') {
+    filtered = filtered.filter(item => item.current_quantity <= item.reorder_level);
+  } else if (activeStatus === 'ok') {
+    filtered = filtered.filter(item => item.current_quantity > item.reorder_level);
+  }
+
+  // ── Step 5: Sort — low stock floats to top, then A–Z within each group ──
+  filtered.sort((a, b) => {
+    const aLow = a.current_quantity <= a.reorder_level ? 0 : 1;
+    const bLow = b.current_quantity <= b.reorder_level ? 0 : 1;
+    if (aLow !== bLow) return aLow - bLow;
+    return a.item_name.localeCompare(b.item_name);
+  });
+
+  // ── Step 6: Pagination slice ──
+  const totalItems = filtered.length;
+  const start = (currentInvPage - 1) * itemsPerPage;
+  const paginated = filtered.slice(start, start + itemsPerPage);
 
   const tbody = document.getElementById("inv-tbody");
   tbody.innerHTML = "";
 
-  let low = 0;
+  const low = filtered.filter(item => item.current_quantity <= item.reorder_level).length;
 
-  items.forEach(item => {
+  paginated.forEach(item => {
     const isLow = item.current_quantity <= item.reorder_level;
 
-    if (isLow) low++;
-
-
     const tr = document.createElement("tr");
-    tr.className = 'tr-clickable';
+    tr.className = isLow ? "tr-clickable tr-warn" : "tr-clickable";
 
-    tr.addEventListener('click', () => {
-      openDP('inventory', item.inventory_gen_id, tr);
+    tr.addEventListener("click", () => {
+      openDP("inventory", item.inventory_gen_id, tr);
     });
-
 
     tr.innerHTML = `
       <td>${item.item_name}</td>
       <td>${item.category}</td>
       <td>${item.current_quantity}</td>
-      <td>${isLow ? "⚠️ LOW" : "OK"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${item.location_name || "-"}</td>
       <td>
-        <button onclick="event.stopPropagation(); openWithdraw(${item.inventory_gen_id})">➖</button>
-        <button onclick="event.stopPropagation(); deleteItem(${item.inventory_gen_id})">🗑️</button>
+        ${isLow
+          ? '<span class="badge b-red">⚠️ Low Stock</span>'
+          : '<span class="badge b-green">OK</span>'
+        }
+      </td>
+      <td>
+        <div class="flex-gap">
+          <button class="btn btn-xs btn-outline" title="Withdraw"
+            onclick="event.stopPropagation(); openWithdraw(${item.inventory_gen_id})">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button class="btn btn-xs btn-red" title="Delete"
+            onclick="event.stopPropagation(); deleteItem(${item.inventory_gen_id})">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+          </button>
+        </div>
       </td>
     `;
-    
-    tr.className = 'tr-clickable';
 
     tbody.appendChild(tr);
   });
 
-  document.getElementById("inv-low-ct").innerText =
-    low + " low stock";
+  document.getElementById("inv-low-ct").innerText = low + " low stock";
+  document.getElementById("inv-total-ct").innerText = totalItems + " items";
+
+  renderPagination(totalItems);
+}
+
+function renderPagination(totalItems) {
+  const container = document.getElementById("pagination-container");
+  if (!container) return;
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  container.innerHTML = "";
+
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement("div");
+  wrap.className = "pagination-wrap";
+
+  // Prev button
+  const prev = document.createElement("button");
+  prev.className = "btn btn-xs btn-outline pg-btn";
+  prev.textContent = "← Prev";
+  prev.disabled = currentInvPage === 1;
+  prev.onclick = () => {
+    if (currentInvPage > 1) {
+      currentInvPage--;
+      renderInventory();
+    }
+  };
+  wrap.appendChild(prev);
+
+  // Page number buttons
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.className = "btn btn-xs pg-btn " + (i === currentInvPage ? "btn-primary" : "btn-outline");
+    btn.textContent = i;
+    btn.onclick = () => {
+      currentInvPage = i;
+      renderInventory();
+    };
+    wrap.appendChild(btn);
+  }
+
+  // Next button
+  const next = document.createElement("button");
+  next.className = "btn btn-xs btn-outline pg-btn";
+  next.textContent = "Next →";
+  next.disabled = currentInvPage === totalPages;
+  next.onclick = () => {
+    if (currentInvPage < totalPages) {
+      currentInvPage++;
+      renderInventory();
+    }
+  };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
+async function exportInventory() {
+  const res = await fetch(`${API_URL}/api/inventory`);
+  const allItems = await res.json();
+
+  // ── Apply the same filter pipeline as renderInventory ──
+  let filtered = searchQuery
+    ? allItems.filter(item =>
+        item.item_name.toLowerCase().includes(searchQuery) ||
+        item.category.toLowerCase().includes(searchQuery) ||
+        (item.location_name && item.location_name.toLowerCase().includes(searchQuery))
+      )
+    : allItems;
+
+  if (activeCategory !== 'all') {
+    filtered = filtered.filter(item => item.category === activeCategory);
+  }
+
+  if (activeUnit !== 'all') {
+    filtered = filtered.filter(item => item.unit === activeUnit);
+  }
+
+  if (activeStatus === 'low') {
+    filtered = filtered.filter(item => item.current_quantity <= item.reorder_level);
+  } else if (activeStatus === 'ok') {
+    filtered = filtered.filter(item => item.current_quantity > item.reorder_level);
+  }
+
+  filtered.sort((a, b) => {
+    const aLow = a.current_quantity <= a.reorder_level ? 0 : 1;
+    const bLow = b.current_quantity <= b.reorder_level ? 0 : 1;
+    if (aLow !== bLow) return aLow - bLow;
+    return a.item_name.localeCompare(b.item_name);
+  });
+
+  // ── Build CSV ──
+  const headers = ["Item Name", "Category", "Quantity", "Unit", "Location", "Status"];
+
+  const rows = filtered.map(item => {
+    const status = item.current_quantity <= item.reorder_level ? "Low Stock" : "OK";
+    return [
+      `"${item.item_name}"`,
+      `"${item.category}"`,
+      item.current_quantity,
+      `"${item.unit || '-'}"`,
+      `"${item.location_name || '-'}"`,
+      `"${status}"`
+    ].join(",");
+  });
+
+  const csv = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+
+  // ── Trigger download ──
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `Inventory_Report_${date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast("Inventory exported successfully", "t-success");
 }
 
 function saveInvItem() {
@@ -344,18 +524,34 @@ async function deleteInv(id) {
 
 
 let invId = 13;
-let invFilter = 'all';
+let activeCategory = 'all';
+let activeUnit = 'all';
+let activeStatus = 'all';
+let searchQuery = '';
+let currentInvPage = 1;
+const itemsPerPage = 20;
 let invEditId = null;
 
 function filterInventory(cat, btn) {
-  invFilter = cat;
-  document.querySelectorAll('.cat-filter').forEach(b => { b.className = b.className.replace(' btn-primary','').replace('btn-outline','').trim(); b.className += ' btn-outline'; });
-  btn.className = btn.className.replace('btn-outline','btn-primary');
+  activeCategory = cat;
+  currentInvPage = 1;
+  document.querySelectorAll('.cat-filter').forEach(b => {
+    b.classList.remove('btn-primary');
+    b.classList.add('btn-outline');
+  });
+  btn.classList.remove('btn-outline');
+  btn.classList.add('btn-primary');
+  renderInventory();
+}
+
+function applyInvFilters() {
+  activeUnit   = document.getElementById('inv-filter-unit').value;
+  activeStatus = document.getElementById('inv-filter-status').value;
+  currentInvPage = 1;
   renderInventory();
 }
 
 async function loadUsersDropdown() {
-
   const res = await fetch(`${API_URL}/api/auth/users`);
   const users = await res.json();
 
@@ -364,26 +560,6 @@ async function loadUsersDropdown() {
   makeSearchable("inv-f-performed", "inv-f-list", names);
   makeSearchable("wd-by", "wd-list", names);
   makeSearchable("po-f-performed", "po-list", names);
-
-
-  selects.forEach(select => {
-    if (!select) return;
-
-    select.innerHTML = "";
-
-    users.forEach(u => {
-      const opt = document.createElement("option");
-      opt.value = u.name;
-      opt.textContent = u.name;
-      const names = users.map(u => u.name);
-
-      makeSearchable("inv-f-performed", "inv-f-list", names);
-      makeSearchable("wd-by", "wd-list", names);
-      makeSearchable("po-f-performed", "po-list", names);
-    });
-
-    select.value = currentUser.name; // default selection
-  });
 }
 
 
@@ -415,3 +591,15 @@ async function loadLocationDropdown() {
     });
   });
 }
+
+// ── Search Listener ──
+document.addEventListener("DOMContentLoaded", () => {
+  const searchInput = document.getElementById("inventory-search");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", () => {
+    searchQuery = searchInput.value.trim().toLowerCase();
+    currentInvPage = 1;
+    renderInventory();
+  });
+});

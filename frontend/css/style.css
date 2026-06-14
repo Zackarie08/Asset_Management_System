@@ -806,3 +806,28 @@ textarea.form-ctrl { resize: vertical; line-height: 1.5; }
 .search-select .form-ctrl {
   width: 100%;
 }
+
+/* ═══════════════════════════════════════════
+   PAGINATION INVENTORY MANAGEMENT
+═══════════════════════════════════════════ */
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════
+   INVENTORY FILTER ROW
+═══════════════════════════════════════════ */
+.inv-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}

@@ -224,14 +224,39 @@
         </div>
 
         <!-- Category filter tabs -->
-        <div class="flex-gap" style="margin-bottom:16px;flex-wrap:wrap;">
-          <button class="btn btn-primary btn-sm cat-filter active" onclick="filterInventory('all',this)">All</button>
-          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Office Supplies',this)">Office Supplies</button>
-          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Pantry Supplies',this)">Pantry Supplies</button>
-          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Company Event Supplies',this)">Event Supplies</button>
-          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Wine',this)">Wine</button>
-          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('First Aid Kit',this)">First Aid</button>
-          <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Medicine Kit',this)">Medicine Kit</button>
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm cat-filter" onclick="filterInventory('all',this)">All</button>
+            <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Office Supplies',this)">Office Supplies</button>
+            <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Pantry Supplies',this)">Pantry Supplies</button>
+            <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Company Event Supplies',this)">Event Supplies</button>
+            <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Wine',this)">Wine</button>
+            <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('First Aid Kit',this)">First Aid</button>
+            <button class="btn btn-outline btn-sm cat-filter" onclick="filterInventory('Medicine Kit',this)">Medicine Kit</button>
+          </div>
+          <div class="flex-gap" style="flex-shrink:0;">
+            <input
+              type="text"
+              id="inventory-search"
+              class="form-ctrl"
+              placeholder="🔍 Search items..."
+              style="font-size:12px;padding:5px 10px;width:180px;"
+            />
+            <select class="form-ctrl" id="inv-sort" onchange="applyInvFilters()" style="font-size:12px;padding:5px 10px;width:auto;">
+              <option value="az">Sort: A–Z</option>
+            </select>
+            <select class="form-ctrl" id="inv-filter-unit" onchange="applyInvFilters()" style="font-size:12px;padding:5px 10px;width:auto;">
+              <option value="all">Unit: All</option>
+              <option value="Piece">Piece</option>
+              <option value="Pack">Pack</option>
+              <option value="Roll">Roll</option>
+            </select>
+            <select class="form-ctrl" id="inv-filter-status" onchange="applyInvFilters()" style="font-size:12px;padding:5px 10px;width:auto;">
+              <option value="all">Status: All</option>
+              <option value="low">Low Stock</option>
+              <option value="ok">OK</option>
+            </select>
+          </div>
         </div>
 
         <div class="card">
@@ -240,7 +265,7 @@
             <div class="card-actions">
               <span class="badge b-red" id="inv-low-ct">0 low stock</span>
               <span class="badge b-slate" id="inv-total-ct">0 items</span>
-              <button class="btn btn-ghost btn-sm" onclick="showToast('Exported','t-success')">📥 Export</button>
+              <button class="btn btn-ghost btn-sm" onclick="exportInventory()">📥 Export</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -252,6 +277,8 @@
               <tbody id="inv-tbody"></tbody>
             </table>
           </div>
+          <!-- PAGINATION -->
+          <div id="pagination-container" style="padding: 12px 20px; border-top: 1.5px solid var(--slate-100);"></div>
         </div>
       </section>
 
