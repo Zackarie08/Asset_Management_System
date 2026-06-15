@@ -103,4 +103,26 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// ✅ GET LAPTOP HISTORY
+router.get("/:id/history", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        h.*,
+        u1.name AS previous_user_name,
+        u2.name AS new_user_name
+      FROM laptop_history h
+      LEFT JOIN users u1 ON h.previous_user_id = u1.user_id
+      LEFT JOIN users u2 ON h.new_user_id = u2.user_id
+      WHERE h.laptop_id = $1
+      ORDER BY h.date_changed DESC
+    `, [req.params.id]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching history");
+  }
+});
+
 module.exports = router;

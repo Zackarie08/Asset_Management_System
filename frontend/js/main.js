@@ -708,6 +708,14 @@ async function renderLaptops() {
 async function dpLaptop(id) {
   const res = await fetch(`${API_URL}/api/laptops`);
   const data = await res.json();
+  const histRes = await fetch(`${API_URL}/api/laptops/${id}/history`);
+  let history = [];
+
+  try {
+    history = await histRes.json();
+  } catch (e) {
+    console.error("History load failed", e);
+  }
 
   const lp = data.find(x => x.laptop_id === id);
   if (!lp) return;
@@ -719,6 +727,44 @@ async function dpLaptop(id) {
   }[lp.status] || 'b-slate';
 
   setDPHeader('💻', '#f0fdf4', lp.item_description, lp.asset_number);
+
+  let histHTML = "";
+
+  if (history.length) {
+    histHTML = `
+      <ul class="mh-list">
+        ${history.map(h => `
+          <li class="mh-item">
+            <div class="mh-dot good"></div>
+
+            <div>
+              <div class="mh-cond info">
+                ${h.previous_user_name || '—'} → ${h.new_user_name || '—'}
+              </div>
+
+              <div class="mh-date">
+                ${new Date(h.date_changed).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </div>
+
+              <div class="mh-remarks">
+                ${h.remarks || 'User assignment update'}
+              </div>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    `;
+  } else {
+    histHTML = `
+      <div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">
+        No assignment history yet.
+      </div>
+    `;
+  }
 
   const html = `
     <div class="dp-section">
@@ -745,6 +791,12 @@ async function dpLaptop(id) {
       <div class="dp-grid">
         ${dpField("Assigned To", lp.user_name || "Unassigned")}
       </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">📜 Assignment History</div>
+
+      ${histHTML}
     </div>
 
     <div class="dp-section">
