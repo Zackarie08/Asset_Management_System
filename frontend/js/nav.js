@@ -87,7 +87,7 @@ function refreshPageActions(page) {
     },
     laptops:    () => {
       const el = document.getElementById('lp-actions');
-      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-lp')">➕ Add Laptop</button>`;
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddLaptop()">➕ Add Laptop</button>`;
       else el.innerHTML = '';
     },
   orders: () => {

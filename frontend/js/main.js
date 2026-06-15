@@ -685,7 +685,7 @@ async function renderLaptops() {
     const tr = document.createElement('tr');
     tr.className = 'tr-clickable';
 
-    td.innerHTML = `
+    tr.innerHTML = `
       <td>${lp.asset_number}</td>
       <td>${lp.item_description}</td>
       <td>${lp.current_user_id || '—'}</td>
@@ -705,70 +705,76 @@ async function renderLaptops() {
   });
 }
 
-function dpLaptop(id) {
-  const lp = laptops.find(x => x.id === id);
+async function dpLaptop(id) {
+  const res = await fetch(`${API_URL}/api/laptops`);
+  const data = await res.json();
+
+  const lp = data.find(x => x.laptop_id === id);
   if (!lp) return;
-  const isAdmin =
-    currentUser.role === 'admin' ||
-    currentUser.role === 'super_admin';
-  const statusColor = {Active:'#f0fdf4','For Repair':'#fef2f2',Disposed:'#f8fafc'}[lp.status]||'#f8fafc';
-  const sCls = {Active:'b-green','For Repair':'b-red',Disposed:'b-slate'}[lp.status]||'b-slate';
-  const mCls = lp.maint==='GOOD'?'b-green':lp.maint==='NEEDS REPAIR'?'b-red':'b-amber';
 
-  // Lifecycle analysis
-  const boughtDate = new Date(lp.bought);
-  const ageYears   = Math.floor((new Date() - boughtDate) / (365.25*24*3600*1000));
-  const isMac      = lp.brand === 'Apple' && lp.price >= 70000;
-  const maxYears   = isMac ? 5 : 3;
-  const needsReplace = ageYears >= maxYears;
+  const sCls = {
+    Active: 'b-green',
+    'For Repair': 'b-red',
+    Disposed: 'b-slate'
+  }[lp.status] || 'b-slate';
 
-  setDPHeader('💻', statusColor, lp.desc, lp.assetNo);
+  setDPHeader('💻', '#f0fdf4', lp.item_description, lp.asset_number);
 
-  let histHTML = '';
-  if (lp.maintHistory && lp.maintHistory.length) {
-    histHTML = '<ul class="mh-list">' + lp.maintHistory.slice().reverse().map(m =>
-      `<li class="mh-item"><div class="mh-dot ${m.cond==='GOOD'?'good':'repair'}"></div><div><div class="mh-cond ${m.cond==='GOOD'?'good':'repair'}">${m.cond}</div><div class="mh-date">${m.date} · ${m.tech||'IT Team'}</div><div class="mh-remarks">${m.remarks||'—'}</div></div></li>`
-    ).join('') + '</ul>';
-  } else {
-    histHTML = '<div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">No maintenance records yet.</div>';
-  }
-
-  let html = `
-    ${lp.status==='For Repair' ? `<div class="dp-alert danger">🔴 <span class="dp-alert-text">Unit is FOR REPAIR. Check maintenance history below.</span></div>` : ''}
-    ${needsReplace ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Laptop is ${ageYears} years old — exceeds ${maxYears}-year replacement threshold${isMac?' (Mac >₱70k policy)':''}.</span></div>` : ''}
-    <div class="dp-status-row">${badge(lp.status,sCls)}<span class="dp-status-label">${ageYears} years old · ${isMac?'Mac lifecycle (5yr)':'Standard lifecycle (3yr)'}</span></div>
+  const html = `
+    <div class="dp-section">
+      <div class="dp-section-hd">💻 Device Info</div>
+      <div class="dp-grid">
+        ${dpField("Asset", lp.asset_number)}
+        ${dpField("Description", lp.item_description)}
+        ${dpField("Serial", lp.serial_number || '-')}
+        ${dpField("Category", lp.category)}
+        ${dpField("Price", lp.price ? '₱' + lp.price : '-')}
+      </div>
+    </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">💻 Device Information</div>
+      <div class="dp-section-hd">📅 Dates</div>
       <div class="dp-grid">
-        ${dpFieldFull('Description',`<strong>${lp.desc}</strong>`)}
-        ${dpField('Asset Number', lp.assetNo, 'mono')}
-        ${dpField('Serial Number', lp.serial, 'mono')}
-        ${dpField('Brand', lp.brand)}
-        ${dpField('Purchase Price', '₱'+lp.price.toLocaleString())}
-        ${dpField('Date Purchased', lp.bought, 'mono')}
-        ${dpField('Warranty Expiry', lp.warranty, 'mono')}
-        ${dpField('Age', ageYears+' year'+(ageYears!==1?'s':''))}
+        ${dpField("Purchased", lp.date_of_purchase || '-')}
+        ${dpField("Warranty", lp.warranty_end_date || '-')}
       </div>
     </div>
 
     <div class="dp-section">
       <div class="dp-section-hd">👤 Assignment</div>
       <div class="dp-grid">
-        ${dpField('Assigned To', lp.user)}
-        ${dpField('Department', lp.dept)}
+        ${dpField("User ID", lp.current_user_id || '-')}
       </div>
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">🔧 Maintenance · ${badge(lp.maint!=='—'?lp.maint:'No Record', lp.maint!=='—'?mCls:'b-slate')}</div>
-      <p style="font-size:11.5px;color:var(--slate-400);margin-bottom:10px">Maintenance scheduled every <strong>June & December</strong></p>
-      ${histHTML}
-    </div>`;
+      <div class="dp-section-hd">⚡ Actions</div>
 
-  if (isAdmin) html += `<div class="dp-section"><div class="dp-section-hd">⚡ Actions</div><div class="dp-action-row"><button class="btn btn-green btn-sm" onclick="openAssign(${lp.id})">👤 Assign User</button><button class="btn btn-primary btn-sm" onclick="openMaint(${lp.id})">🔧 Add Maintenance</button><button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.id})">🗑️ Delete</button></div></div>`;
-  document.getElementById('dp-body').innerHTML = html;
-  document.getElementById('dp-footer').style.display = 'none';
+      <div class="dp-action-row">
+
+        <button 
+          class="btn btn-green btn-sm"
+          onclick="openAssign(${lp.laptop_id})">
+          👤 Assign User
+        </button>
+
+        <button 
+          class="btn btn-primary btn-sm"
+          onclick="openMaint(${lp.laptop_id})">
+          🔧 Maintenance
+        </button>
+
+        <button 
+          class="btn btn-red btn-sm"
+          onclick="deleteLaptop(${lp.laptop_id})">
+          🗑️ Delete
+        </button>
+
+      </div>
+    </div>
+  `;
+
+  document.getElementById("dp-body").innerHTML = html;
 }
 
 function saveLaptop() {
@@ -782,7 +788,7 @@ function saveLaptop() {
     category: document.getElementById('lp-f-brand').value,
     price: document.getElementById('lp-f-price').value,
     current_user_id: null, 
-    current_location: null,
+    current_location: document.getElementById('lp-f-location').value || null,
     status: document.getElementById('lp-f-status').value,
     warranty_end_date: document.getElementById('lp-f-warranty').value,
     date_of_purchase: document.getElementById('lp-f-bought').value
@@ -799,12 +805,13 @@ function saveLaptop() {
     showToast("Laptop added ✅", "t-success");
   });
 }
-function openAssign(id) {
-  const lp = laptops.find(x => x.id === id);
-  if (!lp) return;
+
+async function openAssign(id) {
   currentLpId = id;
-  document.getElementById('assign-lp-name').textContent = lp.desc;
+
+  document.getElementById('assign-lp-name').textContent = "Laptop ID: " + id;
   document.getElementById('assign-user').value = '';
+
   openM('m-assign');
 }
 
@@ -821,21 +828,20 @@ function doAssign() {
     })
   })
   .then(() => {
-    showToast("Assigned ✅", "t-success");
+    showToast("Laptop Assigned", "t-success");
     renderLaptops();
   });
 }
 
 function openMaint(id) {
-  const lp = laptops.find(x => x.id === id);
-  if (!lp) return;
   currentLpId = id;
-  document.getElementById('maint-name').textContent = lp.desc;
-  document.getElementById('maint-sn').textContent   = lp.serial;
-  document.getElementById('maint-date').value       = todayStr();
-  document.getElementById('maint-tech').value       = currentUser.name;
-  document.getElementById('maint-cond').value       = 'GOOD';
-  document.getElementById('maint-remarks').value    = '';
+
+  document.getElementById('maint-name').textContent = "Laptop ID: " + id;
+  document.getElementById('maint-sn').textContent = "-";
+  document.getElementById('maint-date').value = todayStr();
+  document.getElementById('maint-cond').value = 'GOOD';
+  document.getElementById('maint-remarks').value = '';
+
   openM('m-maint');
 }
 
@@ -858,22 +864,77 @@ function saveMaintenance() {
     })
   })
   .then(() => {
-    showToast("Maintenance saved ✅", "t-success");
+    showToast("Laptop Maintenance saved", "t-success");
 
     closeM('m-maint');
     renderLaptops();
   });
 }
 
+let deleteLaptopId = null;
+
 function deleteLaptop(id) {
-  const lp = laptops.find(x => x.id === id);
-  if (!lp || !confirm(`Delete "${lp.desc}"?`)) return;
-  laptops = laptops.filter(x => x.id !== id);
-  addLog('DELETE','Laptops',`Deleted laptop: "${lp.desc}" (${lp.assetNo})`,lp.assetNo);
-  closeDP(); renderLaptops(); showToast('Laptop deleted','t-warning');
+  deleteLaptopId = id;
+  openM("m-confirm-lp-del");
+}
+
+function confirmDeleteLaptop() {
+  fetch(`${API_URL}/api/laptops/${deleteLaptopId}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    showToast("Laptop Deleted", "t-warning");
+
+    addLog("DELETE", "LAPTOP", "Deleted laptop", currentUser.name);
+
+    closeM("m-confirm-lp-del");
+    closeDP();
+    renderLaptops();
+  });
 }
 
 
+async function loadLocationsDropdown() {
+  const res = await fetch(`${API_URL}/api/location`);
+  const data = await res.json();
+
+  const select = document.getElementById("lp-f-location");
+  select.innerHTML = '<option value="">Select Location</option>';
+
+  data.forEach(loc => {
+    select.innerHTML += `<option value="${loc.location_id}">${loc.location_name}</option>`;
+  });
+}
+
+function openAddLaptop() {
+  openM("m-add-lp");
+  loadLocationsDropdown();
+}
+
+let userMap = {};
+
+async function loadAssignUsers() {
+  const res = await fetch(`${API_URL}/api/auth/users`);
+  const users = await res.json();
+
+  const names = users.map(u => u.name);
+
+  makeSearchable("assign-user", "assign-user-list", names);
+
+  userMap = {};
+  users.forEach(u => {
+    userMap[u.name] = u.user_id;
+  });
+}
+
+async function openAssign(id) {
+  currentLpId = id;
+
+  document.getElementById('assign-user').value = "";
+
+  openM('m-assign');
+  await loadAssignUsers();
+}
 
 
 

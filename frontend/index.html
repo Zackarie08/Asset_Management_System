@@ -1007,13 +1007,27 @@
       <button class="modal-close" onclick="closeM('m-add-lp')">✕</button>
     </div>
     <div class="modal-body">
+
       <div class="form-row">
-        <div class="form-grp"><label>Asset Number</label><input class="form-ctrl" id="lp-f-asset" placeholder="LPT-YYYY-###"/></div>
-        <div class="form-grp"><label>Brand / Description *</label><input class="form-ctrl" id="lp-f-desc" placeholder="e.g. Dell Latitude 5510"/></div>
+        <div class="form-grp">
+          <label>Asset Number</label>
+          <input class="form-ctrl" id="lp-f-asset" placeholder="LPT-YYYY-###"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Description *</label>
+          <input class="form-ctrl" id="lp-f-desc" placeholder="e.g. Dell Latitude 5510"/>
+        </div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>Serial Number</label><input class="form-ctrl" id="lp-f-serial" placeholder="Serial number"/></div>
-        <div class="form-grp"><label>Brand</label>
+        <div class="form-grp">
+          <label>Serial Number</label>
+          <input class="form-ctrl" id="lp-f-serial"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Category / Brand</label>
           <select class="form-ctrl" id="lp-f-brand">
             <option>Dell</option>
             <option>HP</option>
@@ -1026,38 +1040,51 @@
           </select>
         </div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>User Assigned</label><input class="form-ctrl" id="lp-f-user" placeholder="Name or Unassigned"/></div>
-        <div class="form-grp"><label>Department</label>
-          <select class="form-ctrl" id="lp-f-dept">
-            <option>IT Department</option>
-            <option>Finance</option>
-            <option>HR</option>
-            <option>Operations</option>
-            <option>Executive</option>
-            <option>Marketing</option>
-          </select>
+        <div class="form-grp">
+          <label>Location</label>
+          <select class="form-ctrl" id="lp-f-location" ></select>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-grp"><label>Status</label>
+
+        <div class="form-grp">
+          <label>Status</label>
           <select class="form-ctrl" id="lp-f-status">
-            <option>Active</option><option>For Repair</option><option>Disposed</option>
+            <option>Active</option>
+            <option>For Repair</option>
+            <option>Disposed</option>
           </select>
         </div>
-        <div class="form-grp"><label>Warranty Expiry</label><input class="form-ctrl" id="lp-f-warranty" type="date"/></div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>Purchase Price (₱)</label><input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/></div>
-        <div class="form-grp"><label>Date Purchased</label><input class="form-ctrl" id="lp-f-bought" type="date"/></div>
+        <div class="form-grp">
+          <label>Warranty Expiry</label>
+          <input class="form-ctrl" id="lp-f-warranty" type="date"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Date Purchased</label>
+          <input class="form-ctrl" id="lp-f-bought" type="date"/>
+        </div>
       </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Price (₱)</label>
+          <input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/>
+        </div>
+      </div>
+
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-lp')">Cancel</button>
         <button class="btn btn-green" onclick="saveLaptop()">✅ Add Laptop</button>
       </div>
+
     </div>
   </div>
 </div>
+
 
 <!-- Maintenance Record -->
 <div class="modal-overlay" id="m-maint">
@@ -1073,7 +1100,6 @@
       </div>
       <div class="form-row">
         <div class="form-grp"><label>Check Date *</label><input class="form-ctrl" id="maint-date" type="date"/></div>
-        <div class="form-grp"><label>Technician</label><input class="form-ctrl" id="maint-tech" placeholder="Technician name"/></div>
       </div>
       <div class="form-grp"><label>Condition</label>
         <select class="form-ctrl" id="maint-cond">
@@ -1103,20 +1129,33 @@
       <div style="background:var(--green-50);border:1.5px solid var(--green-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#166534">Laptop: <span id="assign-lp-name">—</span></div>
       </div>
-      <div class="form-grp"><label>Assign To *</label><input class="form-ctrl" id="assign-user" placeholder="Full name"/></div>
-      <div class="form-grp"><label>Department</label>
-        <select class="form-ctrl" id="assign-dept">
-          <option>IT Department</option>
-          <option>Finance</option>
-          <option>HR</option>
-          <option>Operations</option>
-          <option>Executive</option>
-          <option>Marketing</option>
-        </select>
+      <div class="form-grp"><label>Assign To *</label>
+      <div class="search-select">
+        <input id="assign-user" class="form-ctrl" placeholder="Select user..." />
+        <div id="assign-user-list" class="select-list"></div>
+      </div>
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-assign')">Cancel</button>
         <button class="btn btn-green" onclick="doAssign()">✅ Assign</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="m-confirm-lp-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Laptop</div>
+      <button onclick="closeM('m-confirm-lp-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Delete this laptop?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-lp-del')">Cancel</button>
+        <button class="btn btn-red" onclick="confirmDeleteLaptop()">Delete</button>
       </div>
     </div>
   </div>

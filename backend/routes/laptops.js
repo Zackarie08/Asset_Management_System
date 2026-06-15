@@ -63,4 +63,23 @@ router.delete("/:id", async (req, res) => {
   res.sendStatus(200);
 });
 
+// ✅ UPDATE LAPTOP (ASSIGN USER)
+router.put("/:id", async (req, res) => {
+  const { current_user_id } = req.body;
+
+  try {
+    await pool.query(
+      `UPDATE laptop 
+       SET current_user_id = $1
+       WHERE laptop_id = $2`,
+      [current_user_id, req.params.id]
+    );
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Update failed");
+  }
+});
+
 module.exports = router;
