@@ -126,7 +126,7 @@ CREATE TABLE it_supplies (
 );
 
 -- =========================
--- LAPTOP
+-- LAPTOP ----- DONE
 -- =========================
 CREATE TABLE laptop (
   laptop_id SERIAL PRIMARY KEY,
@@ -135,34 +135,33 @@ CREATE TABLE laptop (
   date_of_purchase DATE,
   warranty_end_date DATE,
   serial_number TEXT,
-  xero_asset_number TEXT,
   category TEXT,
   price NUMERIC(12,2),
-  current_user TEXT,
-  current_location INT REFERENCES location(location_id),
+  current_user_id INT REFERENCES users(user_id) ON DELETE SET NULL,
+  current_location INT REFERENCES location(location_id) ON DELETE SET NULL,
   status TEXT
 );
 
 -- =========================
--- LAPTOP HISTORY
+-- LAPTOP HISTORY ----- DONE
 -- =========================
 CREATE TABLE laptop_history (
   laptop_history_id SERIAL PRIMARY KEY,
-  laptop_id INT REFERENCES laptop(laptop_id),
-  previous_user TEXT,
-  new_user TEXT,
+  laptop_id INT REFERENCES laptop(laptop_id) ON DELETE CASCADE,
+  previous_user_id INT REFERENCES users(user_id),
+  new_user_id INT REFERENCES users(user_id),
   date_changed DATE,
   remarks TEXT
 );
 
 -- =========================
--- LAPTOP MAINTENANCE
+-- LAPTOP MAINTENANCE ----- DONE
 -- =========================
 CREATE TABLE laptop_maintenance (
   laptop_maintenance_id SERIAL PRIMARY KEY,
-  laptop_id INT REFERENCES laptop(laptop_id),
+  laptop_id INT REFERENCES laptop(laptop_id) ON DELETE CASCADE,
   check_date DATE,
-  status TEXT,
+  condition TEXT,
   remarks TEXT,
   user_id INT REFERENCES users(user_id)
 );

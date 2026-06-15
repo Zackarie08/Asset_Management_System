@@ -666,51 +666,43 @@ function openAddIT() {
 /* ──────────────────────────────────────────────────────────────
    LAPTOPS
 ────────────────────────────────────────────────────────────── */
-let laptops = [
-  { id:1, assetNo:'LPT-2024-001', desc:'Dell Latitude 5510',   serial:'DL5510-0023', brand:'Dell',   user:'Juan Reyes',    dept:'IT Department', status:'Active',    warranty:'2025-12-31', price:65000,  bought:'2022-01-15', maint:'NEEDS REPAIR', maintHistory:[{date:'2026-05-10',cond:'NEEDS REPAIR',tech:'IT Team',remarks:'Keyboard W,A,S,D unresponsive. For replacement.'},{date:'2026-03-01',cond:'GOOD',tech:'IT Team',remarks:'Thermal paste replaced. Fan cleaned.'}] },
-  { id:2, assetNo:'LPT-2024-002', desc:'HP ProBook 450 G8',    serial:'HP450-0008',  brand:'HP',     user:'Ana Cruz',      dept:'Finance',       status:'For Repair', warranty:'2026-06-30', price:58000,  bought:'2022-03-20', maint:'NEEDS REPAIR', maintHistory:[{date:'2026-05-15',cond:'NEEDS REPAIR',tech:'IT Team',remarks:'Battery bloated, replacement needed.'}] },
-  { id:3, assetNo:'LPT-2025-003', desc:'Lenovo ThinkPad E15',  serial:'LEN-E15-0031',brand:'Lenovo', user:'Unassigned',    dept:'IT Department', status:'Active',    warranty:'2027-03-15', price:52000,  bought:'2023-01-10', maint:'For Check',    maintHistory:[] },
-  { id:4, assetNo:'LPT-2025-004', desc:'MacBook Air M2 (2023)',serial:'MBA-M2-0012', brand:'Apple',  user:'Carlos Santos', dept:'Executive',     status:'Active',    warranty:'2027-09-01', price:85000,  bought:'2023-08-15', maint:'GOOD',         maintHistory:[{date:'2026-04-20',cond:'GOOD',tech:'IT Team',remarks:'Routine checkup. All systems functional.'}] },
-  { id:5, assetNo:'LPT-2023-005', desc:'Acer Aspire 5',        serial:'ACER-A5-0007',brand:'Acer',   user:'Rosa Flores',   dept:'HR',            status:'Active',    warranty:'2024-08-15', price:34000,  bought:'2021-06-01', maint:'GOOD',         maintHistory:[{date:'2026-02-14',cond:'GOOD',tech:'IT Team',remarks:'SSD upgraded to 512GB.'}] },
-  { id:6, assetNo:'LPT-2022-006', desc:'ASUS VivoBook 14',     serial:'ASUS-VB14-003',brand:'ASUS',  user:'—',             dept:'—',             status:'Disposed',  warranty:'2023-01-01', price:38000,  bought:'2020-05-15', maint:'—',            maintHistory:[{date:'2023-12-01',cond:'NEEDS REPAIR',tech:'IT Team',remarks:'Motherboard failure. Economically unviable to repair. Disposed.'}] },
-];
-let lpId = 7;
-let currentLpId = null;
 
-function renderLaptops() {
-  const isAdmin =
-    currentUser.role === 'admin' ||
-    currentUser.role === 'super_admin';
+async function renderLaptops() {
+  const res = await fetch(`${API_URL}/api/laptops`);
+  const data = await res.json();
+
   const tbody = document.getElementById('lp-tbody');
   tbody.innerHTML = '';
-  let active = 0;
-  laptops.forEach(lp => {
-    if (lp.status === 'Active') active++;
-    const sCls = {Active:'b-green','For Repair':'b-red',Disposed:'b-slate'}[lp.status]||'b-slate';
-    const mCls = lp.maint==='GOOD'?'b-green':lp.maint==='NEEDS REPAIR'?'b-red':'b-amber';
-    const isRepair = lp.status === 'For Repair';
+
+  data.forEach(lp => {
+
+    const sCls = {
+      Active: 'b-green',
+      'For Repair': 'b-red',
+      Disposed: 'b-slate'
+    }[lp.status] || 'b-slate';
+
     const tr = document.createElement('tr');
-    tr.className = 'tr-clickable' + (isRepair ? ' tr-warn' : '');
-    tr.innerHTML = `
-      <td class="td-mono">${lp.assetNo}</td>
-      <td class="td-strong">${lp.desc}</td>
-      <td>${lp.user}</td>
+    tr.className = 'tr-clickable';
+
+    td.innerHTML = `
+      <td>${lp.asset_number}</td>
+      <td>${lp.item_description}</td>
+      <td>${lp.current_user_id || '—'}</td>
       <td>${badge(lp.status, sCls)}</td>
-      <td class="td-mono">${lp.warranty}</td>
-      <td>${lp.maint !== '—' ? badge(lp.maint, mCls) : '<span class="td-muted">—</span>'}</td>
+      <td>${lp.warranty_end_date || '-'}</td>
+      <td>-</td>
       <td>
-        ${isAdmin ? `<div class="flex-gap">
-          <button class="btn btn-xs btn-primary" title="Assign User" onclick="event.stopPropagation();openAssign(${lp.id})">👤</button>
-          <button class="btn btn-xs btn-outline" title="Maintenance" onclick="event.stopPropagation();openMaint(${lp.id})">🔧</button>
-          <button class="btn btn-xs btn-red" title="Delete" onclick="event.stopPropagation();deleteLaptop(${lp.id})">🗑️</button>
-        </div>` : '<span class="td-muted">View only</span>'}
-      </td>`;
-    tr.addEventListener('click', () => openDP('laptop', lp.id, tr));
+        <button onclick="event.stopPropagation(); deleteLaptop(${lp.laptop_id})">🗑️</button>
+      </td>
+    `;
+
+    tr.addEventListener("click", () => {
+      openDP("laptop", lp.laptop_id, tr);
+    });
+
     tbody.appendChild(tr);
   });
-  document.getElementById('lp-ct').textContent    = `${laptops.length} units`;
-  document.getElementById('dc-laptops').textContent = active;
-  document.getElementById('dc-laptops-d').textContent = `${active} currently active`;
 }
 
 function dpLaptop(id) {
@@ -780,24 +772,33 @@ function dpLaptop(id) {
 }
 
 function saveLaptop() {
-  const assetNo = document.getElementById('lp-f-asset').value.trim() || `LPT-${new Date().getFullYear()}-${String(lpId).padStart(3,'0')}`;
-  const desc    = document.getElementById('lp-f-desc').value.trim();
-  const serial  = document.getElementById('lp-f-serial').value.trim()||'N/A';
-  const brand   = document.getElementById('lp-f-brand').value;
-  const user    = document.getElementById('lp-f-user').value.trim()||'Unassigned';
-  const dept    = document.getElementById('lp-f-dept').value;
-  const status  = document.getElementById('lp-f-status').value;
-  const warranty= document.getElementById('lp-f-warranty').value||'N/A';
-  const price   = parseFloat(document.getElementById('lp-f-price').value)||0;
-  const bought  = document.getElementById('lp-f-bought').value||todayStr();
-  if (!desc) { showToast('Description required','t-error'); return; }
-  laptops.push({ id:lpId++, assetNo,desc,serial,brand,user,dept,status,warranty,price,bought,maint:'For Check',maintHistory:[] });
-  closeM('m-add-lp');
-  clearForm(['lp-f-asset','lp-f-desc','lp-f-serial','lp-f-user','lp-f-warranty','lp-f-price','lp-f-bought']);
-  addLog('CREATE','Laptops',`Added laptop: "${desc}" (SN: ${serial}) → ${user}`,assetNo);
-  renderLaptops(); showToast(`"${desc}" added`,'t-success');
-}
+  const desc = document.getElementById('lp-f-desc').value;
+  if (!desc) return;
 
+  const payload = {
+    asset_number: document.getElementById('lp-f-asset').value,
+    item_description: desc,
+    serial_number: document.getElementById('lp-f-serial').value,
+    category: document.getElementById('lp-f-brand').value,
+    price: document.getElementById('lp-f-price').value,
+    current_user_id: null, 
+    current_location: null,
+    status: document.getElementById('lp-f-status').value,
+    warranty_end_date: document.getElementById('lp-f-warranty').value,
+    date_of_purchase: document.getElementById('lp-f-bought').value
+  };
+
+  fetch(`${API_URL}/api/laptops`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    closeM('m-add-lp');
+    renderLaptops();
+    showToast("Laptop added ✅", "t-success");
+  });
+}
 function openAssign(id) {
   const lp = laptops.find(x => x.id === id);
   if (!lp) return;
@@ -808,18 +809,21 @@ function openAssign(id) {
 }
 
 function doAssign() {
-  const lp = laptops.find(x => x.id === currentLpId);
-  if (!lp) return;
-  const name = document.getElementById('assign-user').value.trim();
-  const dept = document.getElementById('assign-dept').value;
-  if (!name) { showToast('Enter a name','t-error'); return; }
-  const old = lp.user;
-  lp.user = name; lp.dept = dept;
-  closeM('m-assign');
-  addLog('UPDATE','Laptops',`Reassigned "${lp.desc}" from ${old} to ${name} (${dept})`,lp.assetNo);
-  renderLaptops();
-  if (dpOpen && dpCurrentType==='laptop' && dpCurrentId===lp.id) dpLaptop(lp.id);
-  showToast(`Assigned to ${name}`,'t-success');
+  const userName = document.getElementById("assign-user").value;
+
+  const user_id = userMap[userName]; 
+
+  fetch(`${API_URL}/api/laptops/${currentLpId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      current_user_id: user_id
+    })
+  })
+  .then(() => {
+    showToast("Assigned ✅", "t-success");
+    renderLaptops();
+  });
 }
 
 function openMaint(id) {
@@ -836,21 +840,29 @@ function openMaint(id) {
 }
 
 function saveMaintenance() {
-  const lp = laptops.find(x => x.id === currentLpId);
-  if (!lp) return;
-  const cond    = document.getElementById('maint-cond').value;
-  const date    = document.getElementById('maint-date').value;
-  const tech    = document.getElementById('maint-tech').value.trim();
-  const remarks = document.getElementById('maint-remarks').value.trim();
-  if (!lp.maintHistory) lp.maintHistory = [];
-  lp.maintHistory.push({ date, cond, tech, remarks });
-  lp.maint  = cond;
-  lp.status = cond==='GOOD' ? 'Active' : 'For Repair';
-  closeM('m-maint');
-  addLog('UPDATE','Laptops',`Maintenance record: "${lp.desc}" → ${cond}. ${remarks}`,lp.assetNo);
-  renderLaptops();
-  if (dpOpen && dpCurrentType==='laptop' && dpCurrentId===lp.id) dpLaptop(lp.id);
-  showToast(`Maintenance saved: ${cond}`, cond==='GOOD'?'t-success':'t-warning');
+  const cond = document.getElementById('maint-cond').value;
+  const date = document.getElementById('maint-date').value;
+  const remarks = document.getElementById('maint-remarks').value;
+
+  fetch(`${API_URL}/api/laptop-maintenance`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      laptop_id: currentLpId,
+      check_date: date,
+      condition: cond,
+      remarks,
+      user_id: currentUser.id
+    })
+  })
+  .then(() => {
+    showToast("Maintenance saved ✅", "t-success");
+
+    closeM('m-maint');
+    renderLaptops();
+  });
 }
 
 function deleteLaptop(id) {
