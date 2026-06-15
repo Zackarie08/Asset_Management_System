@@ -4,7 +4,7 @@ const pool = require("../db");
 
 // GET
 router.get("/", async (req, res) => {
-  const result = await pool.query("SELECT * FROM laptop");
+  const result = await pool.query("SELECT l.*, u.name AS user_name FROM laptop l LEFT JOIN users u ON l.current_user_id = u.user_id ORDER BY l.laptop_id DESC");
   res.json(result.rows);
 });
 
@@ -68,12 +68,33 @@ router.put("/:id", async (req, res) => {
   const { current_user_id } = req.body;
 
   try {
+    // ✅ get previous user
+    const old = await pool.query(
+      "SELECT current_user_id FROM laptop WHERE laptop_id=$1",
+      [req.params.id]
+    );
+
+    const previous_user = old.rows[0].current_user_id;
+
+    // ✅ update laptop
     await pool.query(
-      `UPDATE laptop 
-       SET current_user_id = $1
-       WHERE laptop_id = $2`,
+      "UPDATE laptop SET current_user_id=$1 WHERE laptop_id=$2",
       [current_user_id, req.params.id]
     );
+
+    // ✅ save history
+    await pool.query(`
+      INSERT INTO laptop_history (
+        laptop_id,
+        previous_user_id,
+        new_user_id,
+        date_changed
+      ) VALUES ($1,$2,$3,NOW())
+    `, [
+      req.params.id,
+      previous_user,
+      current_user_id
+    ]);
 
     res.sendStatus(200);
   } catch (err) {

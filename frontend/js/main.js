@@ -743,7 +743,7 @@ async function dpLaptop(id) {
     <div class="dp-section">
       <div class="dp-section-hd">👤 Assignment</div>
       <div class="dp-grid">
-        ${dpField("User ID", lp.current_user_id || '-')}
+        ${dpField("Assigned To", lp.user_name || "Unassigned")}
       </div>
     </div>
 
@@ -802,7 +802,7 @@ function saveLaptop() {
   .then(() => {
     closeM('m-add-lp');
     renderLaptops();
-    showToast("Laptop added ✅", "t-success");
+    showToast("Laptop added", "t-success");
   });
 }
 
@@ -829,7 +829,20 @@ function doAssign() {
   })
   .then(() => {
     showToast("Laptop Assigned", "t-success");
+
+    addLog(
+      "UPDATE",
+      "LAPTOP",
+      "Assigned laptop to " + userName,
+      currentLpId
+    );
+
+    closeM('m-assign');
     renderLaptops();
+
+    if (dpOpen && dpCurrentType === "laptop") {
+      dpLaptop(dpCurrentId);
+    }
   });
 }
 
@@ -850,7 +863,7 @@ function saveMaintenance() {
   const date = document.getElementById('maint-date').value;
   const remarks = document.getElementById('maint-remarks').value;
 
-  fetch(`${API_URL}/api/laptop-maintenance`, {
+  fetch(`${API_URL}/api/laptopMaintenance`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
