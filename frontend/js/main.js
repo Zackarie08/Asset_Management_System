@@ -706,19 +706,34 @@ async function renderLaptops() {
 }
 
 async function dpLaptop(id) {
+
+  const alertMsg = getMaintenanceAlert();
+
   const res = await fetch(`${API_URL}/api/laptops`);
   const data = await res.json();
-  const histRes = await fetch(`${API_URL}/api/laptops/${id}/history`);
-  let history = [];
 
+  const histRes = await fetch(`${API_URL}/api/laptops/${id}/history`);
+
+  let history = [];
   try {
     history = await histRes.json();
   } catch (e) {
     console.error("History load failed", e);
   }
 
+  // ✅ FIRST get laptop
   const lp = data.find(x => x.laptop_id === id);
   if (!lp) return;
+
+  // ✅ NOW safe gamitin lp
+  const purchaseDate = new Date(lp.date_of_purchase);
+  const ageYears = Math.floor((new Date() - purchaseDate) / (365.25*24*3600*1000));
+
+  const isIntern = lp.user_role === "intern";
+
+  const needsReplace = ageYears >= 3 && !isIntern;
+
+  //--------------------------------
 
   const sCls = {
     Active: 'b-green',
@@ -727,6 +742,8 @@ async function dpLaptop(id) {
   }[lp.status] || 'b-slate';
 
   setDPHeader('💻', '#f0fdf4', lp.item_description, lp.asset_number);
+
+  //--------------------------------
 
   let histHTML = "";
 
@@ -766,7 +783,24 @@ async function dpLaptop(id) {
     `;
   }
 
+  //--------------------------------
+
   const html = `
+
+    <div class="dp-section">
+      ${alertMsg ? `
+          <div class="dp-alert warning">
+            ${alertMsg}
+          </div>
+        ` : ""}
+
+        ${needsReplace ? `
+          <div class="dp-alert danger">
+            ⚠️ Laptop is ${ageYears} years old — needs replacement
+          </div>
+        ` : ""}
+    </div>
+
     <div class="dp-section">
       <div class="dp-section-hd">💻 Device Info</div>
       <div class="dp-grid">
@@ -775,6 +809,7 @@ async function dpLaptop(id) {
         ${dpField("Serial", lp.serial_number || '-')}
         ${dpField("Category", lp.category)}
         ${dpField("Price", lp.price ? '₱' + lp.price : '-')}
+        ${dpField("Status", lp.status)}
       </div>
     </div>
 
@@ -783,6 +818,8 @@ async function dpLaptop(id) {
       <div class="dp-grid">
         ${dpField("Purchased", lp.date_of_purchase || '-')}
         ${dpField("Warranty", lp.warranty_end_date || '-')}
+
+
       </div>
     </div>
 
@@ -795,7 +832,6 @@ async function dpLaptop(id) {
 
     <div class="dp-section">
       <div class="dp-section-hd">📜 Assignment History</div>
-
       ${histHTML}
     </div>
 
@@ -803,25 +839,22 @@ async function dpLaptop(id) {
       <div class="dp-section-hd">⚡ Actions</div>
 
       <div class="dp-action-row">
-
-        <button 
-          class="btn btn-green btn-sm"
-          onclick="openAssign(${lp.laptop_id})">
+        <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})">
           👤 Assign User
         </button>
 
-        <button 
-          class="btn btn-primary btn-sm"
-          onclick="openMaint(${lp.laptop_id})">
+        <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})">
           🔧 Maintenance
         </button>
 
-        <button 
-          class="btn btn-red btn-sm"
-          onclick="deleteLaptop(${lp.laptop_id})">
-          🗑️ Delete
+        <button
+          class="btn btn-primaryeditLaptop(${lp.laptop_id})">  class="btn btn-primary btn-sm"
+          ✏️ Edit
         </button>
 
+        <button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})">
+          🗑️ Delete
+        </button>
       </div>
     </div>
   `;
@@ -830,32 +863,76 @@ async function dpLaptop(id) {
 }
 
 function saveLaptop() {
-  const desc = document.getElementById('lp-f-desc').value;
-  if (!desc) return;
+  const asset = document.getElementById('lp-f-asset').value.trim();
+  const desc = document.getElementById('lp-f-desc').value.trim();
+  const serial = document.getElementById('lp-f-serial').value.trim();
+  const brand = document.getElementById('lp-f-brand').value;
+  const location = document.getElementById('lp-f-location').value;
+  const status = document.getElementById('lp-f-status').value;
+  const warranty = document.getElementById('lp-f-warranty').value;
+  const bought = document.getElementById('lp-f-bought').value;
+  const price = document.getElementById('lp-f-price').value;
+
+  // ✅ REQUIRED CHECK
+  if (!asset || !desc || !serial || !brand || !location || !status || !bought) {
+    showToast("Please fill all required fields", "t-error");
+    return;
+  }
 
   const payload = {
-    asset_number: document.getElementById('lp-f-asset').value,
+    asset_number: asset,
     item_description: desc,
-    serial_number: document.getElementById('lp-f-serial').value,
-    category: document.getElementById('lp-f-brand').value,
-    price: document.getElementById('lp-f-price').value,
-    current_user_id: null, 
-    current_location: document.getElementById('lp-f-location').value || null,
-    status: document.getElementById('lp-f-status').value,
-    warranty_end_date: document.getElementById('lp-f-warranty').value,
-    date_of_purchase: document.getElementById('lp-f-bought').value
+    serial_number: serial,
+    category: brand,
+    price: parseFloat(price) || 0,
+    current_user_id: null,
+    current_location: parseInt(location),
+    status,
+    warranty_end_date: warranty || null,
+    date_of_purchase: bought
   };
 
-  fetch(`${API_URL}/api/laptops`, {
-    method: "POST",
+  fetch(url, {
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
   .then(() => {
+    showToast(editLaptopId ? "Laptop updated" : "Laptop added", "t-success");
+
+    editLaptopId = null;
     closeM('m-add-lp');
     renderLaptops();
-    showToast("Laptop added", "t-success");
+
+    if (dpOpen && dpCurrentType === "laptop") {
+      dpLaptop(dpCurrentId);
+    }
   });
+}
+
+let editLaptopId = null;
+
+async function editLaptop(id) {
+  const res = await fetch(`${API_URL}/api/laptops`);
+  const data = await res.json();
+
+  const lp = data.find(x => x.laptop_id === id);
+  if (!lp) return;
+
+  editLaptopId = id;
+
+  openAddLaptop(); // reuse modal
+
+  // ✅ populate fields
+  document.getElementById('lp-f-asset').value = lp.asset_number;
+  document.getElementById('lp-f-desc').value = lp.item_description;
+  document.getElementById('lp-f-serial').value = lp.serial_number;
+  document.getElementById('lp-f-brand').value = lp.category;
+  document.getElementById('lp-f-location').value = lp.current_location;
+  document.getElementById('lp-f-status').value = lp.status;
+  document.getElementById('lp-f-warranty').value = lp.warranty_end_date || "";
+  document.getElementById('lp-f-bought').value = lp.date_of_purchase || "";
+  document.getElementById('lp-f-price').value = lp.price || "";
 }
 
 async function openAssign(id) {
@@ -869,7 +946,6 @@ async function openAssign(id) {
 
 function doAssign() {
   const userName = document.getElementById("assign-user").value;
-
   const user_id = userMap[userName]; 
 
   fetch(`${API_URL}/api/laptops/${currentLpId}`, {
@@ -958,7 +1034,6 @@ function confirmDeleteLaptop() {
   });
 }
 
-
 async function loadLocationsDropdown() {
   const res = await fetch(`${API_URL}/api/location`);
   const data = await res.json();
@@ -1000,6 +1075,20 @@ async function openAssign(id) {
   openM('m-assign');
   await loadAssignUsers();
 }
+
+function getMaintenanceAlert() {
+  const today = new Date();
+  const month = today.getMonth() + 1; // 1–12
+
+  if (month === 6 || month === 12) {
+    return "⚠️ Scheduled Maintenance Month (June/December)";
+  }
+
+  return null;
+}
+
+
+
 
 
 

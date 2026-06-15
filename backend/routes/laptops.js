@@ -4,7 +4,7 @@ const pool = require("../db");
 
 // GET
 router.get("/", async (req, res) => {
-  const result = await pool.query("SELECT l.*, u.name AS user_name FROM laptop l LEFT JOIN users u ON l.current_user_id = u.user_id ORDER BY l.laptop_id DESC");
+  const result = await pool.query("SELECT l.*, u.name AS user_name, u.role AS user_role FROM laptop l LEFT JOIN users u ON l.current_user_id = u.user_id ORDER BY l.laptop_id DESC");
   res.json(result.rows);
 });
 
@@ -122,6 +122,52 @@ router.get("/:id/history", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Error fetching history");
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  const {
+    asset_number,
+    item_description,
+    serial_number,
+    category,
+    price,
+    current_location,
+    status,
+    warranty_end_date,
+    date_of_purchase
+  } = req.body;
+
+  try {
+    await pool.query(`
+      UPDATE laptop SET
+        asset_number = $1,
+        item_description = $2,
+        serial_number = $3,
+        category = $4,
+        price = $5,
+        current_location = $6,
+        status = $7,
+        warranty_end_date = $8,
+        date_of_purchase = $9
+      WHERE laptop_id = $10
+    `, [
+      asset_number,
+      item_description,
+      serial_number,
+      category,
+      price,
+      current_location,
+      status,
+      warranty_end_date,
+      date_of_purchase,
+      req.params.id
+    ]);
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Update failed");
   }
 });
 
