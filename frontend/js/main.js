@@ -957,16 +957,22 @@ function saveLaptop() {
     body: JSON.stringify(payload)
   })
   .then(() => {
-    showToast(editLaptopId ? "Laptop updated" : "Laptop added", "t-success");
+    const isEdit = !!editLaptopId;
 
-    editLaptopId = null;
+    showToast(isEdit ? "Laptop updated" : "Laptop added", "t-success");
 
+    addLog(
+      isEdit ? "UPDATE" : "CREATE",
+      "LAPTOP",
+      isEdit 
+        ? "Updated laptop: " + asset
+        : "Added laptop: " + asset,
+      editLaptopId || asset
+    );
     closeM('m-add-lp');
     renderLaptops();
+    editLaptopId = null;
 
-    if (dpOpen && dpCurrentType === "laptop") {
-      dpLaptop(dpCurrentId);
-    }
   });
 }
 
@@ -981,18 +987,27 @@ async function editLaptop(id) {
 
   editLaptopId = id;
 
-  openAddLaptop(); // reuse modal
+  openAddLaptop(); // opens modal + loads dropdown
 
-  // ✅ populate fields
-  document.getElementById('lp-f-asset').value = lp.asset_number;
-  document.getElementById('lp-f-desc').value = lp.item_description;
-  document.getElementById('lp-f-serial').value = lp.serial_number;
-  document.getElementById('lp-f-brand').value = lp.category;
-  document.getElementById('lp-f-location').value = lp.current_location;
-  document.getElementById('lp-f-status').value = lp.status;
-  document.getElementById('lp-f-warranty').value = lp.warranty_end_date || "";
-  document.getElementById('lp-f-bought').value = lp.date_of_purchase || "";
-  document.getElementById('lp-f-price').value = lp.price || "";
+  // ✅ WAIT a bit for dropdown to load
+  setTimeout(() => {
+    document.getElementById('lp-f-asset').value = lp.asset_number;
+    document.getElementById('lp-f-desc').value = lp.item_description;
+    document.getElementById('lp-f-serial').value = lp.serial_number;
+    document.getElementById('lp-f-brand').value = lp.category;
+    document.getElementById('lp-f-location').value = lp.current_location;
+    document.getElementById('lp-f-status').value = lp.status;
+    document.getElementById('lp-f-warranty').value = formatDateForInput(lp.warranty_end_date);
+    document.getElementById('lp-f-bought').value = formatDateForInput(lp.date_of_purchase);
+    document.getElementById('lp-f-price').value = lp.price || "";
+  }, 100); // ✅ small delay
+}
+
+function formatDateForInput(dateStr) {
+  if (!dateStr) return "";
+
+  const d = new Date(dateStr);
+  return d.toISOString().split('T')[0]; // ✅ YYYY-MM-DD
 }
 
 async function openAssign(id) {
@@ -1051,25 +1066,35 @@ function saveMaintenance() {
   const date = document.getElementById('maint-date').value;
   const remarks = document.getElementById('maint-remarks').value;
 
-  fetch(`${API_URL}/api/laptop-maintenance`,
-  {
+  fetch(`${API_URL}/api/laptop-maintenance`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       laptop_id: currentLpId,
       check_date: date,
       condition: cond,
       remarks,
-      user_id:  currentUser.user_id
+      user_id: currentUser.user_id
     })
   })
   .then(() => {
     showToast("Technical Check saved", "t-success");
 
+    // ✅ FIXED LOG
+    addLog(
+      "UPDATE",
+      "LAPTOP",
+      `Technical check: ${cond} (${remarks || "no remarks"}) | Laptop: ${cachedLp?.asset_number || currentLpId}`,
+      currentLpId
+    );
+
     closeM('m-maint');
     renderLaptops();
+    
+    if (dpOpen && dpCurrentType === "laptop") {
+      dpLaptop(dpCurrentId); 
+    }
+
   });
 }
 
