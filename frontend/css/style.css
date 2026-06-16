@@ -831,3 +831,19 @@ textarea.form-ctrl { resize: vertical; line-height: 1.5; }
   gap: 12px;
   flex-wrap: wrap;
 }
+
+
+
+/* ═══════════════════════════════════════════
+   IDK SAAN NGL
+═══════════════════════════════════════════ */
+
+.dp-section-hd {
+  cursor: pointer;
+  user-select: none;
+  transition: 0.2s;
+}
+
+.dp-section-hd:hover {
+  opacity: 0.75;
+}

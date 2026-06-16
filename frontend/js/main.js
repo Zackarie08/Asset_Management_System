@@ -667,6 +667,13 @@ function openAddIT() {
    LAPTOPS
 ────────────────────────────────────────────────────────────── */
 
+let showMaintHistory = true;
+let showAssignHistory = false;
+let cachedLp = null;
+let cachedHistory = [];
+let cachedMaintenance = [];
+
+
 async function renderLaptops() {
   const res = await fetch(`${API_URL}/api/laptops`);
   const data = await res.json();
@@ -705,68 +712,85 @@ async function renderLaptops() {
   });
 }
 
-async function dpLaptop(id) {
+async function dpLaptop(id, useCache = false) {
 
   const alertMsg = getMaintenanceAlert();
 
-  const res = await fetch(`${API_URL}/api/laptops`);
-  const data = await res.json();
+  let data, history, maintenance;
 
-  const histRes = await fetch(`${API_URL}/api/laptops/${id}/history`);
+  // ✅ ONLY FETCH IF NOT USING CACHE
+  if (!useCache || !cachedLp) {
+    const res = await fetch(`${API_URL}/api/laptops`);
+    data = await res.json();
 
-  let history = [];
-  try {
+    const histRes = await fetch(`${API_URL}/api/laptops/${id}/history`);
     history = await histRes.json();
-  } catch (e) {
-    console.error("History load failed", e);
+
+    const maintRes = await fetch(`${API_URL}/api/laptop-maintenance/${id}`);
+    maintenance = await maintRes.json();
+
+    const lp = data.find(x => x.laptop_id === id);
+    if (!lp) return;
+
+    // ✅ SAVE CACHE
+    cachedLp = lp;
+    cachedHistory = history;
+    cachedMaintenance = maintenance;
+
+  } else {
+    // ✅ USE CACHE
+    data = [cachedLp];
+    history = cachedHistory;
+    maintenance = cachedMaintenance;
   }
 
-  // ✅ FIRST get laptop
-  const lp = data.find(x => x.laptop_id === id);
-  if (!lp) return;
+  const lp = cachedLp;
 
-  // ✅ NOW safe gamitin lp
+  //--------------------------------
+  // DEVICE LOGIC
+
   const purchaseDate = new Date(lp.date_of_purchase);
   const ageYears = Math.floor((new Date() - purchaseDate) / (365.25*24*3600*1000));
 
   const isIntern = lp.user_role === "intern";
-
   const needsReplace = ageYears >= 3 && !isIntern;
-
-  //--------------------------------
-
-  const sCls = {
-    Active: 'b-green',
-    'For Repair': 'b-red',
-    Disposed: 'b-slate'
-  }[lp.status] || 'b-slate';
 
   setDPHeader('💻', '#f0fdf4', lp.item_description, lp.asset_number);
 
   //--------------------------------
+  // MAINT ALERT
 
-  let histHTML = "";
+  const now = new Date();
+  const month = now.getMonth() + 1;
 
-  if (history.length) {
-    histHTML = `
+  const isMaintenanceMonth = (month === 6 || month === 12);
+
+  const hasCheckThisMonth = maintenance.some(m => {
+    const d = new Date(m.check_date);
+    return d.getMonth() + 1 === month &&
+           d.getFullYear() === now.getFullYear();
+  });
+
+  const showMaintenanceAlert = isMaintenanceMonth && !hasCheckThisMonth;
+
+  //--------------------------------
+  // HISTORY HTML
+
+  let histHTML = history.length
+    ? `
       <ul class="mh-list">
         ${history.map(h => `
           <li class="mh-item">
             <div class="mh-dot good"></div>
-
             <div>
               <div class="mh-cond info">
                 ${h.previous_user_name || '—'} → ${h.new_user_name || '—'}
               </div>
-
               <div class="mh-date">
                 ${new Date(h.date_changed).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
+                  year:'numeric', month:'short', day:'numeric'
                 })}
               </div>
-
               <div class="mh-remarks">
                 ${h.remarks || 'User assignment update'}
               </div>
@@ -774,40 +798,63 @@ async function dpLaptop(id) {
           </li>
         `).join('')}
       </ul>
-    `;
-  } else {
-    histHTML = `
+    `
+    : `
       <div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">
         No assignment history yet.
       </div>
     `;
-  }
+
+  let maintHTML = maintenance.length
+    ? `
+      <ul class="mh-list">
+        ${maintenance.map(m => `
+          <li class="mh-item">
+            <div class="mh-dot good"></div>
+            <div>
+              <div class="mh-cond info">${m.condition}</div>
+              <div class="mh-date">
+                ${new Date(m.check_date).toLocaleDateString()}
+              </div>
+              <div class="mh-remarks">
+                ${m.remarks || "No remarks"}
+              </div>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    `
+    : `
+      <div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">
+        No technical check records yet.
+      </div>
+    `;
 
   //--------------------------------
+  // FINAL UI (UNCHANGED STRUCTURE ✅)
 
   const html = `
-
     <div class="dp-section">
-      ${alertMsg ? `
-          <div class="dp-alert warning">
-            ${alertMsg}
-          </div>
-        ` : ""}
+      ${showMaintenanceAlert ? `
+        <div class="dp-alert warning">
+          ⚠️ Technical Check required this month (June/December)
+        </div>
+      ` : ""}
 
-        ${needsReplace ? `
-          <div class="dp-alert danger">
-            ⚠️ Laptop is ${ageYears} years old — needs replacement
-          </div>
-        ` : ""}
+      ${needsReplace ? `
+        <div class="dp-alert danger">
+          ⚠️ Laptop is ${ageYears} years old — needs replacement
+        </div>
+      ` : ""}
     </div>
 
     <div class="dp-section">
       <div class="dp-section-hd">💻 Device Info</div>
       <div class="dp-grid">
-        ${dpField("Asset", lp.asset_number)}
+        ${dpField("Asset Number", lp.asset_number)}
         ${dpField("Description", lp.item_description)}
-        ${dpField("Serial", lp.serial_number || '-')}
-        ${dpField("Category", lp.category)}
+        ${dpField("Serial Number", lp.serial_number || '-')}
+        ${dpField("Brand", lp.category)}
         ${dpField("Price", lp.price ? '₱' + lp.price : '-')}
         ${dpField("Status", lp.status)}
       </div>
@@ -818,8 +865,6 @@ async function dpLaptop(id) {
       <div class="dp-grid">
         ${dpField("Purchased", lp.date_of_purchase || '-')}
         ${dpField("Warranty", lp.warranty_end_date || '-')}
-
-
       </div>
     </div>
 
@@ -831,35 +876,42 @@ async function dpLaptop(id) {
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">📜 Assignment History</div>
-      ${histHTML}
+      <div class="dp-section-hd" onclick="toggleAssignHistory()">
+        📜 Assignment History ${showAssignHistory ? "▲" : "▼"}
+      </div>
+      ${showAssignHistory ? histHTML : ""}
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd" onclick="toggleMaintHistory()">
+        🔧 Technical Check History ${showMaintHistory ? "▲" : "▼"}
+      </div>
+      ${showMaintHistory ? maintHTML : ""}
     </div>
 
     <div class="dp-section">
       <div class="dp-section-hd">⚡ Actions</div>
 
       <div class="dp-action-row">
-        <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})">
-          👤 Assign User
-        </button>
-
-        <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})">
-          🔧 Maintenance
-        </button>
-
-        <button
-          class="btn btn-primaryeditLaptop(${lp.laptop_id})">  class="btn btn-primary btn-sm"
-          ✏️ Edit
-        </button>
-
-        <button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})">
-          🗑️ Delete
-        </button>
+        <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})">👤 Assign User</button>
+        <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})">🔧 Technical Check</button>
+        <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})">🗑️ Delete</button>
       </div>
     </div>
   `;
 
   document.getElementById("dp-body").innerHTML = html;
+}
+
+function toggleMaintHistory() {
+  showMaintHistory = !showMaintHistory;
+  dpLaptop(cachedLp.laptop_id, true); 
+}
+
+function toggleAssignHistory() {
+  showAssignHistory = !showAssignHistory;
+  dpLaptop(cachedLp.laptop_id, true);
 }
 
 function saveLaptop() {
@@ -873,7 +925,7 @@ function saveLaptop() {
   const bought = document.getElementById('lp-f-bought').value;
   const price = document.getElementById('lp-f-price').value;
 
-  // ✅ REQUIRED CHECK
+  // ✅ validation
   if (!asset || !desc || !serial || !brand || !location || !status || !bought) {
     showToast("Please fill all required fields", "t-error");
     return;
@@ -892,6 +944,13 @@ function saveLaptop() {
     date_of_purchase: bought
   };
 
+  // ✅ THIS WAS MISSING 🔥
+  const url = editLaptopId
+    ? `${API_URL}/api/laptops/${editLaptopId}`
+    : `${API_URL}/api/laptops`;
+
+  const method = editLaptopId ? "PUT" : "POST";
+
   fetch(url, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -901,6 +960,7 @@ function saveLaptop() {
     showToast(editLaptopId ? "Laptop updated" : "Laptop added", "t-success");
 
     editLaptopId = null;
+
     closeM('m-add-lp');
     renderLaptops();
 
@@ -991,7 +1051,8 @@ function saveMaintenance() {
   const date = document.getElementById('maint-date').value;
   const remarks = document.getElementById('maint-remarks').value;
 
-  fetch(`${API_URL}/api/laptopMaintenance`, {
+  fetch(`${API_URL}/api/laptop-maintenance`,
+  {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -1001,16 +1062,17 @@ function saveMaintenance() {
       check_date: date,
       condition: cond,
       remarks,
-      user_id: currentUser.id
+      user_id:  currentUser.user_id
     })
   })
   .then(() => {
-    showToast("Laptop Maintenance saved", "t-success");
+    showToast("Technical Check saved", "t-success");
 
     closeM('m-maint');
     renderLaptops();
   });
 }
+
 
 let deleteLaptopId = null;
 

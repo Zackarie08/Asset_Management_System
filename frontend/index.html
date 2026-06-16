@@ -1011,19 +1011,19 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Asset Number</label>
-          <input class="form-ctrl" id="lp-f-asset" placeholder="LPT-YYYY-###"/>
+          <input class="form-ctrl" id="lp-f-asset" placeholder="LPT-YYYY-###" maxlength="50"/>
         </div>
 
         <div class="form-grp">
           <label>Description *</label>
-          <input class="form-ctrl" id="lp-f-desc" placeholder="e.g. Dell Latitude 5510"/>
+          <input class="form-ctrl" id="lp-f-desc" placeholder="e.g. Dell Latitude 5510" maxlength="50"/>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-grp">
           <label>Serial Number</label>
-          <input class="form-ctrl" id="lp-f-serial"/>
+          <input class="form-ctrl" id="lp-f-serial" placeholder="XYZ1234" maxlength="50"/>
         </div>
 
         <div class="form-grp">
@@ -1078,7 +1078,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-lp')">Cancel</button>
-        <button class="btn btn-green" onclick="saveLaptop()">✅ Add Laptop</button>
+        <button class="btn btn-green" onclick="saveLaptop()">Add Laptop</button>
       </div>
 
     </div>
@@ -1103,8 +1103,8 @@
       </div>
       <div class="form-grp"><label>Condition</label>
         <select class="form-ctrl" id="maint-cond">
-          <option value="GOOD">✅ GOOD — Fully functional</option>
-          <option value="NEEDS REPAIR">🔴 NEEDS REPAIR — Issue found</option>
+          <option value="GOOD">GOOD — Fully functional</option>
+          <option value="NEEDS REPAIR">NEEDS REPAIR — Issue found</option>
         </select>
       </div>
       <div class="form-grp"><label>Remarks / Findings</label>
@@ -1112,7 +1112,7 @@
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-maint')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveMaintenance()">💾 Save Record</button>
+        <button class="btn btn-primary" onclick="saveMaintenance()">Save Record</button>
       </div>
     </div>
   </div>
@@ -1137,7 +1137,7 @@
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-assign')">Cancel</button>
-        <button class="btn btn-green" onclick="doAssign()">✅ Assign</button>
+        <button class="btn btn-green" onclick="doAssign()">Assign</button>
       </div>
     </div>
   </div>
