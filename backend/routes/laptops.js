@@ -125,6 +125,7 @@ router.get("/:id/history", async (req, res) => {
   }
 });
 
+// ✅ EDIT LAPTOP
 router.put("/:id", async (req, res) => {
   const {
     asset_number,
