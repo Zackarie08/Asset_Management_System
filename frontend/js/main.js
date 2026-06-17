@@ -19,6 +19,7 @@ const ADMIN_NAV = [
   { id:'vehicles',    icon:'🚗', label:'Vehicle Management',   badge:null },
   { id:'globe',       icon:'📱', label:'Globe Mobile Plans',   badge:null, admin:true },
   { id:'m365',        icon:'💼', label:'M365 Licenses',        badge:null, admin:true },
+  { id:'finance', icon:'📁', label:'Finance Documents', badge:null, admin:true },
   { id:'logs',        icon:'📜', label:'System Logs',          badge:null, admin:true },
   { id: 'users', label: 'Users', icon: '👤', page: 'page-users', admin:true },
 ];
@@ -42,6 +43,7 @@ const PAGE_META = {
   vehicles:   { title:'Vehicle Management',parent:'Asset Management System' },
   globe:      { title:'Globe Mobile Plans',parent:'Asset Management System' },
   m365:       { title:'M365 Licenses',     parent:'Asset Management System' },
+  finance: { title:'Finance Documents', parent:'Asset Management System' },
   logs:       { title:'System Logs',       parent:'Asset Management System' },
   users:      { title:'Users',             parent:'Asset Management System' },
 };
@@ -80,6 +82,7 @@ function openDP(type, id, row) {
     vehicle:   dpVehicle,
     globe:     dpGlobe,
     m365:      dpM365,
+    finance:   dpFinance,
     log:       dpLog,
   };
   if (renderers[type]) renderers[type](id);
@@ -2017,6 +2020,7 @@ let globeEditId = null;
 
 function saveGlobe() {
   const userName = document.getElementById("globe-f-user").value;
+  const mobile = document.getElementById("globe-f-num").value.trim();
   const plan     = document.getElementById("globe-f-plan").value.trim();
   const renew    = document.getElementById("globe-f-renew").value;
 
@@ -2030,7 +2034,6 @@ function saveGlobe() {
     return;
   }
 
-  const mobile = document.getElementById("globe-f-num").value.trim();
 
   // ✅ PH mobile format
   const mobilePattern = /^09\d{2}-\d{3}-\d{4}$/;
@@ -2105,11 +2108,16 @@ async function editGlobe(id) {
   document.getElementById("globe-f-plan").value = g.plan_name || "";
   document.getElementById("globe-f-cost").value = g.monthly_cost || "";
   document.getElementById("globe-f-data").value = g.data_allocation || "";
-  document.getElementById("globe-f-renew").value = g.renewal_date || "";
+  document.getElementById("globe-f-renew").value = formatDateForInput(g.renewal_date);
+  document.getElementById("globe-f-start").value = formatDateForInput(g.start_date);
   document.getElementById("globe-f-credit").value = g.credit_limit || "";
   document.getElementById("globe-f-remarks").value = g.remarks || "";
-  document.getElementById("globe-f-start").value = g.start_date || "";
   document.getElementById("globe-f-status").value = g.status || "Active"; 
+}
+
+function formatDateForInput(dateStr) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toISOString().split('T')[0];
 }
 
 let deleteGlobeId = null;
@@ -2415,6 +2423,175 @@ function confirmDeleteM365() {
 
 
 
+/* ──────────────────────────────────────────────────────────────
+   FINANCIAL DOCUMENTS
+────────────────────────────────────────────────────────────── */
+async function renderFinance() {
+  const res = await fetch(`${API_URL}/api/finance-documents`);
+  const data = await res.json();
+
+  const tbody = document.getElementById('fin-tbody');
+  tbody.innerHTML = "";
+
+  data.forEach(f => {
+    const range = `${f.category_code}${String(f.range_start).padStart(5,'0')} - ${f.category_code}${String(f.range_end).padStart(5,'0')}`;
+
+    const tr = document.createElement("tr");
+    tr.className = "tr-clickable";
+
+    tr.innerHTML = `
+      <td>${f.year}</td>
+      <td>${f.folder_number}</td>
+      <td>${f.category}</td>
+      <td>${range}</td>
+      <td>${f.location}</td>
+      <td>
+        <button onclick="event.stopPropagation(); deleteFinance(${f.finance_id})">🗑️</button>
+      </td>
+    `;
+
+    tr.addEventListener("click", () => {
+      openDP("finance", f.finance_id, tr);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("fin-ct").innerText = data.length + " folders";
+}
+
+function saveFinance() {
+
+  const payload = {
+    year: document.getElementById("fin-f-year").value,
+    folder_number: document.getElementById("fin-f-folder").value,
+    category: document.getElementById("fin-f-cat").value,
+    category_code: document.getElementById("fin-f-code").value,
+    range_start: document.getElementById("fin-f-start").value,
+    range_end: document.getElementById("fin-f-end").value,
+    location: document.getElementById("fin-f-loc").value,
+    remarks: document.getElementById("fin-f-remarks").value
+  };
+
+  const url = editFinanceId
+    ? `${API_URL}/api/finance-documents/${editFinanceId}`
+    : `${API_URL}/api/finance-documents`;
+
+  const method = editFinanceId ? "PUT" : "POST";
+
+  fetch(url, {
+    method,
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    showToast(editFinanceId ? "Document Updated" : "Document Saved", "t-success");
+
+    editFinanceId = null;
+
+    closeM("m-add-fin");
+    renderFinance();
+
+    if (dpOpen && dpCurrentType === "finance") {
+      dpFinance(dpCurrentId);
+    }
+  });
+}
+let deleteFinanceId = null;
+
+function deleteFinance(id) {
+  deleteFinanceId = id;
+  openM("m-confirm-fin-del");
+}
+
+function confirmDeleteFinance() {
+  fetch(`${API_URL}/api/finance-documents/${deleteFinanceId}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    showToast("Document Deleted", "t-warning");
+    closeM("m-confirm-fin-del");
+    renderFinance();
+  });
+}
+
+async function dpFinance(id) {
+  const res = await fetch(`${API_URL}/api/finance-documents`);
+  const data = await res.json();
+
+  const f = data.find(x => x.finance_id === id);
+  if (!f) return;
+
+  setDPHeader('📁', '#eff6ff', f.category, "Folder #" + f.folder_number);
+
+  const range = `${f.category_code}${String(f.range_start).padStart(5,'0')} - ${f.category_code}${String(f.range_end).padStart(5,'0')}`;
+
+  const html = `
+    <div class="dp-section">
+      <div class="dp-section-hd">📋 Details</div>
+      <div class="dp-grid">
+        ${dpField("Year", f.year)}
+        ${dpField("Folder #", f.folder_number)}
+        ${dpField("Category", f.category)}
+        ${dpField("Code", f.category_code)}
+        ${dpField("Range", range)}
+        ${dpField("Location", f.location)}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">📝 Remarks</div>
+      <div class="dp-grid">
+        ${dpFieldFull("Notes", f.remarks || "No remarks")}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-action-row">
+        <button class="btn btn-primary btn-sm" onclick="editFinance(${f.finance_id})">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteFinance(${f.finance_id})">🗑️ Delete</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("dp-body").innerHTML = html;
+}
+
+let editFinanceId = null;
+async function editFinance(id) {
+  const res = await fetch(`${API_URL}/api/finance-documents`);
+  const data = await res.json();
+
+  const f = data.find(x => x.finance_id === id);
+  if (!f) return;
+
+  editFinanceId = id;
+
+  openM("m-add-fin");
+
+  setTimeout(() => {
+    document.getElementById("fin-f-year").value = f.year;
+    document.getElementById("fin-f-folder").value = f.folder_number;
+    document.getElementById("fin-f-cat").value = f.category;
+    document.getElementById("fin-f-code").value = f.category_code;
+    document.getElementById("fin-f-start").value = f.range_start;
+    document.getElementById("fin-f-end").value = f.range_end;
+    document.getElementById("fin-f-loc").value = f.location;
+    document.getElementById("fin-f-remarks").value = f.remarks || "";
+  }, 100);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* ──────────────────────────────────────────────────────────────
@@ -2614,6 +2791,7 @@ function initAllModules() {
   renderVehicles();
   renderGlobe();
   renderM365();
+  renderFinance();
   renderLogs();
   renderUsers();
   renderVehicles()

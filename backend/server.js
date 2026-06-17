@@ -51,3 +51,7 @@ app.use("/api/m365", require("./routes/m365"));
 app.use("/api/laptops", require("./routes/laptops"));
 
 app.use("/api/laptop-maintenance", require("./routes/laptopMaintenance"));
+
+const financeRoutes = require("./routes/finance");
+
+app.use("/api/finance-documents", financeRoutes);

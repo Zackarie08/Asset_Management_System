@@ -198,3 +198,50 @@ CREATE TABLE m365 (
   renewal_date DATE,
   status TEXT
 );
+
+-- =========================
+-- FINANCIAL DOCUMENTS
+-- =========================
+CREATE TABLE finance_documents (
+  finance_id SERIAL PRIMARY KEY,
+  year INT NOT NULL,
+  folder_number INT NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  category_code VARCHAR(10) NOT NULL, 
+  range_start INT NOT NULL,
+  range_end INT NOT NULL,
+  location VARCHAR(50) DEFAULT 'STORAGE',
+  remarks TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================
+-- CONTRACTS
+-- =========================
+CREATE TABLE contracts (
+  contract_id SERIAL PRIMARY KEY,
+  contract_date DATE NOT NULL,
+  other_party VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  validity_type VARCHAR(20),
+  valid_from DATE,
+  valid_to DATE,
+  valid_year INT,
+  status VARCHAR(50) DEFAULT 'IN_STORAGE', 
+  remarks TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================
+-- CONTRACTS REQUEST
+-- =========================
+CREATE TABLE contract_requests (
+  request_id SERIAL PRIMARY KEY,
+  contract_id INT REFERENCES contracts(contract_id) ON DELETE CASCADE,
+  requested_by INT REFERENCES users(user_id),
+  approved_by INT REFERENCES users(user_id) ON DELETE SET NULL,
+  request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  approved_date TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'PENDING',
+  remarks TEXT
+);

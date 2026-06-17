@@ -81,7 +81,7 @@ async function renderInventory() {
             </svg>
           </button>
           <button class="btn btn-xs btn-red" title="Delete"
-            onclick="event.stopPropagation(); deleteItem(${item.inventory_gen_id})">
+            onclick="event.stopPropagation(); event.preventDefault(); event.stopImmediatePropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -322,16 +322,6 @@ function withdrawItem(id, qty) {
   });
 }
 
-function deleteItem(id) {
-  fetch(`${API_URL}/api/inventory/${id}?user_id=${currentUser.user_id}&performed_by=${currentUser.name}`, {
-    method: "DELETE"
-  })
-  .then(() => {
-    showToast("Item deleted", "t-warning");
-    renderInventory();
-  });
-}
-
 let withdrawItemId = null;
 async function openWithdraw(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
@@ -445,7 +435,13 @@ async function dpInventory(id) {
         <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
         <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
         <button class="btn btn-outline btn-sm"onclick="event.stopPropagation(); event.preventDefault(); openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteInv(${item.inventory_gen_id})">🗑️ Delete</button>
+        
+        <button 
+          class="btn btn-red btn-sm"
+          onclick="event.stopPropagation(); event.preventDefault(); event.stopImmediatePropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')">
+          🗑️ Delete
+        </button>
+
       </div>
     </div>`;
   }
@@ -508,19 +504,36 @@ window.openEditInv = async function(id) {
   loadLocationDropdown();
 };
 
-async function deleteInv(id) {
-  if (!confirm("Delete this item?")) return;
-
-  await fetch(`${API_URL}/api/inventory/${id}?user_id=${currentUser.user_id}&performed_by=${currentUser.name}`, {
-    method: "DELETE"
-  })
+let deleteInventoryId = null;
+let deleteInventoryName = "";
 
 
-  closeDP();
-  renderInventory();
-  showToast('Item deleted','t-warning');
+function deleteInventory(id, name) {
+  console.log("DELETE CLICKED", id, name);
+  deleteInventoryId = id;
+  deleteInventoryName = name;
+
+  openM("m-confirm-inv-del"); 
 }
 
+function confirmDeleteInventory() {
+  fetch(`${API_URL}/api/inventory/${deleteInventoryId}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    showToast("Inventory Item Deleted", "t-warning");
+
+    addLog(
+      "DELETE",
+      "INVENTORY",
+      "Deleted Inventory item: " + deleteInventoryName,
+      deleteInventoryId
+    );
+
+    closeM("m-confirm-inv-del");
+    renderInventory();
+  });
+}
 
 
 let invId = 13;

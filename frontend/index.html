@@ -499,6 +499,42 @@
 
 
 
+      <!-- ════════════════ FINACIAL DOCUMENTS ════════════════ -->
+      <section class="page" id="page-finance">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Finance Documents</div>
+            <div class="pg-sub">Folder records · Click any row for details</div>
+          </div>
+          <div class="pg-actions" id="fin-actions"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📁 Finance Folders</div>
+            <span class="badge b-slate" id="fin-ct">0 folders</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Folder #</th>
+                  <th>Category</th>
+                  <th>Range</th>
+                  <th>Location</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="fin-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+
       <!-- ════════════════ SYSTEM LOGS ════════════════ -->
       <section class="page" id="page-logs">
         <div class="pg-header">
@@ -783,8 +819,33 @@
   </div>
 </div>
 
+<!-- Confirm Delete Inventory Item -->
+<div class="modal-overlay" id="m-confirm-inv-del">
+  <div class="modal">
+    
+    <!-- HEADER ✅ -->
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Inventory</div>
+      <button onclick="closeM('m-confirm-inv-del')">✕</button>
+    </div>
 
+    <!-- BODY ✅ -->
+    <div class="modal-body">
+      <p>Are you sure you want to delete this inventory item?</p>
 
+      <!-- BUTTONS ✅ -->
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-inv-del')">
+          Cancel
+        </button>
+        <button class="btn btn-red" onclick="confirmDeleteInventory()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 
 
@@ -1494,6 +1555,105 @@
         <button class="btn btn-red" onclick="confirmDeleteM365()">
           Delete
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+<!-- ════════════════ FINANCIAL DOCUMENT MODULE ════════════════ -->
+
+<!-- Add Financial Document -->
+<div class="modal-overlay" id="m-add-fin">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📁 Finance Folder</div>
+      <button class="modal-close" onclick="closeM('m-add-fin')">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Year *</label>
+          <input class="form-ctrl" id="fin-f-year" type="number"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Folder # *</label>
+          <input class="form-ctrl" id="fin-f-folder"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Category *</label>
+          <input class="form-ctrl" id="fin-f-cat" placeholder="Check Voucher"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Code *</label>
+          <input class="form-ctrl" id="fin-f-code" placeholder="CV"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Range Start *</label>
+          <input class="form-ctrl" id="fin-f-start"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Range End *</label>
+          <input class="form-ctrl" id="fin-f-end"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Location</label>
+          <select class="form-ctrl" id="fin-f-loc">
+            <option value="STORAGE">Storage</option>
+            <option value="OFFICE">Office</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="fin-f-remarks"></textarea>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-fin')">Cancel</button>
+        <button class="btn btn-green" onclick="saveFinance()">✅ Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Delete Financial Document -->
+<div class="modal-overlay" id="m-confirm-fin-del">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Folder</div>
+      <button onclick="closeM('m-confirm-fin-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Delete this finance folder?</p>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-fin-del')">Cancel</button>
+        <button class="btn btn-red" onclick="confirmDeleteFinance()">🗑️ Delete</button>
       </div>
     </div>
   </div>

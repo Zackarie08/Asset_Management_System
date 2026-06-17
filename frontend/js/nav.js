@@ -107,6 +107,10 @@ function refreshPageActions(page) {
       const el = document.getElementById('m365-actions');
       el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-m365')">➕ Add License</button>`;
     },
+    finance: () => {
+      const el = document.getElementById('fin-actions');
+      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-fin')">➕ Add Folder</button>`;
+    },
   };
 
   if (actions[page]) actions[page]();
