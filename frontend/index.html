@@ -1595,12 +1595,17 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Category *</label>
-          <input class="form-ctrl" id="fin-f-cat" placeholder="Check Voucher"/>
+          <select class="form-ctrl" id="fin-f-cat" onchange="autoSetCode()">
+            <option value="">Select Category</option>
+          </select>
         </div>
 
         <div class="form-grp">
-          <label>Code *</label>
-          <input class="form-ctrl" id="fin-f-code" placeholder="CV"/>
+          <label>Location</label>
+          <select class="form-ctrl" id="fin-f-loc">
+            <option value="STORAGE">Storage</option>
+            <option value="OFFICE">Office</option>
+          </select>
         </div>
       </div>
 
@@ -1613,16 +1618,6 @@
         <div class="form-grp">
           <label>Range End *</label>
           <input class="form-ctrl" id="fin-f-end"/>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-grp">
-          <label>Location</label>
-          <select class="form-ctrl" id="fin-f-loc">
-            <option value="STORAGE">Storage</option>
-            <option value="OFFICE">Office</option>
-          </select>
         </div>
       </div>
 

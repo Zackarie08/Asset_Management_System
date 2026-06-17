@@ -2426,6 +2426,15 @@ function confirmDeleteM365() {
 /* ──────────────────────────────────────────────────────────────
    FINANCIAL DOCUMENTS
 ────────────────────────────────────────────────────────────── */
+
+const FIN_CATEGORY_MAP = {
+  "Check Voucher": "CV",
+  "Official Receipt": "OR",
+  "Sales Invoice": "SI",
+  "Purchase Order": "PO"
+  // ✅ add more later here
+};
+
 async function renderFinance() {
   const res = await fetch(`${API_URL}/api/finance-documents`);
   const data = await res.json();
@@ -2582,6 +2591,22 @@ async function editFinance(id) {
   }, 100);
 }
 
+function loadFinanceCategories() {
+  const select = document.getElementById("fin-f-cat");
+
+  select.innerHTML = '<option value="">Select Category</option>';
+
+  Object.keys(FIN_CATEGORY_MAP).forEach(cat => {
+    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+  });
+}
+
+function autoSetCode() {
+  const category = document.getElementById("fin-f-cat").value;
+  const code = FIN_CATEGORY_MAP[category] || "";
+
+  document.getElementById("fin-f-code").value = code;
+}
 
 
 
