@@ -88,7 +88,9 @@ function openDP(type, id, row) {
     finance:   dpFinance,
     log:       dpLog,
   };
-  if (renderers[type]) renderers[type](id);
+  if (renderers[type]) {
+    renderers[type](id);
+  }
   if (type === "vehicle") dpVehicle(id);
 }
 
@@ -1457,6 +1459,52 @@ async function renderContracts() {
   document.getElementById("con-ct").innerText = data.length + " records";
 }
 
+async function dpContract(id) {
+  const res = await fetch(`${API_URL}/api/contracts/${id}`);
+  const c = await res.json();
+
+  if (!c) return;
+
+  setDPHeader("📄", "#eef2ff", c.other_party, c.description);
+
+  let validity = c.validity_type === "YEAR"
+    ? c.valid_year
+    : `${c.valid_from} - ${c.valid_to}`;
+
+  const statusBadge = `
+    <span class="badge ${c.status === 'IN_STORAGE' ? 'b-green' : 'b-blue'}">
+      ${c.status}
+    </span>
+  `;
+
+  const html = `
+    <div class="dp-section">
+      <div class="dp-section-hd">📋 Details</div>
+      <div class="dp-grid">
+        ${dpField("Date", c.contract_date)}
+        ${dpField("Other Party", c.other_party)}
+        ${dpField("Description", c.description)}
+        ${dpField("Validity", validity)}
+        ${dpField("Status", statusBadge)}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-section-hd">📝 Remarks</div>
+      <div class="dp-grid">
+        ${dpFieldFull("Notes", c.remarks || "No remarks")}
+      </div>
+    </div>
+
+    ✅ <!-- container for actions -->
+    <div id="contract-actions"></div>
+  `;
+
+  document.getElementById("dp-body").innerHTML = html;
+
+  renderContractActions(c);
+}
+
 async function saveContract() {
 
   const type = document.getElementById("con-f-type").value;
@@ -1486,6 +1534,124 @@ async function saveContract() {
   renderContracts();
 
   addLog("CREATE", "CONTRACTS", `Added Contract with ${payload.other_party}`, null);
+}
+
+async function renderContractActions(c) {
+
+  const el = document.getElementById("contract-actions");
+  if (!el) return;
+
+  const isAdmin =
+    currentUser.role === "admin" ||
+    currentUser.role === "super_admin";
+
+  let buttons = "";
+
+  try {
+    const res = await fetch(`${API_URL}/api/contracts/requests`);
+    const requests = await res.json();
+
+    const currentReq = requests.find(r =>
+      r.contract_id == c.contract_id &&
+      r.status !== "RETURNED"
+    );
+
+    // ✅ EMPLOYEE
+    if (!isAdmin && !currentReq) {
+      buttons = `
+        <button class="btn btn-primary btn-sm"
+          onclick="requestContract(${c.contract_id})">
+          📩 Request Contract
+        </button>
+      `;
+    }
+
+    // ✅ ADMIN + SUPER ADMIN
+    if (isAdmin) {
+
+      if (currentReq && currentReq.status === "PENDING") {
+        buttons = `
+          <button class="btn btn-green btn-sm"
+            onclick="approveRequest(${currentReq.request_id})">
+            ✅ Approve
+          </button>
+        `;
+      }
+
+      if (c.status === "WITH_EMPLOYEE" && currentReq) {
+        buttons += `
+          <button class="btn btn-outline btn-sm"
+            onclick="returnContract(${currentReq.request_id})">
+            ↩️ Return
+          </button>
+        `;
+      }
+    }
+
+  } catch (err) {
+    console.error(err);
+    buttons = "<span class='dp-muted'>Error loading actions</span>";
+  }
+
+  el.innerHTML = `
+    <div class="dp-section">
+      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-action-row">
+        ${buttons || "<span class='dp-muted'>No actions available</span>"}
+      </div>
+    </div>
+  `;
+}
+
+function requestContract(id) {
+  fetch(`${API_URL}/api/contracts/request`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      contract_id: id,
+      user_id: currentUser.user_id
+    })
+  })
+  .then(() => {
+    showToast("Contract Request sent", "t-success");
+
+    addLog("CREATE", "CONTRACT",
+      `Requested contract ID ${id}`, id);
+
+    dpContract(id); // ✅ refresh
+  });
+}
+
+function approveRequest(id) {
+  fetch(`${API_URL}/api/contracts/request/${id}/approve`, {
+    method: "PUT",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ admin_id: currentUser.user_id })
+  })
+  .then(() => {
+    showToast("Contract Approved", "t-success");
+
+    addLog("UPDATE", "CONTRACT",
+      `Approved contract request ${id}`, id);
+
+    renderContracts();
+    dpContract(dpCurrentId);
+  });
+}
+
+function returnContract(id) {
+  fetch(`${API_URL}/api/contracts/request/${id}/return`, {
+    method: "PUT"
+  })
+  .then(() => {
+    showToast("Contract Returned", "t-success");
+
+    addLog("UPDATE", "CONTRACT",
+      `Returned contract request ${id}`, id);
+
+    renderContracts();
+    dpContract(dpCurrentId);
+  });
 }
 
 function toggleValidity() {

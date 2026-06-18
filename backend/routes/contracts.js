@@ -11,19 +11,6 @@ router.get("/", async (req, res) => {
 });
 
 
-// ✅ GET SINGLE CONTRACT
-router.get("/:id", async (req, res) => {
-  const { id } = req.params;
-
-  const result = await db.query(
-    "SELECT * FROM contracts WHERE contract_id = $1",
-    [id]
-  );
-
-  res.json(result.rows[0]);
-});
-
-
 // ✅ CREATE CONTRACT
 router.post("/", async (req, res) => {
   const {
@@ -148,6 +135,18 @@ router.get("/requests", async (req, res) => {
   `);
 
   res.json(result.rows);
+});
+
+// ✅ GET SINGLE CONTRACT
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const result = await db.query(
+    "SELECT * FROM contracts WHERE contract_id = $1",
+    [id]
+  );
+
+  res.json(result.rows[0]);
 });
 
 
