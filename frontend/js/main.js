@@ -25,7 +25,7 @@ const ADMIN_NAV = [
   { id: 'users', label: 'Users', icon: '👤', page: 'page-users', admin:true },
 ];
 
-const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','orders'];
+const EMP_NAV = ['dashboard','inventory','orders','furniture','itsupplies','laptops', 'vehicles', 'contracts'];
 
 
 
@@ -1496,7 +1496,7 @@ async function dpContract(id) {
       </div>
     </div>
 
-    ✅ <!-- container for actions -->
+    <!-- container for actions -->
     <div id="contract-actions"></div>
   `;
 
@@ -1546,6 +1546,7 @@ async function renderContractActions(c) {
     currentUser.role === "super_admin";
 
   let buttons = "";
+  let info = "";
 
   try {
     const res = await fetch(`${API_URL}/api/contracts/requests`);
@@ -1555,25 +1556,39 @@ async function renderContractActions(c) {
       r.contract_id == c.contract_id &&
       r.status !== "RETURNED"
     );
+    
+    if (currentReq) {
+      info = `
+        <div class="dp-muted" style="margin-bottom:6px;">
+          Requested by: <b>${currentReq.requested_name}</b><br>
+          Date: ${new Date(currentReq.request_date).toLocaleString()}
+        </div>
+      `;
+    }
 
-    // ✅ EMPLOYEE
-    if (!isAdmin && !currentReq) {
+    // EMPLOYEE
+    if (!isAdmin && currentReq && currentReq.status === "PENDING") {
       buttons = `
-        <button class="btn btn-primary btn-sm"
-          onclick="requestContract(${c.contract_id})">
-          📩 Request Contract
+        <button class="btn btn-red btn-sm"
+          onclick="cancelRequest(${currentReq.request_id})">
+          Cancel Request
         </button>
       `;
     }
 
-    // ✅ ADMIN + SUPER ADMIN
+    // ADMIN
     if (isAdmin) {
 
       if (currentReq && currentReq.status === "PENDING") {
         buttons = `
           <button class="btn btn-green btn-sm"
             onclick="approveRequest(${currentReq.request_id})">
-            ✅ Approve
+            Approve
+          </button>
+
+          <button class="btn btn-red btn-sm"
+            onclick="denyRequest(${currentReq.request_id})">
+            Deny
           </button>
         `;
       }
@@ -1582,10 +1597,23 @@ async function renderContractActions(c) {
         buttons += `
           <button class="btn btn-outline btn-sm"
             onclick="returnContract(${currentReq.request_id})">
-            ↩️ Return
+            Mark as Returned
           </button>
         `;
       }
+    }
+    if (isAdmin) {
+      buttons += `
+        <button class="btn btn-primary btn-sm"
+          onclick="editContract(${c.contract_id})">
+          ✏️ Edit
+        </button>
+
+        <button class="btn btn-red btn-sm"
+          onclick="deleteContract(${c.contract_id})">
+          🗑️ Delete
+        </button>
+      `;
     }
 
   } catch (err) {
@@ -1597,6 +1625,7 @@ async function renderContractActions(c) {
     <div class="dp-section">
       <div class="dp-section-hd">⚡ Actions</div>
       <div class="dp-action-row">
+        ${info}
         ${buttons || "<span class='dp-muted'>No actions available</span>"}
       </div>
     </div>
@@ -1648,6 +1677,35 @@ function returnContract(id) {
 
     addLog("UPDATE", "CONTRACT",
       `Returned contract request ${id}`, id);
+
+    renderContracts();
+    dpContract(dpCurrentId);
+  });
+}
+
+function cancelRequest(id) {
+  fetch(`${API_URL}/api/contracts/request/${id}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    showToast("Request cancelled", "t-warning");
+
+    addLog("DELETE", "CONTRACT",
+      `Cancelled contract request ${id}`, id);
+
+    dpContract(dpCurrentId);
+  });
+}
+
+function denyRequest(id) {
+  fetch(`${API_URL}/api/contracts/request/${id}/deny`, {
+    method: "PUT"
+  })
+  .then(() => {
+    showToast("Request denied", "t-warning");
+
+    addLog("UPDATE", "CONTRACT",
+      `Denied contract request ${id}`, id);
 
     renderContracts();
     dpContract(dpCurrentId);

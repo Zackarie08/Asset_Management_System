@@ -3,10 +3,20 @@ const db = require("../db");
 
 
 // ✅ GET ALL CONTRACTS
-router.get("/", async (req, res) => {
-  const result = await db.query(
-    "SELECT * FROM contracts ORDER BY created_at DESC"
-  );
+router.get("/requests", async (req, res) => {
+
+  const result = await db.query(`
+    SELECT 
+      cr.*,
+      c.other_party,
+      c.description,
+      u.name AS requested_name
+    FROM contract_requests cr
+    JOIN contracts c ON cr.contract_id = c.contract_id
+    JOIN users u ON cr.requested_by = u.user_id
+    ORDER BY cr.request_date DESC
+  `);
+
   res.json(result.rows);
 });
 
@@ -204,6 +214,29 @@ router.put("/request/:id/return", async (req, res) => {
     SET status='IN_STORAGE'
     WHERE contract_id=$1
   `, [contract_id]);
+
+  res.json({ success: true });
+});
+
+router.put("/request/:id/deny", async (req, res) => {
+  const { id } = req.params;
+
+  await db.query(`
+    UPDATE contract_requests
+    SET status='REJECTED'
+    WHERE request_id=$1
+  `, [id]);
+
+  res.json({ success: true });
+});
+
+router.delete("/request/:id", async (req, res) => {
+  const { id } = req.params;
+
+  await db.query(`
+    DELETE FROM contract_requests
+    WHERE request_id=$1 AND status='PENDING'
+  `, [id]);
 
   res.json({ success: true });
 });
