@@ -1583,12 +1583,24 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Year *</label>
-          <input class="form-ctrl" id="fin-f-year" type="number"/>
+          <input class="form-ctrl" id="fin-f-year" type="number" placeholder="e.g. 2026" maxlength="4"/>
         </div>
 
         <div class="form-grp">
           <label>Folder # *</label>
-          <input class="form-ctrl" id="fin-f-folder"/>
+          <input class="form-ctrl" id="fin-f-folder" type="number" placeholder="e.g. 1" maxlength="1"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Range Start *</label>
+          <input class="form-ctrl" id="fin-f-start" placeholder="e.g. 0001" maxlength="4"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Range End *</label>
+          <input class="form-ctrl" id="fin-f-end" placeholder="e.g. 0050" maxlength="4"/>
         </div>
       </div>
 
@@ -1599,31 +1611,11 @@
             <option value="">Select Category</option>
           </select>
         </div>
-
-        <div class="form-grp">
-          <label>Location</label>
-          <select class="form-ctrl" id="fin-f-loc">
-            <option value="STORAGE">Storage</option>
-            <option value="OFFICE">Office</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-grp">
-          <label>Range Start *</label>
-          <input class="form-ctrl" id="fin-f-start"/>
-        </div>
-
-        <div class="form-grp">
-          <label>Range End *</label>
-          <input class="form-ctrl" id="fin-f-end"/>
-        </div>
       </div>
 
       <div class="form-grp">
         <label>Remarks</label>
-        <textarea class="form-ctrl" id="fin-f-remarks"></textarea>
+        <textarea class="form-ctrl" id="fin-f-remarks" placeholder="Optional notes..." maxlength="255"></textarea>
       </div>
 
       <div class="form-footer">

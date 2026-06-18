@@ -2443,7 +2443,10 @@ async function renderFinance() {
   tbody.innerHTML = "";
 
   data.forEach(f => {
-    const range = `${f.category_code}${String(f.range_start).padStart(5,'0')} - ${f.category_code}${String(f.range_end).padStart(5,'0')}`;
+    const start = String(f.range_start).padStart(4,'0');
+    const end   = String(f.range_end).padStart(4,'0');
+
+    const range = `${f.category_code}${f.year}${start} - ${f.category_code}${f.year}${end}`;
 
     const tr = document.createElement("tr");
     tr.className = "tr-clickable";
@@ -2469,17 +2472,28 @@ async function renderFinance() {
   document.getElementById("fin-ct").innerText = data.length + " folders";
 }
 
-function saveFinance() {
+async function saveFinance() {
+
+  const category = document.getElementById("fin-f-cat").value;
+
+  let existing = null;
+
+  if (editFinanceId) {
+    const res = await fetch(`${API_URL}/api/finance-documents/${editFinanceId}`);
+    existing = await res.json();
+  }
 
   const payload = {
     year: document.getElementById("fin-f-year").value,
     folder_number: document.getElementById("fin-f-folder").value,
-    category: document.getElementById("fin-f-cat").value,
-    category_code: document.getElementById("fin-f-code").value,
-    range_start: document.getElementById("fin-f-start").value,
-    range_end: document.getElementById("fin-f-end").value,
-    location: document.getElementById("fin-f-loc").value,
-    remarks: document.getElementById("fin-f-remarks").value
+    category,
+    category_code: FIN_CATEGORY_MAP[category],
+    range_start: parseInt(document.getElementById("fin-f-start").value),
+    range_end: parseInt(document.getElementById("fin-f-end").value),
+    remarks: document.getElementById("fin-f-remarks").value,
+
+    // ✅ FIX HERE
+    location: existing ? existing.location : "STORAGE"
   };
 
   const url = editFinanceId
@@ -2488,24 +2502,37 @@ function saveFinance() {
 
   const method = editFinanceId ? "PUT" : "POST";
 
-  fetch(url, {
+  await fetch(url, {
     method,
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(payload)
-  })
-  .then(() => {
-    showToast(editFinanceId ? "Document Updated" : "Document Saved", "t-success");
-
-    editFinanceId = null;
-
-    closeM("m-add-fin");
-    renderFinance();
-
-    if (dpOpen && dpCurrentType === "finance") {
-      dpFinance(dpCurrentId);
-    }
   });
+
+  const actionType = editFinanceId ? "UPDATE" : "CREATE";
+
+  const year = document.getElementById("fin-f-year").value;
+  const start = String(document.getElementById("fin-f-start").value).padStart(4, '0');
+  const end   = String(document.getElementById("fin-f-end").value).padStart(4, '0');
+  const category_code = FIN_CATEGORY_MAP[category];
+
+  addLog(
+    actionType,
+    "FINANCE",
+    `${actionType === "CREATE" ? "Added" : "Updated"} ${category} | ${category_code}${year}${start} - ${category_code}${year}${end}`,
+    editFinanceId || null
+  );
+  showToast(editFinanceId ? "Document Updated" : "Document Saved", "t-success");
+
+  editFinanceId = null;
+
+  closeM("m-add-fin");
+  renderFinance();
+
+  if (dpOpen && dpCurrentType === "finance") {
+    dpFinance(dpCurrentId);
+  }
 }
+
 let deleteFinanceId = null;
 
 function deleteFinance(id) {
@@ -2514,14 +2541,34 @@ function deleteFinance(id) {
 }
 
 function confirmDeleteFinance() {
-  fetch(`${API_URL}/api/finance-documents/${deleteFinanceId}`, {
-    method: "DELETE"
-  })
-  .then(() => {
-    showToast("Document Deleted", "t-warning");
-    closeM("m-confirm-fin-del");
-    renderFinance();
-  });
+
+  fetch(`${API_URL}/api/finance-documents/${deleteFinanceId}`)
+    .then(res => res.json())
+    .then(f => {
+
+      const start = String(f.range_start).padStart(4, '0');
+      const end   = String(f.range_end).padStart(4, '0');
+
+      const range = `${f.category_code}${f.year}${start} - ${f.category_code}${f.year}${end}`;
+
+      return fetch(`${API_URL}/api/finance-documents/${deleteFinanceId}`, {
+        method: "DELETE"
+      }).then(() => ({ f, range }));
+    })
+    .then(({ f, range }) => {
+
+      showToast("Document Deleted", "t-warning");
+      closeM("m-confirm-fin-del");
+
+      addLog(
+        "DELETE",
+        "FINANCE",
+        `Deleted ${f.category} | ${range}`,
+        deleteFinanceId
+      );
+
+      renderFinance();
+    });
 }
 
 async function dpFinance(id) {
@@ -2533,7 +2580,10 @@ async function dpFinance(id) {
 
   setDPHeader('📁', '#eff6ff', f.category, "Folder #" + f.folder_number);
 
-  const range = `${f.category_code}${String(f.range_start).padStart(5,'0')} - ${f.category_code}${String(f.range_end).padStart(5,'0')}`;
+  const start = String(f.range_start).padStart(4,'0');
+  const end   = String(f.range_end).padStart(4,'0');
+
+  const range = `${f.category_code}${f.year}${start} - ${f.category_code}${f.year}${end}`;
 
   const html = `
     <div class="dp-section">
@@ -2544,7 +2594,16 @@ async function dpFinance(id) {
         ${dpField("Category", f.category)}
         ${dpField("Code", f.category_code)}
         ${dpField("Range", range)}
-        ${dpField("Location", f.location)}
+        ${dpField(
+          "Location",
+          `<span class="badge ${f.location === 'STORAGE' ? 'b-green' : 'b-blue'}">
+            ${f.location}
+          </span>
+          <button class="btn btn-xs btn-outline"
+            onclick="event.stopPropagation(); toggleFinanceLocation(${f.finance_id})">
+            🔄
+          </button>`
+        )}
       </div>
     </div>
 
@@ -2580,14 +2639,21 @@ async function editFinance(id) {
   openM("m-add-fin");
 
   setTimeout(() => {
+    const catSelect = document.getElementById("fin-f-cat");
+
+    loadFinanceCategories();
+    catSelect.value = f.category;
+
+    document.getElementById("fin-f-start").value =
+      String(f.range_start).padStart(4, '0');
+
+    document.getElementById("fin-f-end").value =
+      String(f.range_end).padStart(4, '0');
+
     document.getElementById("fin-f-year").value = f.year;
     document.getElementById("fin-f-folder").value = f.folder_number;
-    document.getElementById("fin-f-cat").value = f.category;
-    document.getElementById("fin-f-code").value = f.category_code;
-    document.getElementById("fin-f-start").value = f.range_start;
-    document.getElementById("fin-f-end").value = f.range_end;
-    document.getElementById("fin-f-loc").value = f.location;
     document.getElementById("fin-f-remarks").value = f.remarks || "";
+
   }, 100);
 }
 
@@ -2607,6 +2673,63 @@ function autoSetCode() {
 
   document.getElementById("fin-f-code").value = code;
 }
+
+async function toggleFinanceLocation(id) {
+
+  const res = await fetch(`${API_URL}/api/finance-documents/${id}`);
+  const f = await res.json();
+
+  if (!f) return;
+
+  const newLoc = f.location === "STORAGE" ? "OFFICE" : "STORAGE";
+
+  // ✅ prepare formatted range
+  const start = String(f.range_start).padStart(4, '0');
+  const end   = String(f.range_end).padStart(4, '0');
+
+  const range = `${f.category_code}${f.year}${start} - ${f.category_code}${f.year}${end}`;
+
+  await fetch(`${API_URL}/api/finance-documents/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...f,
+      location: newLoc
+    })
+  });
+
+  showToast("Location updated", "t-success");
+
+  // ✅ FIXED LOG ✅🔥
+  addLog(
+    "UPDATE",
+    "FINANCE",
+    `Moved ${f.category} | ${range} → ${newLoc}`,
+    id
+  );
+
+  renderFinance();
+
+  // ✅ FIXED REFRESH ✅🔥
+  if (dpCurrentType === "finance") {
+    dpFinance(id);
+  }
+}
+
+
+function openAddFinance() {
+  editFinanceId = null;
+
+  openM("m-add-fin");
+
+  const catSelect = document.getElementById("fin-f-cat");
+
+  loadFinanceCategories();
+
+  catSelect.disabled = false; 
+  catSelect.value = ""; 
+}
+
 
 
 
@@ -2821,6 +2944,7 @@ function initAllModules() {
   renderUsers();
   renderVehicles()
   loadFurLocations();
+  loadFinanceCategories()
   checkMonthlyOdoReminder();
   refreshDashboard();
   refreshPageActions('dashboard');
