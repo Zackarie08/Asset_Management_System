@@ -55,3 +55,7 @@ app.use("/api/laptop-maintenance", require("./routes/laptopMaintenance"));
 const financeRoutes = require("./routes/finance");
 
 app.use("/api/finance-documents", financeRoutes);
+
+const contractRoutes = require("./routes/contracts");
+
+app.use("/api/contracts", contractRoutes);

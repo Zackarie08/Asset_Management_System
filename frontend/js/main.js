@@ -12,11 +12,12 @@ let currentUser = null; // { name, role, initials }
 const ADMIN_NAV = [
   { id:'dashboard',   icon:'🏠', label:'Dashboard',            badge:null },
   { id:'inventory',   icon:'📦', label:'Inventory Management', badge:'inv' },
+    { id:'orders',      icon:'🛒', label:'Purchase Orders',      badge:'po' },
   { id:'furniture',   icon:'🪑', label:'Office Furniture',     badge:null },
   { id:'itsupplies',  icon:'🖨️', label:'IT Supplies',          badge:'it' },
   { id:'laptops',     icon:'💻', label:'Laptops',              badge:null },
-  { id:'orders',      icon:'🛒', label:'Purchase Orders',      badge:'po' },
   { id:'vehicles',    icon:'🚗', label:'Vehicle Management',   badge:null },
+  { id:'contracts', icon:'📄', label:'Contracts', badge:null },
   { id:'globe',       icon:'📱', label:'Globe Mobile Plans',   badge:null, admin:true },
   { id:'m365',        icon:'💼', label:'M365 Licenses',        badge:null, admin:true },
   { id:'finance', icon:'📁', label:'Finance Documents', badge:null, admin:true },
@@ -36,11 +37,12 @@ const EMP_NAV = ['dashboard','inventory','furniture','itsupplies','laptops','ord
 const PAGE_META = {
   dashboard:  { title:'Dashboard',         parent:'Asset Management System' },
   inventory:  { title:'Inventory Management', parent:'Asset Management System' },
+  orders:     { title:'Purchase Orders',   parent:'Asset Management System' },
   furniture:  { title:'Office Furniture',  parent:'Asset Management System' },
   itsupplies: { title:'IT Supplies',       parent:'Asset Management System' },
   laptops:    { title:'Laptop Management', parent:'Asset Management System' },
-  orders:     { title:'Purchase Orders',   parent:'Asset Management System' },
   vehicles:   { title:'Vehicle Management',parent:'Asset Management System' },
+  contracts: { title:'Contracts', parent:'Asset Management System' },
   globe:      { title:'Globe Mobile Plans',parent:'Asset Management System' },
   m365:       { title:'M365 Licenses',     parent:'Asset Management System' },
   finance: { title:'Finance Documents', parent:'Asset Management System' },
@@ -76,10 +78,11 @@ function openDP(type, id, row) {
   const renderers = {
     inventory: dpInventory,
     furniture: dpFurniture,
+    order:     dpOrder,
     itsupplies: dpITSupplies,
     laptop:    dpLaptop,
-    order:     dpOrder,
     vehicle:   dpVehicle,
+    contracts: dpContract,
     globe:     dpGlobe,
     m365:      dpM365,
     finance:   dpFinance,
@@ -1406,6 +1409,91 @@ function cancelOrder(id) {
     renderInventory();
     closeDP();
   });
+}
+
+
+
+
+
+
+
+
+
+/* ──────────────────────────────────────────────────────────────
+   CONTRACTS
+────────────────────────────────────────────────────────────── */
+
+async function renderContracts() {
+  const res = await fetch(`${API_URL}/api/contracts`);
+  const data = await res.json();
+
+  const tbody = document.getElementById("con-tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(c => {
+
+    let validity = c.validity_type === "YEAR"
+      ? c.valid_year
+      : `${c.valid_from} - ${c.valid_to}`;
+
+    const tr = document.createElement("tr");
+    tr.className = "tr-clickable";
+
+    tr.innerHTML = `
+      <td>${c.contract_date}</td>
+      <td>${c.other_party}</td>
+      <td>${c.description}</td>
+      <td>${validity}</td>
+      <td>
+        <button onclick="event.stopPropagation(); deleteContract(${c.contract_id})">🗑️</button>
+      </td>
+    `;
+
+    tr.onclick = () => openDP("contracts", c.contract_id, tr);
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("con-ct").innerText = data.length + " records";
+}
+
+async function saveContract() {
+
+  const type = document.getElementById("con-f-type").value;
+
+  const payload = {
+    contract_date: document.getElementById("con-f-date").value,
+    other_party: document.getElementById("con-f-party").value,
+    description: document.getElementById("con-f-desc").value,
+
+    validity_type: type,
+    valid_year: type === "YEAR" ? document.getElementById("con-f-year").value : null,
+    valid_from: type === "RANGE" ? document.getElementById("con-f-from").value : null,
+    valid_to: type === "RANGE" ? document.getElementById("con-f-to").value : null,
+
+    remarks: document.getElementById("con-f-remarks").value
+  };
+
+  await fetch(`${API_URL}/api/contracts`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  });
+
+  showToast("Contract Saved", "t-success");
+
+  closeM("m-add-con");
+  renderContracts();
+
+  addLog("CREATE", "CONTRACTS", `Added Contract with ${payload.other_party}`, null);
+}
+
+function toggleValidity() {
+  const type = document.getElementById("con-f-type").value;
+
+  document.getElementById("con-year").style.display = type === "YEAR" ? "block" : "none";
+  document.getElementById("con-range").style.display = type === "RANGE" ? "block" : "none";
+  document.getElementById("con-range2").style.display = type === "RANGE" ? "block" : "none";
 }
 
 
@@ -2943,6 +3031,7 @@ function initAllModules() {
   renderLogs();
   renderUsers();
   renderVehicles()
+  renderContracts();
   loadFurLocations();
   loadFinanceCategories()
   checkMonthlyOdoReminder();

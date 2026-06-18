@@ -90,10 +90,14 @@ function refreshPageActions(page) {
       if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddLaptop()">➕ Add Laptop</button>`;
       else el.innerHTML = '';
     },
-  orders: () => {
-    const el = document.getElementById('po-actions');
-    el.innerHTML = ''; // ✅ REMOVE BUTTON
-  },
+    orders: () => {
+      const el = document.getElementById('po-actions');
+      el.innerHTML = ''; 
+    },
+    contracts: () => {
+      const el = document.getElementById('con-actions');
+      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-con')">➕ Add Contract</button>`;
+    },
     vehicles:   () => {
       const el = document.getElementById('veh-actions');
       if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')">➕ Add Vehicle</button>`;

@@ -200,7 +200,7 @@ CREATE TABLE m365 (
 );
 
 -- =========================
--- FINANCIAL DOCUMENTS
+-- FINANCIAL DOCUMENTS ----- DONE
 -- =========================
 CREATE TABLE finance_documents (
   finance_id SERIAL PRIMARY KEY,
@@ -216,7 +216,7 @@ CREATE TABLE finance_documents (
 );
 
 -- =========================
--- CONTRACTS
+-- CONTRACTS ----- DONE
 -- =========================
 CREATE TABLE contracts (
   contract_id SERIAL PRIMARY KEY,
@@ -233,7 +233,7 @@ CREATE TABLE contracts (
 );
 
 -- =========================
--- CONTRACTS REQUEST
+-- CONTRACTS REQUEST ----- DONE
 -- =========================
 CREATE TABLE contract_requests (
   request_id SERIAL PRIMARY KEY,

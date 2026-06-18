@@ -401,6 +401,40 @@
       </section>
 
 
+      <!-- ════════════════ CONTRACTS ════════════════ -->
+      <section class="page" id="page-contracts">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Contracts</div>
+            <div class="pg-sub">Company contracts · Click to view details</div>
+          </div>
+          <div class="pg-actions" id="con-actions"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📄 Contract Records</div>
+            <span class="badge b-slate" id="con-ct">0 records</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Other Party</th>
+                  <th>Description</th>
+                  <th>Validity</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="con-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
 
       <!-- ════════════════ VEHICLE MANAGEMENT ════════════════ -->
       <section class="page" id="page-vehicles">
@@ -1218,6 +1252,83 @@
         <button class="btn btn-outline" onclick="closeM('m-confirm-lp-del')">Cancel</button>
         <button class="btn btn-red" onclick="confirmDeleteLaptop()">Delete</button>
       </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- ════════════════ CONTRACT MODULE ════════════════ -->
+
+<!-- Add Contract -->
+<div class="modal-overlay" id="m-add-con">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📄 Contract</div>
+      <button class="modal-close" onclick="closeM('m-add-con')">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Date *</label>
+          <input class="form-ctrl" type="date" id="con-f-date">
+        </div>
+
+        <div class="form-grp">
+          <label>Other Party *</label>
+          <input class="form-ctrl" id="con-f-party">
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Description *</label>
+        <input class="form-ctrl" id="con-f-desc">
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Validity Type</label>
+          <select id="con-f-type" class="form-ctrl" onchange="toggleValidity()">
+            <option value="YEAR">Year</option>
+            <option value="RANGE">Range</option>
+          </select>
+        </div>
+
+        <div class="form-grp" id="con-year">
+          <label>Year</label>
+          <input class="form-ctrl" type="number" id="con-f-year">
+        </div>
+
+        <div class="form-grp" id="con-range" style="display:none;">
+          <label>From</label>
+          <input class="form-ctrl" type="date" id="con-f-from">
+        </div>
+
+        <div class="form-grp" id="con-range2" style="display:none;">
+          <label>To</label>
+          <input class="form-ctrl" type="date" id="con-f-to">
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="con-f-remarks"></textarea>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-con')">Cancel</button>
+        <button class="btn btn-green" onclick="saveContract()">✅ Save</button>
+      </div>
+
     </div>
   </div>
 </div>
