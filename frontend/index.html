@@ -1333,6 +1333,34 @@
   </div>
 </div>
 
+<!-- Confirm Delete Contract -->
+<div class="modal-overlay" id="m-confirm-con-del">
+  <div class="modal modal-sm">
+    <div class="modal-hd">
+      <div class="modal-title">Confirm Delete</div>
+      <button class="modal-close" onclick="closeM('m-confirm-con-del')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div>
+        Are you sure you want to delete this contract?
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline"
+          onclick="closeM('m-confirm-con-del')">
+          Cancel
+        </button>
+
+        <button class="btn btn-red"
+          onclick="confirmDeleteContract()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 

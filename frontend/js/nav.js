@@ -96,7 +96,7 @@ function refreshPageActions(page) {
     },
     contracts: () => {
       const el = document.getElementById('con-actions');
-      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-con')">➕ Add Contract</button>`;
+      if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-con')">➕ Add Contract</button>`;
     },
     vehicles:   () => {
       const el = document.getElementById('veh-actions');

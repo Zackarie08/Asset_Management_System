@@ -52,6 +52,10 @@ const PAGE_META = {
 
 let currentPage = 'dashboard';
 
+function isAdminUser() {
+  return currentUser.role === "admin" || currentUser.role === "super_admin";
+}
+
 
 
 
@@ -147,10 +151,6 @@ async function renderFurniture() {
       <td>₱${f.price?.toLocaleString() || 0}</td>
       <td>${f.location_name || '-'}</td>
       <td>${f.remarks || '-'}</td>
-      <td>
-        <button onclick="event.stopPropagation(); editFur(${f.office_furniture_id})">✏️</button>
-        <button onclick="event.stopPropagation(); deleteFur(${f.office_furniture_id}, '${f.furniture_name}')">🗑️</button>
-      </td>
     `;
 
     tr.addEventListener('click', () => {
@@ -185,15 +185,17 @@ async function dpFurniture(id) {
 
     <div class="dp-section">
       <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm"
-          onclick="editFur(${f.office_furniture_id})">
-          ✏️ Edit
-        </button>
+        ${isAdminUser() ? `
+          <button class="btn btn-primary btn-sm"
+            onclick="editFur(${f.office_furniture_id})">
+            ✏️ Edit
+          </button>
 
-        <button class="btn btn-red btn-sm"
-          onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name}')">
-          🗑️ Delete
-        </button>
+          <button class="btn btn-red btn-sm"
+            onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name}')">
+            🗑️ Delete
+          </button>
+        ` : ""}
       </div>
     </div>
   `;
@@ -429,10 +431,6 @@ async function renderITSupplies() {
       </td>
       <td>${it.location_name || '-'}</td>
       <td>${it.status || '-'}</td>
-      <td>
-        <button onclick="event.stopPropagation(); editIT(${it.it_supplies_id})">✏️</button>
-        <button onclick="event.stopPropagation(); deleteIT(${it.it_supplies_id}, '${it.asset_name}')">🗑️</button>
-      </td>
     `;
 
     tr.addEventListener("click", () => {
@@ -486,15 +484,17 @@ async function dpITSupplies(id) {
 
     <div class="dp-section">
       <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm"
-          onclick="editIT(${it.it_supplies_id})">
-          ✏️ Edit
-        </button>
+        ${isAdminUser() ? `
+          <button class="btn btn-primary btn-sm"
+            onclick="editIT(${it.it_supplies_id})">
+            ✏️ Edit
+          </button>
 
-        <button class="btn btn-red btn-sm"
-          onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name}')">
-          🗑️ Delete
-        </button>
+          <button class="btn btn-red btn-sm"
+            onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name}')">
+            🗑️ Delete
+          </button>
+        ` : ""}
       </div>
     </div>
   `;
@@ -706,10 +706,6 @@ async function renderLaptops() {
       <td>${lp.current_user_id || '—'}</td>
       <td>${badge(lp.status, sCls)}</td>
       <td>${lp.warranty_end_date || '-'}</td>
-      <td>-</td>
-      <td>
-        <button onclick="event.stopPropagation(); deleteLaptop(${lp.laptop_id})">🗑️</button>
-      </td>
     `;
 
     tr.addEventListener("click", () => {
@@ -883,6 +879,19 @@ async function dpLaptop(id, useCache = false) {
       </div>
     </div>
 
+    ${isAdminUser() ? `
+      <div class="dp-section">
+        <div class="dp-section-hd">⚡ Actions</div>
+
+        <div class="dp-action-row">
+          <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})">👤 Assign User</button>
+          <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})">🔧 Technical Check</button>
+          <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})">✏️ Edit</button>
+          <button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})">🗑️ Delete</button>
+        </div>
+      </div>
+    ` : ""}
+
     <div class="dp-section">
       <div class="dp-section-hd" onclick="toggleAssignHistory()">
         📜 Assignment History ${showAssignHistory ? "▲" : "▼"}
@@ -895,17 +904,6 @@ async function dpLaptop(id, useCache = false) {
         🔧 Technical Check History ${showMaintHistory ? "▲" : "▼"}
       </div>
       ${showMaintHistory ? maintHTML : ""}
-    </div>
-
-    <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
-
-      <div class="dp-action-row">
-        <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})">👤 Assign User</button>
-        <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})">🔧 Technical Check</button>
-        <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})">🗑️ Delete</button>
-      </div>
     </div>
   `;
 
@@ -1424,6 +1422,8 @@ function cancelOrder(id) {
    CONTRACTS
 ────────────────────────────────────────────────────────────── */
 
+let deleteContractId = null;
+
 async function renderContracts() {
   const res = await fetch(`${API_URL}/api/contracts`);
   const data = await res.json();
@@ -1445,9 +1445,6 @@ async function renderContracts() {
       <td>${c.other_party}</td>
       <td>${c.description}</td>
       <td>${validity}</td>
-      <td>
-        <button onclick="event.stopPropagation(); deleteContract(${c.contract_id})">🗑️</button>
-      </td>
     `;
 
     tr.onclick = () => openDP("contracts", c.contract_id, tr);
@@ -1723,10 +1720,13 @@ function editContract(id) {
 }
 
 function deleteContract(id) {
+  deleteContractId = id;
+  openM("m-confirm-con-del");
+}
 
-  if (!confirm("Delete this contract?")) return;
+function confirmDeleteContract() {
 
-  fetch(`${API_URL}/api/contracts/${id}`, {
+  fetch(`${API_URL}/api/contracts/${deleteContractId}`, {
     method: "DELETE"
   })
   .then(() => {
@@ -1734,9 +1734,12 @@ function deleteContract(id) {
     showToast("Contract Deleted", "t-warning");
 
     addLog("DELETE", "CONTRACT",
-      `Deleted contract ${id}`, id);
+      `Deleted contract ${deleteContractId}`, deleteContractId);
+
+    closeM("m-confirm-con-del");
 
     closeDP();
+
     renderContracts();
   });
 }
@@ -2092,30 +2095,32 @@ async function dpVehicle(id) {
       </div>
     </div>
 
-    <div class="dp-section">
-      <div class="dp-action-row">
-          ${
-            v.status !== "UNDER_MAINTENANCE"
-              ? `<button class="btn btn-primary btn-sm"
-                  onclick="openVehMaint(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
-                  🔧 Place Under Maintenance
-                </button>           
-                <button class="btn btn-outline btn-sm"
-                  onclick="openUpdateOdo(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
-                  📊 Update Odometer
-                </button>
-                `
-              : `<button class="btn btn-green btn-sm"
-                  onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
-                  ✅ Complete Maintenance
-                </button>`
-          }
-          <button class="btn btn-red btn-sm"
-            onclick="deleteVehicle(${v.vehicle_id}, '${v.plate_number}')">
-            🗑️ Delete Vehicle
-          </button>
+    ${isAdminUser() ? `
+      <div class="dp-section">
+        <div class="dp-action-row">
+            ${
+              v.status !== "UNDER_MAINTENANCE"
+                ? `<button class="btn btn-primary btn-sm"
+                    onclick="openVehMaint(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
+                    🔧 Place Under Maintenance
+                  </button>           
+                  <button class="btn btn-outline btn-sm"
+                    onclick="openUpdateOdo(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
+                    📊 Update Odometer
+                  </button>
+                  `
+                : `<button class="btn btn-green btn-sm"
+                    onclick="completeMaintenance(${v.vehicle_id}, ${v.odometer}, '${v.plate_number}')">
+                    ✅ Complete Maintenance
+                  </button>`
+            }
+            <button class="btn btn-red btn-sm"
+              onclick="deleteVehicle(${v.vehicle_id}, '${v.plate_number}')">
+              🗑️ Delete Vehicle
+            </button>
+        </div>
       </div>
-    </div>
+    ` : ""}
 
     <div class="dp-section">
       <div class="dp-section-hd">🔧 Maintenance History</div>
