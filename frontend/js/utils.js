@@ -38,8 +38,33 @@ function badge(text, cls) { return `<span class="badge ${cls}">${text}</span>`; 
 /* ──────────────────────────────────────────────────────────────
    MODAL HELPERS
 ────────────────────────────────────────────────────────────── */
-function openM(id)  { document.getElementById(id).classList.add('open'); }
-function closeM(id) { document.getElementById(id).classList.remove('open'); }
+function openM(id)  { 
+  document.getElementById(id).classList.add('open'); 
+}
+
+function closeM(id) {
+  const el = document.getElementById(id);
+  el.classList.remove("open");
+
+  // ✅ auto reset form inside modal
+  resetForm(id);
+}
+
+function resetForm(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const inputs = container.querySelectorAll("input, textarea, select");
+
+  inputs.forEach(el => {
+    if (el.tagName === "SELECT") {
+      el.selectedIndex = 0;
+    } else {
+      el.value = "";
+    }
+  });
+}
+
 document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => {
     if (e.target === o) {

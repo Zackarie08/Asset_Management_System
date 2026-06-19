@@ -57,6 +57,60 @@ router.post('/', async (req, res) => {
   }
 });
 
+// ✅ UPDATE VEHICLE
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      vehicle_name,
+      plate_number,
+      type,
+      purchase_date,
+      status,
+      price,
+      remarks,
+      odometer,
+      last_maintenance_km,
+      maintenance_threshold
+    } = req.body;
+
+    await pool.query(
+      `UPDATE vehicle SET
+        vehicle_name = $1,
+        plate_number = $2,
+        type = $3,
+        purchase_date = $4,
+        status = $5,
+        price = $6,
+        remarks = $7,
+        odometer = $8,
+        last_maintenance_km = $9,
+        maintenance_threshold = $10
+      WHERE vehicle_id = $11`,
+      [
+        vehicle_name,
+        plate_number,
+        type,
+        purchase_date,
+        status,
+        price,
+        remarks,
+        odometer,
+        last_maintenance_km,
+        maintenance_threshold,
+        id
+      ]
+    );
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error updating vehicle");
+  }
+});
+
 router.post("/maintenance", async (req, res) => {
   const {
     vehicle_id,

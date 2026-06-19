@@ -1535,7 +1535,12 @@ async function saveContract() {
   closeM("m-add-con");
   renderContracts();
 
-  addLog("CREATE", "CONTRACTS", `Added Contract with ${payload.other_party}`, null);
+  addLog(
+    editState.id ? "UPDATE" : "CREATE",
+    "CONTRACT",
+    `${editState.id ? "Updated" : "Added"} Contract | ${payload.other_party}`,
+    editState.id || null
+  );
 }
 
 async function renderContractActions(c) {
@@ -1726,22 +1731,29 @@ function deleteContract(id) {
 
 function confirmDeleteContract() {
 
-  fetch(`${API_URL}/api/contracts/${deleteContractId}`, {
-    method: "DELETE"
-  })
-  .then(() => {
+  fetch(`${API_URL}/api/contracts/${deleteContractId}`)
+    .then(res => res.json())
+    .then(c => {
 
-    showToast("Contract Deleted", "t-warning");
+      return fetch(`${API_URL}/api/contracts/${deleteContractId}`, {
+        method: "DELETE"
+      }).then(() => c);
+    })
+    .then(c => {
 
-    addLog("DELETE", "CONTRACT",
-      `Deleted contract ${deleteContractId}`, deleteContractId);
+      addLog(
+        "DELETE",
+        "CONTRACT",
+        `Deleted Contract | ${c.other_party}`,
+        deleteContractId
+      );
 
-    closeM("m-confirm-con-del");
+      showToast("Contract Deleted", "t-warning");
 
-    closeDP();
-
-    renderContracts();
-  });
+      closeM("m-confirm-con-del");
+      closeDP();
+      renderContracts();
+    });
 }
 
 function requestContract(id) {
@@ -1756,8 +1768,12 @@ function requestContract(id) {
   .then(() => {
     showToast("Contract Request sent", "t-success");
 
-    addLog("CREATE", "CONTRACT",
-      `Requested contract ID ${id}`, id);
+    addLog(
+      "REQUEST",
+      "CONTRACT",
+      `Requested Contract | ${c.other_party}`,
+      id
+    );
 
     dpContract(id); // ✅ refresh
     refreshContractUI(id);
@@ -1773,8 +1789,12 @@ function approveRequest(id) {
   .then(() => {
     showToast("Contract Approved", "t-success");
 
-    addLog("UPDATE", "CONTRACT",
-      `Approved contract request ${id}`, id);
+    addLog(
+      "REQUEST",
+      "CONTRACT",
+      `Approved Request | ${c.other_party}`,
+      id
+    );
 
     renderContracts();
     dpContract(dpCurrentId);
@@ -1789,8 +1809,12 @@ function returnContract(id) {
   .then(() => {
     showToast("Contract Returned", "t-success");
 
-    addLog("UPDATE", "CONTRACT",
-      `Returned contract request ${id}`, id);
+  addLog(
+    "REQUEST",
+    "CONTRACT",
+    `Returned Contract | ${c.other_party}`,
+    id
+  );
 
     renderContracts();
     dpContract(dpCurrentId);
@@ -1805,8 +1829,12 @@ function cancelRequest(id) {
   .then(() => {
     showToast("Request cancelled", "t-warning");
 
-    addLog("DELETE", "CONTRACT",
-      `Cancelled contract request ${id}`, id);
+    addLog(
+      "REQUEST",
+      "CONTRACT",
+      `Cancelled request Contract | ${c.other_party}`,
+      id
+    );
 
     dpContract(dpCurrentId);
     refreshContractUI(id);
@@ -1820,8 +1848,12 @@ function denyRequest(id) {
   .then(() => {
     showToast("Request denied", "t-warning");
 
-    addLog("UPDATE", "CONTRACT",
-      `Denied contract request ${id}`, id);
+    addLog(
+      "REQUEST",
+      "CONTRACT",
+      `Denied Request | ${c.other_party}`,
+      id
+    );
 
     renderContracts();
     dpContract(dpCurrentId);
@@ -1942,8 +1974,14 @@ function saveVehicle() {
     return;
   }
 
-  fetch(`${API_URL}/api/vehicle`, {
-    method: "POST",
+  const url = editState.id
+    ? `${API_URL}/api/vehicle/${editState.id}`
+    : `${API_URL}/api/vehicle`;
+
+  const method = editState.id ? "PUT" : "POST";
+
+  fetch(url, {
+    method,
     headers: {
       "Content-Type": "application/json"
     },
@@ -1956,32 +1994,35 @@ function saveVehicle() {
       price,
       remarks,
       odometer,
-      last_maintenance_km: 0, 
+      last_maintenance_km: 0,
       maintenance_threshold: threshold
     })
-
   })
   .then(res => {
     if (!res.ok) throw new Error("Failed to save");
     return res.text();
   })
   .then(() => {
-    showToast("Vehicle added", "t-success");
-    closeM("m-add-veh");
-    renderVehicles();
-  })
-  .then(() => {
-    showToast("Vehicle added", "t-success");
+
+    showToast(
+      editState.id ? "Vehicle updated" : "Vehicle added",
+      "t-success"
+    );
 
     addLog(
-      "CREATE",
-      "Vehicle",
-      `Added vehicle: "${name}" (Plate No. ${plate})`,
-      "VEH-" + plate
+      editState.id ? "UPDATE" : "CREATE",
+      "VEHICLE",
+      `${editState.id ? "Updated" : "Added"} Vehicle | ${name}`,
+      editState.id || null
     );
 
     closeM("m-add-veh");
     renderVehicles();
+
+    // ✅ reset edit state
+    editState.id = null;
+    editState.type = null;
+
   })
     .catch(err => {
     console.error(err);
@@ -2114,6 +2155,12 @@ async function dpVehicle(id) {
                     ✅ Complete Maintenance
                   </button>`
             }
+            
+            <button class="btn btn-primary btn-sm"
+              onclick="editVehicle(${v.vehicle_id})">
+              ✏️ Edit
+            </button>
+
             <button class="btn btn-red btn-sm"
               onclick="deleteVehicle(${v.vehicle_id}, '${v.plate_number}')">
               🗑️ Delete Vehicle
@@ -2129,6 +2176,33 @@ async function dpVehicle(id) {
   `;
 
   document.getElementById("dp-body").innerHTML = html;
+}
+
+async function editVehicle(id) {
+
+  const res = await fetch(`${API_URL}/api/vehicle`);
+  const data = await res.json();
+
+  const v = data.find(x => x.vehicle_id === id);
+  if (!v) return;
+
+  openM("m-add-veh");
+
+  setTimeout(() => {
+
+    document.getElementById("veh-f-name").value = v.vehicle_name;
+    document.getElementById("veh-f-plate").value = v.plate_number;
+    document.getElementById("veh-f-type").value = v.type;
+    document.getElementById("veh-f-remarks").value = v.remarks || "";
+
+    document.getElementById("veh-f-date").value = v.purchase_date || "";
+    document.getElementById("veh-f-price").value = v.price || "";
+    document.getElementById("veh-f-odometer").value = v.odometer || 0;
+
+    editState.id = id;
+    editState.type = "vehicle";
+
+  }, 50);
 }
 
 
@@ -2292,7 +2366,7 @@ function confirmDeleteVehicle() {
   .then(res => {
     if (!res.ok) throw new Error("Delete failed");
 
-    showToast("Vehicle deleted ✅", "t-warning");
+    showToast("Vehicle deleted", "t-warning");
 
     closeM("m-confirm-del");
     closeDP();
@@ -2300,7 +2374,7 @@ function confirmDeleteVehicle() {
     renderVehicles();
   })
   .then(() => {
-    showToast("Vehicle deleted ✅", "t-warning");
+    showToast("Vehicle deleted", "t-warning");
 
     addLog(
       "DELETE",
@@ -2315,7 +2389,7 @@ function confirmDeleteVehicle() {
   })
   .catch(err => {
     console.error(err);
-    showToast("Error deleting ❌", "t-error");
+    showToast("Error deleting", "t-error");
   });
 }
 
