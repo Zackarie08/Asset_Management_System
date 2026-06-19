@@ -1106,7 +1106,6 @@ function saveMaintenance() {
   });
 }
 
-
 let deleteLaptopId = null;
 
 function deleteLaptop(id) {
@@ -1509,6 +1508,12 @@ async function saveContract() {
 
   const type = document.getElementById("con-f-type").value;
 
+  const url = window.editContractId
+    ? `${API_URL}/api/contracts/${window.editContractId}`
+    : `${API_URL}/api/contracts`;
+
+  const method = window.editContractId ? "PUT" : "POST";
+
   const payload = {
     contract_date: document.getElementById("con-f-date").value,
     other_party: document.getElementById("con-f-party").value,
@@ -1529,7 +1534,7 @@ async function saveContract() {
   });
 
   showToast("Contract Saved", "t-success");
-
+  refreshContractUI();
   closeM("m-add-con");
   renderContracts();
 
@@ -1552,28 +1557,81 @@ async function renderContractActions(c) {
     const res = await fetch(`${API_URL}/api/contracts/requests`);
     const requests = await res.json();
 
+    // ✅ DEFINE THIS FIRST
+    const latestReq = requests
+      .filter(r => r.contract_id == c.contract_id)
+      .sort((a, b) => new Date(b.request_date) - new Date(a.request_date))[0];
+
+    // ✅ ACTIVE REQUEST ONLY
     const currentReq = requests.find(r =>
       r.contract_id == c.contract_id &&
-      r.status !== "RETURNED"
+      (r.status === "PENDING" || r.status === "APPROVED")
     );
     
-    if (currentReq) {
+    if (latestReq) {
+
+      let statusColor = "good";
+
+      if (latestReq.status === "APPROVED") statusColor = "good";
+      if (latestReq.status === "PENDING") statusColor = "warn";
+      if (latestReq.status === "REJECTED") statusColor = "bad";
+
       info = `
-        <div class="dp-muted" style="margin-bottom:6px;">
-          Requested by: <b>${currentReq.requested_name}</b><br>
-          Date: ${new Date(currentReq.request_date).toLocaleString()}
-        </div>
+        <ul class="mh-list">
+          <li class="mh-item">
+            <div class="mh-dot ${statusColor}"></div>
+            <div>
+              <div class="mh-cond info">
+                ${latestReq.requested_name}
+              </div>
+
+              <div class="mh-date">
+                ${new Date(latestReq.request_date).toLocaleDateString('en-US', {
+                  year:'numeric', month:'short', day:'numeric'
+                })}
+              </div>
+
+              <div class="mh-remarks">
+                Status: ${latestReq.status}
+              </div>
+            </div>
+          </li>
+        </ul>
       `;
     }
+    
+    // ✅ EMPLOYEE
 
-    // EMPLOYEE
-    if (!isAdmin && currentReq && currentReq.status === "PENDING") {
-      buttons = `
-        <button class="btn btn-red btn-sm"
-          onclick="cancelRequest(${currentReq.request_id})">
-          Cancel Request
-        </button>
-      `;
+    if (!isAdmin) {
+
+      // ✅ NO ACTIVE REQUEST → allow
+      if (!currentReq) {
+        buttons = `
+          <button class="btn btn-primary btn-sm"
+            onclick="requestContract(${c.contract_id})">
+            📩 Request Contract
+          </button>
+        `;
+      }
+
+      // ✅ ANOTHER USER REQUESTED → BLOCK
+      if (currentReq && currentReq.requested_by !== currentUser.user_id) {
+        buttons = `
+          <button class="btn btn-outline btn-sm" disabled>
+            🔒 Requested by ${currentReq.requested_name}
+          </button>
+        `;
+      }
+
+      // ✅ MY OWN REQUEST → allow cancel
+      if (currentReq && currentReq.requested_by === currentUser.user_id) {
+        buttons = `
+          <button class="btn btn-red btn-sm"
+            onclick="cancelRequest(${currentReq.request_id})">
+            ❌ Cancel Request
+          </button>
+        `;
+      }
     }
 
     // ADMIN
@@ -1624,12 +1682,63 @@ async function renderContractActions(c) {
   el.innerHTML = `
     <div class="dp-section">
       <div class="dp-section-hd">⚡ Actions</div>
-      <div class="dp-action-row">
-        ${info}
+
+      <div class="dp-action-row" style="margin-bottom:10px;">
         ${buttons || "<span class='dp-muted'>No actions available</span>"}
+      </div>
+
+      <div class="dp-history">
+        ${info}
       </div>
     </div>
   `;
+}
+
+function editContract(id) {
+  fetch(`${API_URL}/api/contracts/${id}`)
+    .then(res => res.json())
+    .then(c => {
+
+      openM("m-add-con");
+
+      setTimeout(() => {
+        document.getElementById("con-f-date").value = c.contract_date;
+        document.getElementById("con-f-party").value = c.other_party;
+        document.getElementById("con-f-desc").value = c.description;
+
+        document.getElementById("con-f-type").value = c.validity_type;
+        toggleValidity();
+
+        document.getElementById("con-f-year").value = c.valid_year || "";
+        document.getElementById("con-f-from").value = c.valid_from || "";
+        document.getElementById("con-f-to").value = c.valid_to || "";
+
+        document.getElementById("con-f-remarks").value = c.remarks || "";
+
+        // ✅ store edit mode
+        window.editContractId = id;
+
+      }, 100);
+    });
+}
+
+function deleteContract(id) {
+
+  if (!confirm("Delete this contract?")) return;
+
+  fetch(`${API_URL}/api/contracts/${id}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+
+    showToast("Contract Deleted", "t-warning");
+
+    addLog("DELETE", "CONTRACT",
+      `Deleted contract ${id}`, id);
+
+    closeDP();
+    renderContracts();
+  });
 }
 
 function requestContract(id) {
@@ -1648,6 +1757,7 @@ function requestContract(id) {
       `Requested contract ID ${id}`, id);
 
     dpContract(id); // ✅ refresh
+    refreshContractUI(id);
   });
 }
 
@@ -1665,6 +1775,7 @@ function approveRequest(id) {
 
     renderContracts();
     dpContract(dpCurrentId);
+    refreshContractUI(id);
   });
 }
 
@@ -1680,6 +1791,7 @@ function returnContract(id) {
 
     renderContracts();
     dpContract(dpCurrentId);
+    refreshContractUI(id);
   });
 }
 
@@ -1694,6 +1806,7 @@ function cancelRequest(id) {
       `Cancelled contract request ${id}`, id);
 
     dpContract(dpCurrentId);
+    refreshContractUI(id);
   });
 }
 
@@ -1709,6 +1822,7 @@ function denyRequest(id) {
 
     renderContracts();
     dpContract(dpCurrentId);
+    refreshContractUI(id);
   });
 }
 
@@ -1718,6 +1832,14 @@ function toggleValidity() {
   document.getElementById("con-year").style.display = type === "YEAR" ? "block" : "none";
   document.getElementById("con-range").style.display = type === "RANGE" ? "block" : "none";
   document.getElementById("con-range2").style.display = type === "RANGE" ? "block" : "none";
+}
+
+function refreshContractUI(id = null) {
+  renderContracts();
+
+  if (dpCurrentType === "contracts" && (id || dpCurrentId)) {
+    dpContract(id || dpCurrentId);
+  }
 }
 
 
@@ -3271,7 +3393,35 @@ function initAllModules() {
   });
 }
 
+let lastRequestCheck = 0;
 
+setInterval(async () => {
+
+  if (document.hidden) return;
+
+  try {
+    const res = await fetch(`${API_URL}/api/contracts/requests`);
+    const data = await res.json();
+
+    const latestTime = new Date(data[0]?.request_date || 0).getTime();
+
+    // ✅ only refresh if may new update
+    if (latestTime !== lastRequestCheck) {
+
+      lastRequestCheck = latestTime;
+
+      renderContracts();
+
+      if (dpOpen && dpCurrentType === "contracts") {
+        dpContract(dpCurrentId);
+      }
+    }
+
+  } catch (e) {
+    console.error("Polling error", e);
+  }
+
+}, 3000);
 
 
 

@@ -222,4 +222,30 @@ router.delete("/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+
+router.post("/request", async (req, res) => {
+  const { contract_id, user_id } = req.body;
+
+  // ✅ check existing active request
+  const existing = await db.query(`
+    SELECT * FROM contract_requests
+    WHERE contract_id=$1
+    AND status IN ('PENDING','APPROVED')
+  `, [contract_id]);
+
+  if (existing.rows.length > 0) {
+    return res.status(400).json({
+      error: "Contract already requested"
+    });
+  }
+
+  await db.query(`
+    INSERT INTO contract_requests (contract_id, requested_by)
+    VALUES ($1, $2)
+  `, [contract_id, user_id]);
+
+  res.json({ success: true });
+});
+
+
 module.exports = router;
