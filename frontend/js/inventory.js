@@ -18,15 +18,20 @@ async function renderInventory() {
     filtered = filtered.filter(item => item.category === activeCategory);
   }
 
-  // ── Step 3: Unit filter ──
+// ── Step 3: Unit filter ──
   if (activeUnit !== 'all') {
     filtered = filtered.filter(item => item.unit === activeUnit);
+  }
+
+  // ── Step 3b: Location filter ──
+  if (activeLocation !== 'all') {
+    filtered = filtered.filter(item => item.location_name === activeLocation);
   }
 
   // ── Step 4: Status filter ──
   if (activeStatus === 'low') {
     filtered = filtered.filter(item => item.current_quantity <= item.reorder_level);
-  } else if (activeStatus === 'ok') {
+  } else if (activeStatus === 'active') {
     filtered = filtered.filter(item => item.current_quantity > item.reorder_level);
   }
 
@@ -66,8 +71,8 @@ async function renderInventory() {
       <td>${item.location_name || "-"}</td>
       <td>
         ${isLow
-          ? '<span class="badge b-red">⚠️ Low Stock</span>'
-          : '<span class="badge b-green">OK</span>'
+          ? '<span class="badge b-red">Low Stock</span>'
+          : '<span class="badge b-green">Active</span>'
         }
       </td>
       <td>
@@ -77,11 +82,11 @@ async function renderInventory() {
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
           </button>
           <button class="btn btn-xs btn-red" title="Delete"
-            onclick="event.stopPropagation(); event.preventDefault(); event.stopImmediatePropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')">
+            onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2.2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -178,9 +183,13 @@ async function exportInventory() {
     filtered = filtered.filter(item => item.unit === activeUnit);
   }
 
+  if (activeLocation !== 'all') {
+    filtered = filtered.filter(item => item.location_name === activeLocation);
+  }
+
   if (activeStatus === 'low') {
     filtered = filtered.filter(item => item.current_quantity <= item.reorder_level);
-  } else if (activeStatus === 'ok') {
+  } else if (activeStatus === 'active') {
     filtered = filtered.filter(item => item.current_quantity > item.reorder_level);
   }
 
@@ -195,7 +204,7 @@ async function exportInventory() {
   const headers = ["Item Name", "Category", "Quantity", "Unit", "Location", "Status"];
 
   const rows = filtered.map(item => {
-    const status = item.current_quantity <= item.reorder_level ? "Low Stock" : "OK";
+    const status = item.current_quantity <= item.reorder_level ? "Low Stock" : "Active";
     return [
       `"${item.item_name}"`,
       `"${item.category}"`,
@@ -293,6 +302,12 @@ function saveInvItem() {
     }).then(() => {
       renderInventory();
       closeM('m-add-inv');
+
+      if (dpOpen && dpCurrentType === 'inventory' && dpCurrentId === invEditId) {
+        dpInventory(invEditId);
+      }
+
+      invEditId = null; // ✅ reset mode
     });
   }
 }
@@ -384,6 +399,10 @@ function doWithdraw() {
     closeM('m-withdraw');
     renderInventory();
     showToast('Withdraw successful','t-success');
+
+    if (dpOpen && dpCurrentType === 'inventory' && dpCurrentId === withdrawItemId) {
+      dpInventory(withdrawItemId);
+    }
   });
 }
 
@@ -402,14 +421,14 @@ async function dpInventory(id) {
   const isLow = item.current_quantity <= item.reorder_level;
   setDPHeader('📦','#eff6ff', item.item_name, item.category);
 
-  const progress = Math.min(100, Math.round((item.current_quantity / Math.max(item.quantity_limit*2,1))*100));
-  const barColor = isLow ? '#ef4444' : '#22c55e';
+  const maxCapacity = Math.max(item.reorder_level * 2, 1);
+  const progress = Math.min(100, Math.round((item.current_quantity / maxCapacity) * 100));
+  const barColor = isLow ? '#ff4d4f' : '#52c41a';
 
   let html = `
     ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Stock is below reorder level. Create a purchase order.</span></div>` : ''}
-    <div class="dp-status-row">${isLow ? badge('LOW STOCK','b-red') : badge('OK','b-green')}<span class="dp-status-label">Current: <strong>${item.current_quantity} ${item.unit}</strong> / Reorder at: <strong>${item.reorder_level}</strong></span></div>
     <div class="prog-bar-wrap">
-      <div class="prog-bar-labels"><span>Stock Level</span><span>${item.current_quantity} ${item.unit}</span></div>
+      <div class="prog-bar-labels"><span>Stock Level</span><span>${item.current_quantity} / ${item.reorder_level*2} ${item.unit}</span></div>
       <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${barColor}"></div></div>
     </div>
 
@@ -427,19 +446,53 @@ async function dpInventory(id) {
 
     ${item.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', item.remarks)}</div></div>` : ''}`;
 
-  if (isAdmin) {
+if (isAdmin) {
     html += `
     <div class="dp-section">
       <div class="dp-section-hd">⚡ Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
-        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
-        <button class="btn btn-outline btn-sm"onclick="event.stopPropagation(); event.preventDefault(); openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
-        
-        <button 
+        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Withdraw
+        </button>
+
+        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8l-9-5-9 5 9 5 9-5z"/>
+            <path d="M3 8v8l9 5 9-5V8"/>
+            <line x1="12" y1="13" x2="12" y2="21"/>
+          </svg>
+          Create Order
+        </button>
+
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); event.preventDefault(); openEditInv(${item.inventory_gen_id})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/>
+            <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Edit
+        </button>
+
+        <button
           class="btn btn-red btn-sm"
           onclick="event.stopPropagation(); event.preventDefault(); event.stopImmediatePropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')">
-          🗑️ Delete
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          Delete
         </button>
 
       </div>
@@ -539,6 +592,7 @@ function confirmDeleteInventory() {
 let invId = 13;
 let activeCategory = 'all';
 let activeUnit = 'all';
+let activeLocation = 'all';
 let activeStatus = 'all';
 let searchQuery = '';
 let currentInvPage = 1;
@@ -558,8 +612,9 @@ function filterInventory(cat, btn) {
 }
 
 function applyInvFilters() {
-  activeUnit   = document.getElementById('inv-filter-unit').value;
-  activeStatus = document.getElementById('inv-filter-status').value;
+  activeUnit     = document.getElementById('inv-filter-unit').value;
+  activeLocation = document.getElementById('inv-filter-location').value;
+  activeStatus   = document.getElementById('inv-filter-status').value;
   currentInvPage = 1;
   renderInventory();
 }
@@ -587,11 +642,12 @@ async function loadLocationDropdown() {
   const res = await fetch(`${API_URL}/api/location`);
   const locations = await res.json();
 
-  const selects = [
+  // ✅ Add Item / Edit form select — value must be location_id (FK)
+  const formSelects = [
     document.getElementById("inv-f-loc"),
   ];
 
-  selects.forEach(select => {
+  formSelects.forEach(select => {
     if (!select) return;
 
     select.innerHTML = "";
@@ -603,6 +659,25 @@ async function loadLocationDropdown() {
       select.appendChild(opt);
     });
   });
+
+  // ✅ Table filter select — value must be location_name (matches item.location_name from /api/inventory)
+  const filterSelect = document.getElementById("inv-filter-location");
+  if (filterSelect) {
+    const previousValue = filterSelect.value || 'all';
+
+    filterSelect.innerHTML = '<option value="all">Location: All</option>';
+
+    locations.forEach(loc => {
+      const opt = document.createElement("option");
+      opt.value = loc.location_name;
+      opt.textContent = loc.location_name;
+      filterSelect.appendChild(opt);
+    });
+
+    // ✅ restore previous selection if it still exists in the list
+    const stillExists = Array.from(filterSelect.options).some(o => o.value === previousValue);
+    filterSelect.value = stillExists ? previousValue : 'all';
+  }
 }
 
 // ── Search Listener ──
@@ -615,4 +690,9 @@ document.addEventListener("DOMContentLoaded", () => {
     currentInvPage = 1;
     renderInventory();
   });
+});
+
+// ── Populate Location filter on load ──
+document.addEventListener("DOMContentLoaded", () => {
+  loadLocationDropdown();
 });
