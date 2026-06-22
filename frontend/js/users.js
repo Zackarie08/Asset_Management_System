@@ -48,7 +48,7 @@ function saveUser() {
   const role = document.getElementById("u-role").value;
   const department = document.getElementById("u-dept").value;
 
-  if (!name || !email || !role || !department) {
+  if (!name || !email || !department) {
     showToast("Please fill all required fields", "t-error");
     return;
   }
@@ -251,12 +251,20 @@ function editUser(id) {
       const u = data.find(x => x.user_id === id);
       if (!u) return;
 
-      editUserId = id;
+      userEditId = id;
 
       document.getElementById("e-name").value = u.name;
       document.getElementById("e-email").value = u.email;
       document.getElementById("e-dept").value = u.department || "";
       document.getElementById("e-role").value = u.role;
+
+      const roleInput = document.getElementById("e-role");
+
+      roleInput.value = u.role;
+
+      // ✅ store original role
+      roleInput.setAttribute("data-original", u.role);
+
 
       // ✅ 🔥 SUPER ADMIN PROTECTION
       if (u.role === "super_admin") {
@@ -275,14 +283,18 @@ function updateUser() {
   const name = document.getElementById("e-name").value;
   const email = document.getElementById("e-email").value;
   const department = document.getElementById("e-dept").value;
-  const role = document.getElementById("e-role").value;
+  const roleInput = document.getElementById("e-role");
 
-  if (!name || !email || !department || !role) {
-    showToast("Fill all required fields ❌", "t-error");
+  let role = roleInput.value || roleInput.getAttribute("data-original");
+  console.log("UPDATE CLICKED");
+  console.log("ID:", userEditId);
+
+  if (!name || !email || !department) {
+    showToast("Fill all required fields", "t-error");
     return;
   }
 
-  fetch(`${API_URL}/api/auth/users/${editUserId}`, {
+  fetch(`${API_URL}/api/auth/users/${userEditId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json"

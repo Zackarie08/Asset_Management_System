@@ -421,14 +421,14 @@ async function dpInventory(id) {
   const isLow = item.current_quantity <= item.reorder_level;
   setDPHeader('📦','#eff6ff', item.item_name, item.category);
 
-  const maxCapacity = Math.max(item.reorder_level * 2, 1);
+  const maxCapacity = Math.max(item.reorder_level * 5, 1);
   const progress = Math.min(100, Math.round((item.current_quantity / maxCapacity) * 100));
   const barColor = isLow ? '#ff4d4f' : '#52c41a';
 
   let html = `
     ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Stock is below reorder level. Create a purchase order.</span></div>` : ''}
     <div class="prog-bar-wrap">
-      <div class="prog-bar-labels"><span>Stock Level</span><span>${item.current_quantity} / ${item.reorder_level*2} ${item.unit}</span></div>
+      <div class="prog-bar-labels"><span>Stock Level</span><span>${item.current_quantity} / ${item.reorder_level*5} ${item.unit}</span></div>
       <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${barColor}"></div></div>
     </div>
 
