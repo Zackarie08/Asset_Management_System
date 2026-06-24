@@ -24,18 +24,40 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      item_id, quantity, order_date,
-      expected_delivery_date, remarks, unit,
-      user_id, performed_by
+      item_id,
+      quantity,
+      order_date,
+      expected_delivery_date,
+      remarks,
+      unit,
+      user_id,
+      performed_by,
+      supplier_name,
+      supplier_contact,
+      unit_price
     } = req.body;
 
     await pool.query(
       `INSERT INTO purchase_orders
-       (item_id, quantity_ordered, received_quantity, order_date,
-        expected_delivery_date, status, remarks, unit, performed_by)
-       VALUES ($1,$2,0,$3,$4,'ORDERED',$5,$6,$7)`,
-      [item_id, quantity, order_date, expected_delivery_date || null,
-       remarks || null, unit || null, performed_by || null]
+      (item_id, quantity_ordered, received_quantity, order_date,
+      expected_delivery_date, status, remarks, unit,
+      performed_by,
+      supplier_name,
+      supplier_contact,
+      unit_price)
+      VALUES ($1,$2,0,$3,$4,'ORDERED',$5,$6,$7,$8,$9,$10)`,
+      [
+        item_id,
+        quantity,
+        order_date,
+        expected_delivery_date || null,
+        remarks || null,
+        unit || null,
+        performed_by || null,
+        supplier_name || null,
+        supplier_contact || null,
+        unit_price || null
+      ]
     );
 
     await logAction({

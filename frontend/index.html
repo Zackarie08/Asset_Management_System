@@ -506,6 +506,65 @@
 
 
 
+      <!-- ════════════════ SUBSCRIPTIONS ════════════════ -->
+      <section class="page" id="page-subscriptions">
+
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Subscriptions</div>
+            <div class="pg-sub">Manage all subscriptions (M365, Globe, Others)</div>
+          </div>
+          <div class="pg-actions">
+            <button class="btn btn-green btn-sm" onclick="openM('m-sub-add')">+ Add</button>
+          </div>
+        </div>
+
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Category</th>
+              <th>Assigned To</th>
+              <th>Account</th>
+              <th>Plan</th>
+              <th>Expiry</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="sub-tbody"></tbody>
+        </table>
+
+      </section>
+
+
+
+      <!-- ════════════════ INSURANCE ════════════════ -->
+      <section class="page" id="page-insurance">
+
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Insurance</div>
+            <div class="pg-sub">Employee insurance tracking</div>
+          </div>
+          <button class="btn btn-green btn-sm" onclick="openM('m-ins-add')">+ Add</button>
+        </div>
+
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Provider</th>
+              <th>Policy</th>
+              <th>Expiry</th>
+            </tr>
+          </thead>
+          <tbody id="ins-tbody"></tbody>
+        </table>
+
+      </section>
+
+
+
       <!-- ════════════════ GLOBE MOBILE PLAN ════════════════ -->
       <section class="page" id="page-globe">
         <div class="pg-header">
@@ -823,6 +882,15 @@
         <button class="btn btn-outline" onclick="closeM('m-add-inv')">Cancel</button>
         <button class="btn btn-green" onclick="saveInvItem()">✅ Save Item</button>
       </div>
+
+      <div class="form-grp">
+        <label>Attachments</label>
+        <input type="file" id="att-input"/>
+        <button class="btn btn-outline btn-sm" onclick="uploadAttachment()">Upload</button>
+
+        <div id="att-list"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -865,6 +933,7 @@
         </div>
       </div>
       <div class="form-row">
+
       <div class="form-grp">
         <label>Performed by</label>
 
@@ -873,11 +942,15 @@
           <div id="po-list" class="select-list"></div>
         </div>
       </div>
-        <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-f-price" type="number" placeholder="0.00" readonly/></div>
+        <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-price" type="number" placeholder="0.00"/></div>
       </div>
       <div class="form-row">
         <div class="form-grp"><label>Order Date</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
         <div class="form-grp"><label>Expected Delivery</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="po-supplier" placeholder="Supplier Name"/></div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="po-contact" placeholder="Supplier Contact"/></div>
       </div>
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Optional notes..." maxlength="255"></textarea></div>
       <div class="form-footer">
@@ -915,6 +988,19 @@
 
   </div>
 </div>
+
+<!-- Purchase Recieved Modal -->
+<div class="modal" id="m-po-receive">
+  <div class="modal-body">
+    <h3>Receive Items</h3>
+
+    <input id="recv-qty" placeholder="Qty Received"/>
+    <input id="recv-by" placeholder="Performed By"/>
+
+    <button onclick="submitReceive()">Submit</button>
+  </div>
+</div>
+
 
 
 

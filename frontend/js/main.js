@@ -1311,6 +1311,7 @@ function savePO() {
   const date  = document.getElementById("po-f-date").value;
   const eta   = document.getElementById("po-f-eta").value;
   const notes = document.getElementById("po-f-notes").value;
+  
 
   if (!selectState["po-f-performed"]) {
     showToast("Select a valid user", "t-error");
@@ -1329,7 +1330,9 @@ function savePO() {
       expected_delivery_date: eta,
       remarks: notes,
       unit,
-
+      supplier_name: document.getElementById("po-supplier").value,
+      supplier_contact: document.getElementById("po-contact").value,
+      unit_price: document.getElementById("po-price").value,
       user_id: currentUser.user_id,
       performed_by: document.getElementById("po-f-performed").value
     })
@@ -2392,6 +2395,78 @@ function confirmDeleteVehicle() {
     showToast("Error deleting", "t-error");
   });
 }
+
+
+
+
+
+
+
+
+
+
+/* ──────────────────────────────────────────────────────────────
+   SUBSCRIPTIONS
+────────────────────────────────────────────────────────────── */
+
+async function renderSubscriptions() {
+  const res = await fetch(`${API_URL}/api/subscriptions`);
+  const data = await res.json();
+
+  const tbody = document.getElementById("sub-tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(s => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${s.subscription_id}</td>
+      <td>${s.category}</td>
+      <td>${s.assigned_to || '-'}</td>
+      <td>${s.account_identifier}</td>
+      <td>${s.plan_type || '-'}</td>
+      <td>${s.expiry_date || '-'}</td>
+      <td>${s.status}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+
+
+
+
+
+
+
+
+
+/* ──────────────────────────────────────────────────────────────
+   INSURANCE
+────────────────────────────────────────────────────────────── */
+
+async function renderInsurance() {
+  const res = await fetch(`${API_URL}/api/insurance`);
+  const data = await res.json();
+
+  const tbody = document.getElementById("ins-tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(i => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${i.employee_name}</td>
+      <td>${i.provider}</td>
+      <td>${i.policy_number || "-"}</td>
+      <td>${i.expiry_date || "-"}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
 
 
 

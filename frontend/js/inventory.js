@@ -588,6 +588,31 @@ function confirmDeleteInventory() {
   });
 }
 
+let currentPO = null;
+
+function openReceive(id) {
+  currentPO = id;
+  openM("m-po-receive");
+}
+
+async function submitReceive() {
+  const qty = document.getElementById("recv-qty").value;
+  const performed_by = document.getElementById("recv-by").value;
+
+  await fetch(`${API_URL}/api/po/receive/${currentPO}`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      received_qty: qty,
+      performed_by
+    })
+  });
+
+  closeM("m-po-receive");
+  showToast("Items received", "t-success");
+}
+
+
 
 let invId = 13;
 let activeCategory = 'all';
