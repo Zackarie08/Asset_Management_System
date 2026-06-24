@@ -3327,73 +3327,470 @@ function clearLogs() {
 /* ──────────────────────────────────────────────────────────────
    DASHBOARD REFRESH
 ────────────────────────────────────────────────────────────── */
-async function refreshDashboard() {
-  // Stats
-  const res = await fetch(`${API_URL}/api/inventory`);
-  const items = await res.json();
-  const lowInv = items.filter(i => i.qty <= i.reorder).length;
-  const activeLaptops = laptops.filter(l => l.status === 'Active').length;
-  const now = new Date(); now.setHours(0,0,0,0);
-  let pending = 0;
-  poItems.forEach(o => {
-    let s = o.status;
-    if (s!=='DELIVERED' && o.eta && new Date(o.eta)<now) s='DELAYED';
-    if (['ORDERED','IN TRANSIT','DELAYED'].includes(s)) pending++;
-  });
+/* ── Safe fetch helper ─────────────────────────────────────── */
+async function safeFetch(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
 
-  document.getElementById('dc-total').textContent   = items.length;
-  document.getElementById('dc-total-d').textContent = `${items.length} tracked items`;
-  document.getElementById('dc-low').textContent     = lowInv;
-  document.getElementById('dc-low-d').textContent   = lowInv ? `${lowInv} items need restocking` : 'All stocks OK';
-  document.getElementById('dc-laptops').textContent = activeLaptops;
-  document.getElementById('dc-laptops-d').textContent = `${activeLaptops} of ${laptops.length} active`;
-  document.getElementById('dc-orders').textContent  = pending;
-  document.getElementById('dc-orders-d').textContent = pending ? `${pending} pending` : 'No pending orders';
-
-  // Low stock list
-  const lowItems = items.filter(i => i.qty <= i.reorder).slice(0,5);
-  document.getElementById('dash-low-list').innerHTML = lowItems.length
-    ? lowItems.map(i => `<div class="panel-row"><div class="pr-dot ${i.qty===0?'red':'amber'}"></div><div><div class="pr-name">${i.name}</div><div class="pr-meta">${i.cat} · Qty: ${i.qty} / Reorder: ${i.reorder}</div></div>${badge(i.qty===0?'Critical':'Low Stock',i.qty===0?'b-red':'b-amber')}</div>`).join('')
-    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ All inventory levels are OK</div>`;
-  document.getElementById('dash-low-ct').textContent = lowItems.length+' items';
-
-  // Pending orders
-  const pendOrd = poItems.filter(o => {
-    let s=o.status;
-    if(s!=='DELIVERED'&&o.eta&&new Date(o.eta)<now)s='DELAYED';
-    return ['ORDERED','IN TRANSIT','DELAYED'].includes(s);
-  }).slice(0,5);
-  document.getElementById('dash-order-list').innerHTML = pendOrd.length
-    ? pendOrd.map(o => {
-        let s=o.status; if(s!=='DELIVERED'&&o.eta&&new Date(o.eta)<now)s='DELAYED';
-        const dotCls = s==='DELAYED'?'red':s==='IN TRANSIT'?'blue':'amber';
-        return `<div class="panel-row"><div class="pr-dot ${dotCls}"></div><div><div class="pr-name">${o.item}</div><div class="pr-meta">${o.poNum} · ETA: ${o.eta||'—'}</div></div>${badge(s,s==='DELAYED'?'b-red':s==='IN TRANSIT'?'b-blue':'b-amber')}</div>`;
-      }).join('')
-    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">📦 No pending orders</div>`;
-  document.getElementById('dash-order-ct').textContent = pendOrd.length+' orders';
-
-  // Laptops needing maintenance
-  const maintLp = laptops.filter(l => l.maint==='NEEDS REPAIR'||l.status==='For Repair');
-  document.getElementById('dash-maint-list').innerHTML = maintLp.length
-    ? maintLp.slice(0,4).map(l => `<div class="panel-row"><div class="pr-dot red"></div><div><div class="pr-name">${l.desc}</div><div class="pr-meta">${l.assetNo} · ${l.user}</div></div>${badge('Needs Repair','b-red')}</div>`).join('')
-    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ No laptops need maintenance</div>`;
-  document.getElementById('dash-maint-ct').textContent = maintLp.length+' units';
-
-  // Vehicle alerts
-  const vehAlerts = vehicles.filter(v => {
-    const nd = v.nextMaint ? new Date(v.nextMaint) : null;
-    return nd && nd <= now || v.status==='For Maintenance';
-  });
-  document.getElementById('dash-veh-list').innerHTML = vehAlerts.length
-    ? vehAlerts.slice(0,4).map(v => `<div class="panel-row"><div class="pr-dot amber"></div><div><div class="pr-name">${v.name}</div><div class="pr-meta">${v.plate} · ${v.assigned}</div></div>${badge('Maintenance Due','b-amber')}</div>`).join('')
-    : `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">✅ All vehicles on schedule</div>`;
-  document.getElementById('dash-veh-ct').textContent = vehAlerts.length+' alerts';
-
-  // Date
-  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+/* ── Date helpers ──────────────────────────────────────────── */
+function daysFromNow(dateStr) {
+  if (!dateStr) return null;
+  const diff = new Date(dateStr) - new Date();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
 
+/* ══════════════════════════════════════════════════════════════
+   MAIN DASHBOARD REFRESH
+══════════════════════════════════════════════════════════════ */
+async function refreshDashboard() {
+
+  /* ── Formatted date header ─────────────────────────────── */
+  document.getElementById('dash-date').textContent =
+    new Date().toLocaleDateString('en-PH', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+  /* ── Fetch all data concurrently (safe) ────────────────── */
+  const [inventory, orders, laptops, vehicles, contracts, logs, globe, m365] =
+    await Promise.all([
+      safeFetch(`${API_URL}/api/inventory`),
+      safeFetch(`${API_URL}/api/po`),
+      safeFetch(`${API_URL}/api/laptops`),
+      safeFetch(`${API_URL}/api/vehicle`),
+      safeFetch(`${API_URL}/api/contracts`),
+      safeFetch(`${API_URL}/api/logs`),
+      safeFetch(`${API_URL}/api/globe`),
+      safeFetch(`${API_URL}/api/m365`),
+    ]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  /* ══════════════════════════════════════════════════════════
+     STAT CARDS
+  ══════════════════════════════════════════════════════════ */
+
+  // 1. Total Inventory Items
+  const totalInv = inventory.length;
+
+  // 2. Low Stock Items
+  const lowStock = inventory.filter(i => i.current_quantity <= i.reorder_level);
+
+  // 3. Active Laptops
+  const activeLaptops = laptops.filter(l => l.status === 'Active');
+
+  // 4. Pending Orders (not DELIVERED / CANCELLED)
+  const pendingOrders = orders.filter(o =>
+    o.status !== 'DELIVERED' && o.status !== 'CANCELLED'
+  );
+
+  // Stat card values
+  _setText('dc-total',    totalInv);
+  _setText('dc-total-d',  `${totalInv} tracked items`);
+
+  _setText('dc-low',      lowStock.length);
+  _setText('dc-low-d',    lowStock.length
+    ? `${lowStock.length} item${lowStock.length > 1 ? 's' : ''} need restocking`
+    : 'All stocks OK');
+
+  _setText('dc-laptops',   activeLaptops.length);
+  _setText('dc-laptops-d', `${activeLaptops.length} of ${laptops.length} active`);
+
+  _setText('dc-orders',   pendingOrders.length);
+  _setText('dc-orders-d', pendingOrders.length
+    ? `${pendingOrders.length} pending`
+    : 'No pending orders');
+
+  /* ══════════════════════════════════════════════════════════
+     PANEL 1 — LOW STOCK INVENTORY
+  ══════════════════════════════════════════════════════════ */
+
+  _setText('dash-low-ct', `${lowStock.length} items`);
+
+  if (lowStock.length === 0) {
+    _setHTML('dash-low-list', _emptyMsg('✅ All inventory levels are OK'));
+  } else {
+    const rows = lowStock.slice(0, 6).map(i => {
+      const critical = i.current_quantity === 0;
+      return `
+        <div class="panel-row">
+          <div class="pr-dot ${critical ? 'red' : 'amber'}"></div>
+          <div style="flex:1">
+            <div class="pr-name">${_esc(i.item_name)}</div>
+            <div class="pr-meta">${_esc(i.category)} · Qty: ${i.current_quantity} / Reorder: ${i.reorder_level} ${i.unit || ''}</div>
+          </div>
+          ${badge(critical ? 'Critical' : 'Low Stock', critical ? 'b-red' : 'b-amber')}
+        </div>`;
+    }).join('');
+    _setHTML('dash-low-list', rows);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PANEL 2 — PENDING / DELAYED ORDERS
+  ══════════════════════════════════════════════════════════ */
+
+  // Compute effective status (DELAYED if ETA passed)
+  const enrichedOrders = orders.map(o => {
+    let status = o.status;
+    if (status !== 'DELIVERED' && status !== 'CANCELLED' && o.expected_delivery_date) {
+      const eta = new Date(o.expected_delivery_date);
+      eta.setHours(0, 0, 0, 0);
+      if (eta < today) status = 'DELAYED';
+    }
+    return { ...o, effectiveStatus: status };
+  });
+
+  const activeOrders = enrichedOrders.filter(o =>
+    !['DELIVERED', 'CANCELLED'].includes(o.effectiveStatus)
+  );
+
+  const delayedCount = activeOrders.filter(o => o.effectiveStatus === 'DELAYED').length;
+
+  _setText('dash-order-ct', `${activeOrders.length} orders`);
+
+  // Update the delayed badge if it exists in the orders page (reuse safely)
+  const delayedBadge = document.getElementById('po-delay-ct');
+  if (delayedBadge) delayedBadge.textContent = `${delayedCount} delayed`;
+
+  if (activeOrders.length === 0) {
+    _setHTML('dash-order-list', _emptyMsg('📦 No pending orders'));
+  } else {
+    const rows = activeOrders.slice(0, 6).map(o => {
+      const s = o.effectiveStatus;
+      const dotCls = s === 'DELAYED' ? 'red' : s === 'IN TRANSIT' ? 'blue' : 'amber';
+      const bdgCls = s === 'DELAYED' ? 'b-red' : s === 'IN TRANSIT' ? 'b-blue' : 'b-amber';
+      return `
+        <div class="panel-row">
+          <div class="pr-dot ${dotCls}"></div>
+          <div style="flex:1">
+            <div class="pr-name">${_esc(o.item_name || `Item #${o.item_id}`)}</div>
+            <div class="pr-meta">PO #${o.purchase_order_id} · ETA: ${o.expected_delivery_date || '—'}</div>
+          </div>
+          ${badge(s, bdgCls)}
+        </div>`;
+    }).join('');
+    _setHTML('dash-order-list', rows);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PANEL 3 — LAPTOP ALERTS
+  ══════════════════════════════════════════════════════════ */
+
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const isMaintenanceMonth = currentMonth === 6 || currentMonth === 12;
+
+  const laptopAlerts = [];
+
+  laptops.forEach(lp => {
+    // For Repair
+    if (lp.status === 'For Repair') {
+      laptopAlerts.push({ lp, reason: 'For Repair', cls: 'red' });
+      return;
+    }
+
+    // Unassigned
+    if (!lp.current_user_id) {
+      laptopAlerts.push({ lp, reason: 'Unassigned', cls: 'amber' });
+      return;
+    }
+
+    // Age check: 3+ years and assigned to intern
+    if (lp.date_of_purchase) {
+      const ageYears = (now - new Date(lp.date_of_purchase)) / (365.25 * 24 * 3600 * 1000);
+      if (ageYears >= 3 && lp.user_role === 'intern') {
+        laptopAlerts.push({ lp, reason: `${Math.floor(ageYears)}y old · Intern`, cls: 'amber' });
+        return;
+      }
+    }
+  });
+
+  // Maintenance month global reminder
+  let laptopHeader = `${laptopAlerts.length} alerts`;
+  if (isMaintenanceMonth && laptops.length > 0) {
+    laptopHeader = `${laptopAlerts.length} alerts · ⚠️ Check month`;
+  }
+
+  _setText('dash-maint-ct', laptopHeader);
+
+  if (laptopAlerts.length === 0 && !isMaintenanceMonth) {
+    _setHTML('dash-maint-list', _emptyMsg('✅ No laptop alerts'));
+  } else {
+    let html = '';
+
+    if (isMaintenanceMonth) {
+      html += `
+        <div class="panel-row" style="background:var(--amber-50)">
+          <div class="pr-dot amber"></div>
+          <div style="flex:1">
+            <div class="pr-name">Scheduled Technical Check</div>
+            <div class="pr-meta">${currentMonth === 6 ? 'June' : 'December'} — Check all laptops this month</div>
+          </div>
+          ${badge('Reminder', 'b-amber')}
+        </div>`;
+    }
+
+    if (laptopAlerts.length === 0) {
+      html += _emptyMsg('✅ No other laptop alerts');
+    } else {
+      html += laptopAlerts.slice(0, 5).map(({ lp, reason, cls }) => `
+        <div class="panel-row">
+          <div class="pr-dot ${cls}"></div>
+          <div style="flex:1">
+            <div class="pr-name">${_esc(lp.item_description)}</div>
+            <div class="pr-meta">${_esc(lp.asset_number)} · ${_esc(lp.user_name || 'No user')}</div>
+          </div>
+          ${badge(reason, `b-${cls}`)}
+        </div>`).join('');
+    }
+
+    _setHTML('dash-maint-list', html);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PANEL 4 — VEHICLE ALERTS
+  ══════════════════════════════════════════════════════════ */
+
+  const isFirstWorkingDay = (() => {
+    const d = now.getDay();   // 0=Sun, 6=Sat
+    const day = now.getDate();
+    return day <= 3 && d !== 0 && d !== 6;
+  })();
+
+  const vehicleAlerts = [];
+
+  vehicles.forEach(v => {
+    if (v.status === 'UNDER_MAINTENANCE') {
+      vehicleAlerts.push({ v, reason: 'Under Maintenance', cls: 'blue' });
+      return;
+    }
+    const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
+    const threshold = v.maintenance_threshold || 1000;
+    if (kmUsed >= threshold) {
+      vehicleAlerts.push({ v, reason: `${kmUsed} km since last service`, cls: 'red' });
+    }
+  });
+
+  _setText('dash-veh-ct', `${vehicleAlerts.length} alerts`);
+
+  if (vehicleAlerts.length === 0 && !isFirstWorkingDay) {
+    _setHTML('dash-veh-list', _emptyMsg('✅ All vehicles on schedule'));
+  } else {
+    let html = '';
+
+    if (isFirstWorkingDay) {
+      html += `
+        <div class="panel-row" style="background:var(--blue-50)">
+          <div class="pr-dot blue"></div>
+          <div style="flex:1">
+            <div class="pr-name">Monthly Odometer Update</div>
+            <div class="pr-meta">Please update odometer readings for all vehicles</div>
+          </div>
+          ${badge('Reminder', 'b-blue')}
+        </div>`;
+    }
+
+    if (vehicleAlerts.length === 0) {
+      html += _emptyMsg('✅ No vehicle maintenance alerts');
+    } else {
+      html += vehicleAlerts.slice(0, 5).map(({ v, reason, cls }) => `
+        <div class="panel-row">
+          <div class="pr-dot ${cls}"></div>
+          <div style="flex:1">
+            <div class="pr-name">${_esc(v.vehicle_name)}</div>
+            <div class="pr-meta">${_esc(v.plate_number)} · ${_esc(v.type)}</div>
+          </div>
+          ${badge(reason, `b-${cls}`)}
+        </div>`).join('');
+    }
+
+    _setHTML('dash-veh-list', html);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PANEL 5 — CONTRACTS
+  ══════════════════════════════════════════════════════════ */
+
+  const contractAlerts = [];
+
+  contracts.forEach(c => {
+    // Determine expiry date
+    let expiryDate = null;
+    if (c.validity_type === 'YEAR' && c.valid_year) {
+      expiryDate = new Date(`${c.valid_year}-12-31`);
+    } else if (c.valid_to) {
+      expiryDate = new Date(c.valid_to);
+    }
+
+    if (!expiryDate) return;
+
+    const daysLeft = daysFromNow(expiryDate);
+
+    if (daysLeft < 0) {
+      contractAlerts.push({ c, reason: 'Expired', cls: 'red', daysLeft });
+    } else if (daysLeft <= 30) {
+      contractAlerts.push({ c, reason: `Expires in ${daysLeft}d`, cls: 'amber', daysLeft });
+    }
+
+    // Admin: pending approvals
+    if (isAdminUser() && c.status === 'PENDING') {
+      contractAlerts.push({ c, reason: 'Approval needed', cls: 'blue', daysLeft: null });
+    }
+  });
+
+  _setText('dash-con-ct', `${contractAlerts.length} alerts`);
+
+  if (contractAlerts.length === 0) {
+    _setHTML('dash-con-list', _emptyMsg('✅ All contracts are current'));
+  } else {
+    const rows = contractAlerts.slice(0, 5).map(({ c, reason, cls }) => `
+      <div class="panel-row">
+        <div class="pr-dot ${cls}"></div>
+        <div style="flex:1">
+          <div class="pr-name">${_esc(c.other_party)}</div>
+          <div class="pr-meta">${_esc(c.description)}</div>
+        </div>
+        ${badge(reason, `b-${cls}`)}
+      </div>`).join('');
+    _setHTML('dash-con-list', rows);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PANEL 6 — RECENT SYSTEM LOGS
+  ══════════════════════════════════════════════════════════ */
+
+  const recentLogs = logs.slice(0, 6);
+
+  _setText('dash-log-ct', `${logs.length} total`);
+
+  if (recentLogs.length === 0) {
+    _setHTML('dash-log-list', _emptyMsg('📜 No recent activity'));
+  } else {
+    const LOG_ICONS = {
+      LOGIN: '🔐', LOGOUT: '🚪', CREATE: '✅', UPDATE: '✏️',
+      DELETE: '🗑️', DELIVER: '📦', WITHDRAW: '➖', SYSTEM: '⚙️',
+      REQUEST: '📩'
+    };
+    const LOG_CLS = {
+      CREATE: 'b-green', UPDATE: 'b-blue', DELETE: 'b-red',
+      DELIVER: 'b-amber', WITHDRAW: 'b-purple', LOGIN: 'b-slate',
+      LOGOUT: 'b-slate', SYSTEM: 'b-slate', REQUEST: 'b-blue'
+    };
+
+    const rows = recentLogs.map(l => {
+      const icon = LOG_ICONS[l.action_type] || '📝';
+      const cls  = LOG_CLS[l.action_type]  || 'b-slate';
+      const ts   = new Date(l.date_time).toLocaleString('en-PH', {
+        month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      return `
+        <div class="panel-row">
+          <div style="font-size:15px;width:22px;flex-shrink:0">${icon}</div>
+          <div style="flex:1;min-width:0">
+            <div class="pr-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${_esc(l.description || l.action_type)}
+            </div>
+            <div class="pr-meta">${_esc(l.name || 'System')} · ${ts}</div>
+          </div>
+          ${badge(l.action_type, cls)}
+        </div>`;
+    }).join('');
+    _setHTML('dash-log-list', rows);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PANEL 7 — ADMIN ONLY: GLOBE + M365
+  ══════════════════════════════════════════════════════════ */
+
+  const adminPanel = document.getElementById('dash-admin-wrap');
+  if (adminPanel) {
+    adminPanel.style.display = isAdminUser() ? '' : 'none';
+  }
+
+  if (isAdminUser()) {
+    // Globe alerts
+    const globeAlerts = globe.filter(g => {
+      if (g.status === 'Inactive') return false;
+      const d = daysFromNow(g.renewal_date);
+      return d !== null && d <= 7;
+    });
+
+    // M365 alerts
+    const m365Alerts = m365.filter(m => {
+      const d = daysFromNow(m.expiry_date);
+      return d !== null && d <= 7;
+    });
+
+    const totalSubs = globe.filter(g => g.status === 'Active').length +
+                      m365.filter(m => m.status === 'Active').length;
+
+    _setText('dash-admin-ct', `${globeAlerts.length + m365Alerts.length} alerts`);
+    _setText('dash-admin-subs', `${totalSubs} active subscriptions`);
+
+    const allSubAlerts = [
+      ...globeAlerts.map(g => ({
+        name: g.employee_name,
+        detail: `Globe · ${g.plan_name || '—'} · Renews ${g.renewal_date || '—'}`,
+        daysLeft: daysFromNow(g.renewal_date)
+      })),
+      ...m365Alerts.map(m => ({
+        name: m.assigned_email,
+        detail: `M365 · ${m.license_type || '—'} · Expires ${m.expiry_date || '—'}`,
+        daysLeft: daysFromNow(m.expiry_date)
+      }))
+    ];
+
+    if (allSubAlerts.length === 0) {
+      _setHTML('dash-admin-list', _emptyMsg('✅ No subscription alerts'));
+    } else {
+      const rows = allSubAlerts.slice(0, 5).map(a => {
+        const expired = a.daysLeft < 0;
+        const cls = expired ? 'red' : 'amber';
+        const label = expired ? 'Expired' : `${a.daysLeft}d left`;
+        return `
+          <div class="panel-row">
+            <div class="pr-dot ${cls}"></div>
+            <div style="flex:1">
+              <div class="pr-name">${_esc(a.name)}</div>
+              <div class="pr-meta">${_esc(a.detail)}</div>
+            </div>
+            ${badge(label, `b-${cls}`)}
+          </div>`;
+      }).join('');
+      _setHTML('dash-admin-list', rows);
+    }
+  }
+}
+
+/* ── Private helpers (internal to dashboard only) ────────── */
+function _setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function _setHTML(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+function _emptyMsg(msg) {
+  return `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">${msg}</div>`;
+}
+function _esc(str) {
+  if (!str) return '—';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 
 
