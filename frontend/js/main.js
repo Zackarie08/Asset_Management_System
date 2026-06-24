@@ -1215,23 +1215,29 @@ async function renderOrders() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    let status = o.status;
+    let computedStatus = o.status;
 
-    // ✅ DO NOT override if final states
     if (
-      status !== "DELIVERED" &&
-      status !== "CANCELLED" && 
+      computedStatus !== "DELIVERED" &&
+      computedStatus !== "CANCELLED" &&
       o.expected_delivery_date
     ) {
       const eta = new Date(o.expected_delivery_date);
       const etaDate = new Date(eta.getFullYear(), eta.getMonth(), eta.getDate());
 
       if (etaDate < today) {
-        status = "DELAYED";
+        computedStatus = "DELAYED ⏱️";
       }
     }
-    
 
+    const received = o.received_quantity || 0;
+    const remaining = o.quantity_ordered - received;
+
+    if (remaining === 0) {
+      computedStatus = "DELIVERED";
+    } else if (received > 0) {
+      computedStatus = "PARTIAL";
+    }
 
     // ✅ THEN USE IT
     tr.innerHTML = `
@@ -1239,9 +1245,15 @@ async function renderOrders() {
       <td>${o.item_id}</td>
       <td>${o.item_name || '-'}</td>
       <td>${o.quantity_ordered}</td>
+      <td>${o.received_quantity || 0}</td>
+      <td>${o.quantity_ordered - (o.received_quantity || 0)}</td>
+
+      <td>${o.supplier_name || '-'}</td>
+      <td>${o.supplier_contact || '-'}</td>
+
       <td>${o.order_date || ''}</td>
       <td>${o.expected_delivery_date || ''}</td>
-      <td>${status}</td>
+      <td>${computedStatus}</td>
     `;
 
     tr.addEventListener('click', () => {
@@ -1259,18 +1271,31 @@ async function dpOrder(id) {
   const o = data.find(x => x.purchase_order_id === id);
   if (!o) return;
 
-  // ✅ HEADER
-  setDPHeader('🛒', '#eff6ff', `PO #${o.purchase_order_id}`, "Purchase Order");
+  const received = o.received_quantity || 0;
+  const remaining = o.quantity_ordered - received;
 
-  // ✅ CONTENT
+  setDPHeader(
+    '🛒',
+    '#eff6ff',
+    o.item_name || `PO #${o.purchase_order_id}`,
+    `PO #${o.purchase_order_id}`
+  );
+
   let html = `
     <div class="dp-section">
       <div class="dp-section-hd">📦 Order Information</div>
       <div class="dp-grid">
         ${dpField('Item ID', o.item_id)}
         ${dpField('Item Name', o.item_name || '-')}
-        ${dpField('Quantity', o.quantity_ordered + ' ' + (o.unit || ''))}
-        ${dpField('Status', o.status)}
+        ${dpField('Ordered', o.quantity_ordered + ' ' + (o.unit || ''))}
+        ${dpField('Received', received)}
+        ${dpField('Remaining', remaining)}
+        ${dpField('Supplier', o.supplier_name || '-')}
+        ${dpField('Contact', o.supplier_contact || '-')}
+        ${dpField('Unit Price', o.unit_price ? '₱'+o.unit_price : '-')}
+        ${dpField('Status', remaining === 0 
+          ? 'DELIVERED ✅' 
+          : (received > 0 ? 'PARTIAL ⚠️' : o.status))}
         ${dpField('Order Date', o.order_date)}
         ${dpField('Expected Delivery', o.expected_delivery_date || '—')}
         ${dpField('Delivered', o.actual_delivery_date || 'Pending')}
@@ -1278,32 +1303,30 @@ async function dpOrder(id) {
     </div>
   `;
 
-  // ✅ ACTION BUTTON
-if (
-  (o.status === "ORDERED" || o.status === "DELAYED") && currentUser.role === "admin"
-) {
+  if (
+    remaining > 0 &&
+    (currentUser.role === "admin" || currentUser.role === "super_admin")
+  ) {
     html += `
       <div class="dp-section">
         <div class="dp-section-hd">⚡ Actions</div>
         <div class="dp-action-row">
           <button class="btn btn-green btn-sm"
-            onclick="event.stopPropagation(); markDelivered(${o.purchase_order_id})">
-            ✅ Mark Delivered
+            onclick="event.stopPropagation(); openReceive(${o.purchase_order_id})">
+            Receive Items
           </button>      
           <button class="btn btn-red btn-sm"
             onclick="event.stopPropagation(); cancelOrder(${o.purchase_order_id})">
-            ❌ Cancel Order
+            Cancel Order
           </button>
         </div>
       </div>
     `;
   }
-  
 
   document.getElementById('dp-body').innerHTML = html;
   document.getElementById('dp-footer').style.display = 'none';
 }
-
 
 function savePO() {
   const qty   = parseInt(document.getElementById("po-f-qty").value) || 1;
@@ -1412,6 +1435,76 @@ function cancelOrder(id) {
     closeDP();
   });
 }
+
+let currentRemaining = 0;
+let currentPO = null;
+
+window.openReceive = async function(id) {
+  const res = await fetch(`${API_URL}/api/po`);
+  const data = await res.json();
+
+  const o = data.find(x => x.purchase_order_id === id);
+  if (!o) return;
+
+  currentPO = id;
+
+  currentRemaining = o.quantity_ordered - (o.received_quantity || 0);
+
+  document.getElementById('recv-item-name').textContent =
+    o.item_name;
+
+  document.getElementById('recv-remaining').textContent =
+    `Remaining: ${currentRemaining}`;
+
+  document.getElementById('recv-qty').value = '';
+  document.getElementById('recv-by').value = '';
+
+  selectState["recv-by"] = false;
+
+  openM("m-po-receive");
+  loadUsersDropdown();
+};
+
+async function submitReceive() {
+  const qty = parseInt(document.getElementById("recv-qty").value);
+  const performed_by = document.getElementById("recv-by").value;
+
+  if (!qty || qty <= 0) {
+    showToast("Enter valid quantity", "t-error");
+    return;
+  }
+
+  if (qty > currentRemaining) {
+    showToast("Cannot exceed remaining qty", "t-error");
+    return;
+  }
+
+  if (!selectState["recv-by"]) {
+    showToast("Select valid user", "t-error");
+    return;
+  }
+
+  await fetch(`${API_URL}/api/po/receive/${currentPO}`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      received_qty: qty,
+      performed_by,
+      user_id: currentUser.user_id
+    })
+  });
+
+  closeM("m-po-receive");
+  showToast("Items received", "t-success");
+
+  renderOrders();
+  renderInventory();
+
+  if (dpOpen && dpCurrentType === 'order') {
+    dpOrder(currentPO);
+  }
+}
+
 
 
 

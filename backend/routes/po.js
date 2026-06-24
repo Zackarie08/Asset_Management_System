@@ -107,10 +107,26 @@ router.post('/receive/:id', async (req, res) => {
     if (qty > remaining) {
       return res.status(400).send(`Cannot receive more than remaining (${remaining})`);
     }
+    if (remaining <= 0) {
+      return res.status(400).send('Already fully received');
+    }
+
 
     const newReceived = alreadyReceived + qty;
-    const newStatus   = newReceived >= po.quantity_ordered ? 'DELIVERED' : 'PARTIAL';
-    const deliveryDate = newStatus === 'DELIVERED' ? new Date().toISOString().slice(0, 10) : null;
+    let newStatus = 'ORDERED';
+
+    if (newReceived >= po.quantity_ordered) {
+      newStatus = 'DELIVERED';
+    } else if (newReceived > 0) {
+      newStatus = 'PARTIAL';
+    }
+    
+    let deliveryDate = null;
+
+    if (newStatus === 'DELIVERED') {
+      deliveryDate = new Date().toISOString().slice(0, 10);
+    }
+
 
     // Update PO
     await pool.query(

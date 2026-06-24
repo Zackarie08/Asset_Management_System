@@ -506,7 +506,7 @@ if (isAdmin) {
 
 let currentOrderItemId = null;
 
-async function openCreateOrder(id) {
+window.openCreateOrder = async function(id) {
   const res = await fetch(`${API_URL}/api/inventory`);
   const items = await res.json();
 
@@ -515,16 +515,20 @@ async function openCreateOrder(id) {
 
   currentOrderItemId = id;
 
-  document.getElementById('po-f-item').value     = item.item_name;
-  document.getElementById('po-f-cat').value      = item.category;
-  document.getElementById('po-f-unit').value     = item.unit;
-  document.getElementById('po-f-price').value    = item.price || '';
-  document.getElementById('po-f-date').value     = todayStr();
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+
+  setVal('po-f-item', item.item_name);
+  setVal('po-f-cat', item.category);
+  setVal('po-f-unit', item.unit);
+  setVal('po-f-price', item.price || '');
+  setVal('po-f-date', todayStr());
 
   openM('m-add-po');
-  loadUsersDropdown(["po-f-performed"]);
-}
-
+  loadUsersDropdown();
+};
 
 window.openEditInv = async function(id) {
   console.log("EDIT CLICKED:", id);
@@ -588,31 +592,6 @@ function confirmDeleteInventory() {
   });
 }
 
-let currentPO = null;
-
-function openReceive(id) {
-  currentPO = id;
-  openM("m-po-receive");
-}
-
-async function submitReceive() {
-  const qty = document.getElementById("recv-qty").value;
-  const performed_by = document.getElementById("recv-by").value;
-
-  await fetch(`${API_URL}/api/po/receive/${currentPO}`, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      received_qty: qty,
-      performed_by
-    })
-  });
-
-  closeM("m-po-receive");
-  showToast("Items received", "t-success");
-}
-
-
 
 let invId = 13;
 let activeCategory = 'all';
@@ -653,6 +632,7 @@ async function loadUsersDropdown() {
   makeSearchable("inv-f-performed", "inv-f-list", names);
   makeSearchable("wd-by", "wd-list", names);
   makeSearchable("po-f-performed", "po-list", names);
+  makeSearchable("recv-by", "recv-list", names);
 }
 
 

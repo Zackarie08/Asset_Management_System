@@ -990,14 +990,45 @@
 </div>
 
 <!-- Purchase Recieved Modal -->
-<div class="modal" id="m-po-receive">
-  <div class="modal-body">
-    <h3>Receive Items</h3>
+<div class="modal-overlay" id="m-po-receive">
+  <div class="modal">
+    
+    <!-- HEADER -->
+    <div class="modal-hd">
+      <div class="modal-title">📦 Receive Items</div>
+      <button class="modal-close" onclick="closeM('m-po-receive')">✕</button>
+    </div>
 
-    <input id="recv-qty" placeholder="Qty Received"/>
-    <input id="recv-by" placeholder="Performed By"/>
+    <div class="modal-body">
 
-    <button onclick="submitReceive()">Submit</button>
+      <!-- ITEM NAME -->
+      <div class="dp-section">
+        <div class="dp-section-hd">Item</div>
+        <div id="recv-item-name" style="font-weight:600;"></div>
+        <div id="recv-remaining" style="color:#888; margin-top:4px;"></div>
+      </div>
+
+      <!-- ROW -->
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Quantity Received *</label>
+          <input class="form-ctrl" id="recv-qty" type="number" placeholder="Enter quantity"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Received By *</label>
+          <input class="form-ctrl" id="recv-by" placeholder="Select user"/>
+          <div id="recv-list"></div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-po-receive')">Cancel</button>
+        <button class="btn btn-green" onclick="submitReceive()">✅ Confirm Receive</button>
+      </div>
+
+    </div>
   </div>
 </div>
 
