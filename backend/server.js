@@ -59,3 +59,9 @@ app.use("/api/finance-documents", financeRoutes);
 const contractRoutes = require("./routes/contracts");
 
 app.use("/api/contracts", contractRoutes);
+
+app.use('/api/attachments', require('./routes/attachments'));
+
+app.use('/api/subscriptions', require('./routes/subscriptions'));
+
+app.use('/api/insurance', require('./routes/insurance'));
