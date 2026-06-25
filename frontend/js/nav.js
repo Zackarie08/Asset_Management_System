@@ -103,12 +103,6 @@ function refreshPageActions(page) {
       if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')">➕ Add Vehicle</button>`;
       else el.innerHTML = '';
     },
-    subscriptions: () => {
-    const el = document.getElementById('sub-actions');
-    if (isAdmin)
-      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-sub-add')">➕ Add Subscription</button>`;
-    else el.innerHTML = '';
-  },
 
   insurance: () => {
     const el = document.getElementById('ins-actions');

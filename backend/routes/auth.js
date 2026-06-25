@@ -32,7 +32,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-module.exports = router;
+
 
 
 router.get("/users", async (req, res) => {
@@ -122,3 +122,6 @@ router.put("/users/:id", async (req, res) => {
 
   res.sendStatus(200);
 });
+
+
+module.exports = router;

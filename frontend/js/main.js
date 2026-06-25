@@ -18,10 +18,7 @@ const ADMIN_NAV = [
   { id:'laptops',     icon:'💻', label:'Laptops',              badge:null },
   { id:'vehicles',    icon:'🚗', label:'Vehicle Management',   badge:null },
   { id:'contracts', icon:'📄', label:'Contracts', badge:null },
-  { id:'globe',       icon:'📱', label:'Globe Mobile Plans',   badge:null, admin:true },
-  { id:'m365',        icon:'💼', label:'M365 Licenses',        badge:null, admin:true },
-  { id:'subscriptions', icon:'📡', label:'Subscriptions', badge:null, admin:true },
-  { id: 'master-subscriptions', icon: '🔗', label: 'All Subscriptions', badge: null, admin: true },
+  { id:'subscriptions', icon:'🔐', label:'Subscriptions', badge:null, admin:true },
   { id:'insurance', icon:'🛡️', label:'Insurance', badge:null, admin:true },
   { id:'finance', icon:'📁', label:'Finance Documents', badge:null, admin:true },
   { id:'logs',        icon:'📜', label:'System Logs',          badge:null, admin:true },
@@ -3418,9 +3415,7 @@ function initAllModules() {
   renderLaptops();
   renderOrders();
   renderVehicles();
-  renderSubscriptions();
-  renderGlobe();
-  renderM365();
+  renderSubscriptionsUnified()
   renderFinance();
   renderLogs();
   renderUsers();

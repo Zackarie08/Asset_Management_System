@@ -480,6 +480,29 @@
           </div>
           <div class="pg-actions" id="veh-actions"></div>
         </div>
+        <div class="stats-grid" style="margin-bottom:16px" id="veh-stats-row">
+          <div class="stat-card blue">
+            <div class="stat-icon si-blue">🚗</div>
+            <div>
+              <div class="stat-num" id="veh-stat-total">—</div>
+              <div class="stat-label">Total Vehicles</div>
+            </div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon si-amber">🛠</div>
+            <div>
+              <div class="stat-num" id="veh-stat-maint">—</div>
+              <div class="stat-label">Under Maintenance</div>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon si-red">⚠️</div>
+            <div>
+              <div class="stat-num" id="veh-stat-due">—</div>
+              <div class="stat-label">Due / Overdue</div>
+            </div>
+          </div>
+        </div>
         <div class="card">
           <div class="card-hd">
             <div class="card-title">🚗 Fleet Register</div>
@@ -489,13 +512,12 @@
             <table>
               <thead>
                 <tr>
-                  <th>Vehicle Name</th>
+                  <th>Vehicle</th>
+                  <th>Plate</th>
                   <th>Type</th>
-                  <th>Plate Number</th>
-                  <th>Odometer (KM)</th>
+                  <th>Odometer</th>
+                  <th>Next Maintenance</th>
                   <th>Status</th>
-                  <th>Purchase Date</th>
-                  <th>Price</th>
                 </tr>
               </thead>
               <tbody id="veh-tbody"></tbody>
@@ -506,170 +528,48 @@
 
 
 
-      <!-- ============================================================
-          PAGE SECTION REPLACEMENTS
-          Drop these into index.html inside the .main-content div
-          ============================================================ -->
 
-
-      <!-- ════════════════ M365 LICENSES (UPDATED TABLE) ════════════════ -->
-      <!-- Replace existing page-m365 section -->
-      <section class="page" id="page-m365">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">M365 Licenses</div>
-            <div class="pg-sub">Microsoft 365 subscriptions · Admin only · Click row for details</div>
-          </div>
-          <div class="pg-actions" id="m365-actions">
-            <button class="btn btn-green btn-sm" onclick="openM('m-add-m365')">➕ Add License</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-hd">
-            <div class="card-title">💼 License Registry</div>
-            <div class="card-actions">
-              <span class="badge b-red"   id="m365-exp-ct">0 expired</span>
-              <span class="badge b-slate" id="m365-ct">0 licenses</span>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Assigned Email</th>
-                  <th>License Type</th>
-                  <th>Category</th>
-                  <th>Expiry Date</th>
-                  <th>Monthly Cost</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="m365-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ════════════════ GLOBE MOBILE PLANS (UPDATED TABLE) ════════════════ -->
-      <!-- Replace existing page-globe section -->
-      <section class="page" id="page-globe">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Globe Mobile Plans</div>
-            <div class="pg-sub">Employee mobile subscriptions · Click row for details</div>
-          </div>
-          <div class="pg-actions" id="globe-actions">
-            <button class="btn btn-green btn-sm" onclick="openAddGlobe()">➕ Add Plan</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-hd">
-            <div class="card-title">📱 Mobile Plan Registry</div>
-            <div class="card-actions">
-              <span class="badge b-amber" id="globe-renew-ct">0 renewing soon</span>
-              <span class="badge b-slate" id="globe-ct">0 plans</span>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Mobile Number</th>
-                  <th>Plan Name</th>
-                  <th>Monthly Cost</th>
-                  <th>Renewal Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="globe-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- ════════════════ SUBSCRIPTIONS (FULLY REPLACED) ════════════════ -->
-      <!-- Replace existing page-subscriptions section -->
+      <!-- ════════════════ UNIFIED SUBSCRIPTIONS PAGE ════════════════ -->
+      <!-- Replace the page-subscriptions section with this -->
       <section class="page" id="page-subscriptions">
         <div class="pg-header">
           <div>
             <div class="pg-title">Subscriptions</div>
-            <div class="pg-sub">Software, security, and cloud subscriptions · Click row for details</div>
+            <div class="pg-sub">M365 · Globe · Other — unified view · Click row for details</div>
           </div>
-          <div class="pg-actions">
-            <button class="btn btn-green btn-sm" onclick="openM('m-sub-add')">➕ Add Subscription</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-hd">
-            <div class="card-title">🔐 Subscription Registry</div>
-            <div class="card-actions">
-              <span class="badge b-red"   id="sub-exp-ct">0 expired</span>
-              <span class="badge b-slate" id="sub-ct">0 subscriptions</span>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Assigned To</th>
-                  <th>Supplier</th>
-                  <th>Monthly Cost</th>
-                  <th>Expiry</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="sub-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-
-      <section class="page" id="page-master-subscriptions">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">All Subscriptions</div>
-            <div class="pg-sub">Unified view across M365 · Globe · Other — read only</div>
-          </div>
-          <div class="pg-actions">
-            <button class="btn btn-outline btn-sm" onclick="exportMasterSubscriptions()">📥 Export</button>
+          <div class="pg-actions" id="sub-actions">
+            <button class="btn btn-ghost btn-sm" onclick="exportUnifiedSubscriptions()">📥 Export</button>
+            <button class="btn btn-green btn-sm" onclick="openAddSubscription()">➕ Add Subscription</button>
           </div>
         </div>
 
+        <!-- Stat cards -->
         <div class="stats-grid" style="margin-bottom:20px">
           <div class="stat-card blue">
             <div class="stat-icon si-blue">📊</div>
             <div>
-              <div class="stat-num" id="ms-total">—</div>
-              <div class="stat-label">Total Subscriptions</div>
+              <div class="stat-num" id="uni-stat-total">—</div>
+              <div class="stat-label">Total</div>
             </div>
           </div>
           <div class="stat-card green">
             <div class="stat-icon si-green">✅</div>
             <div>
-              <div class="stat-num" id="ms-active">—</div>
+              <div class="stat-num" id="uni-stat-active">—</div>
               <div class="stat-label">Active</div>
             </div>
           </div>
           <div class="stat-card amber">
             <div class="stat-icon si-amber">⚠️</div>
             <div>
-              <div class="stat-num" id="ms-expiring">—</div>
-              <div class="stat-label">Expiring Soon</div>
+              <div class="stat-num" id="uni-stat-expiring">—</div>
+              <div class="stat-label">Expiring / Renewal</div>
             </div>
           </div>
           <div class="stat-card red">
             <div class="stat-icon si-red">❌</div>
             <div>
-              <div class="stat-num" id="ms-expired">—</div>
+              <div class="stat-num" id="uni-stat-expired">—</div>
               <div class="stat-label">Expired</div>
             </div>
           </div>
@@ -679,20 +579,21 @@
           <div class="card-hd">
             <div class="card-title">🔗 All Subscriptions</div>
             <div class="card-actions">
-              <select class="form-ctrl" id="ms-filter-source" onchange="renderMasterSubscriptions()"
+              <select class="form-ctrl" id="uni-filter-source" onchange="renderSubscriptionsUnified()"
                 style="font-size:12px;padding:5px 10px;width:auto">
                 <option value="all">Source: All</option>
                 <option value="M365">M365</option>
                 <option value="Globe">Globe</option>
-                <option value="Subscription">Other</option>
+                <option value="Other">Other</option>
               </select>
-              <select class="form-ctrl" id="ms-filter-status" onchange="renderMasterSubscriptions()"
+              <select class="form-ctrl" id="uni-filter-status" onchange="renderSubscriptionsUnified()"
                 style="font-size:12px;padding:5px 10px;width:auto">
                 <option value="all">Status: All</option>
                 <option value="Active">Active</option>
                 <option value="Expiring Soon">Expiring Soon</option>
                 <option value="For Renewal">For Renewal</option>
                 <option value="Expired">Expired</option>
+                <option value="Inactive">Inactive</option>
               </select>
             </div>
           </div>
@@ -709,14 +610,11 @@
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody id="ms-tbody"></tbody>
+              <tbody id="uni-tbody"></tbody>
             </table>
           </div>
-          <div style="padding:12px 20px;border-top:1.5px solid var(--slate-100);
-            display:flex;align-items:center;justify-content:space-between">
-            <span id="ms-total-cost" style="font-size:13px;font-weight:700;color:var(--slate-700)">
-              Total active monthly: —
-            </span>
+          <div style="padding:12px 20px;border-top:1.5px solid var(--slate-100)">
+            <span id="uni-total-cost" style="font-size:13px;font-weight:700;color:var(--slate-700)">Total active monthly: —</span>
           </div>
         </div>
       </section>
@@ -1788,6 +1686,123 @@
 </div>
 
 
+<!-- MODAL: ADD / EDIT MAINTENANCE PLAN -->
+<div class="modal-overlay" id="m-plan-add">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔧 Maintenance Plan</div>
+      <button class="modal-close" onclick="closeM('m-plan-add')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-grp">
+        <label>Plan Name *</label>
+        <input class="form-ctrl" id="plan-f-name" placeholder="e.g. Oil Change, CVT Service, Monthly Inspection" maxlength="100"/>
+      </div>
+
+      <div class="form-grp">
+        <label>Basis *</label>
+        <select class="form-ctrl" id="plan-f-basis" onchange="_setBasisUI(this.value)">
+          <option value="odometer">Odometer (KM-based)</option>
+          <option value="time">Time (calendar-based)</option>
+        </select>
+      </div>
+
+      <!-- Odometer fields -->
+      <div id="plan-odo-section">
+        <div class="form-row">
+          <div class="form-grp">
+            <label>Interval (KM) *</label>
+            <input class="form-ctrl" id="plan-f-km" type="number" placeholder="e.g. 15000"/>
+            <span class="form-note">How many km between services</span>
+          </div>
+          <div class="form-grp">
+            <label>Last Performed KM</label>
+            <input class="form-ctrl" id="plan-f-last-km" type="number" placeholder="e.g. 900"/>
+            <span class="form-note">KM when last done (sets next target)</span>
+          </div>
+        </div>
+        <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:#1e40af;margin-bottom:14px">
+          ℹ️ Next service = Last KM + Interval. If done early, that actual KM becomes the new baseline.
+        </div>
+      </div>
+
+      <!-- Time fields -->
+      <div id="plan-time-section" style="display:none">
+        <div class="form-row">
+          <div class="form-grp">
+            <label>Every *</label>
+            <input class="form-ctrl" id="plan-f-interval" type="number" min="1" placeholder="e.g. 1"/>
+          </div>
+          <div class="form-grp">
+            <label>Unit</label>
+            <select class="form-ctrl" id="plan-f-unit">
+              <option value="week">Week(s)</option>
+              <option value="month" selected>Month(s)</option>
+              <option value="year">Year(s)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grp">
+          <label>Last Performed Date</label>
+          <input class="form-ctrl" id="plan-f-last-date" type="date"/>
+          <span class="form-note">Leave blank if never performed</span>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-plan-add')">Cancel</button>
+        <button class="btn btn-green" onclick="savePlan()">✅ Save Plan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: RECORD MAINTENANCE -->
+<div class="modal-overlay" id="m-record-maint">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hd">
+      <div class="modal-title">✅ Record Maintenance</div>
+      <button class="modal-close" onclick="closeM('m-record-maint')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div style="background:var(--green-50);border:1.5px solid var(--green-100);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#166534">Plan: <span id="rec-maint-plan-name">—</span></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Date Performed</label>
+          <input class="form-ctrl" id="rec-maint-date" type="date"/>
+        </div>
+        <div class="form-grp">
+          <label>Odometer at Service (km)</label>
+          <input class="form-ctrl" id="rec-maint-odo" type="number" placeholder="e.g. 15900"/>
+          <span class="form-note">Required for odometer-based plans</span>
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Cost (₱)</label>
+        <input class="form-ctrl" id="rec-maint-cost" type="number" placeholder="0.00"/>
+      </div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="rec-maint-remarks" rows="2" maxlength="255" placeholder="Optional notes…"></textarea>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-record-maint')">Cancel</button>
+        <button class="btn btn-green" onclick="saveRecordMaint()">✅ Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 
 
@@ -1897,6 +1912,16 @@
     </div>
   </div>
 </div>
+
+
+
+
+
+
+
+
+
+
 
 
 <!-- ════════════════ GLOBE — ADD / EDIT (UPDATED) ════════════════ -->
@@ -2107,6 +2132,50 @@
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-sub-del')">Cancel</button>
         <button class="btn btn-red"     onclick="confirmDeleteSubscription()">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- MODAL: SUBSCRIPTION TYPE SELECTOR -->
+<div class="modal-overlay" id="m-sub-type-select">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd">
+      <div class="modal-title">➕ Add Subscription</div>
+      <button class="modal-close" onclick="closeM('m-sub-type-select')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--slate-500);margin-bottom:16px">Select the type of subscription to add:</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-outline" style="justify-content:flex-start;padding:14px 18px;text-align:left"
+          onclick="selectSubType('M365')">
+          <span style="font-size:18px;margin-right:10px">💼</span>
+          <div>
+            <div style="font-weight:700">M365 License</div>
+            <div style="font-size:11.5px;color:var(--slate-400);margin-top:2px">Microsoft 365 email/app license</div>
+          </div>
+        </button>
+        <button class="btn btn-outline" style="justify-content:flex-start;padding:14px 18px;text-align:left"
+          onclick="selectSubType('Globe')">
+          <span style="font-size:18px;margin-right:10px">📱</span>
+          <div>
+            <div style="font-weight:700">Globe Mobile Plan</div>
+            <div style="font-size:11.5px;color:var(--slate-400);margin-top:2px">Employee Globe SIM / data plan</div>
+          </div>
+        </button>
+        <button class="btn btn-outline" style="justify-content:flex-start;padding:14px 18px;text-align:left"
+          onclick="selectSubType('Other')">
+          <span style="font-size:18px;margin-right:10px">🔐</span>
+          <div>
+            <div style="font-weight:700">Other Subscription</div>
+            <div style="font-size:11.5px;color:var(--slate-400);margin-top:2px">Zoom, Adobe, cloud services, etc.</div>
+          </div>
+        </button>
+      </div>
+      <div class="form-footer" style="margin-top:16px">
+        <button class="btn btn-outline" onclick="closeM('m-sub-type-select')">Cancel</button>
       </div>
     </div>
   </div>
@@ -2449,7 +2518,8 @@
 <script src="js/nav.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/orders.js"></script>
-<script src="js/subscriptions.js"></script>
+<script src="js/subscriptions_unified.js"></script>
+<script src="js/vehicles_enhanced.js"></script>
 <script src="js/main.js"></script>
 <script src="js/users.js"></script>
 

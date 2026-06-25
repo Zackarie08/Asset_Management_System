@@ -67,3 +67,5 @@ app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/insurance', require('./routes/insurance'));
 
 app.use('/api/insurance', require('./routes/subscriptionsMaster'));
+
+app.use('/api/vehicle-plans', require('./routes/vehicleMaintPlans'));
