@@ -103,6 +103,19 @@ function refreshPageActions(page) {
       if (isAdmin) el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')">➕ Add Vehicle</button>`;
       else el.innerHTML = '';
     },
+    subscriptions: () => {
+    const el = document.getElementById('sub-actions');
+    if (isAdmin)
+      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-sub-add')">➕ Add Subscription</button>`;
+    else el.innerHTML = '';
+  },
+
+  insurance: () => {
+    const el = document.getElementById('ins-actions');
+    if (isAdmin)
+      el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openM('m-ins-add')">➕ Add Insurance</button>`;
+    else el.innerHTML = '';
+  },
     globe:      () => {
       const el = document.getElementById('globe-actions');
       el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddGlobe()">➕ Add Plan</button>`;

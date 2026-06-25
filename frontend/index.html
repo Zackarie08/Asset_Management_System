@@ -506,35 +506,228 @@
 
 
 
-      <!-- ════════════════ SUBSCRIPTIONS ════════════════ -->
-      <section class="page" id="page-subscriptions">
+      <!-- ============================================================
+          PAGE SECTION REPLACEMENTS
+          Drop these into index.html inside the .main-content div
+          ============================================================ -->
 
+
+      <!-- ════════════════ M365 LICENSES (UPDATED TABLE) ════════════════ -->
+      <!-- Replace existing page-m365 section -->
+      <section class="page" id="page-m365">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">M365 Licenses</div>
+            <div class="pg-sub">Microsoft 365 subscriptions · Admin only · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="m365-actions">
+            <button class="btn btn-green btn-sm" onclick="openM('m-add-m365')">➕ Add License</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">💼 License Registry</div>
+            <div class="card-actions">
+              <span class="badge b-red"   id="m365-exp-ct">0 expired</span>
+              <span class="badge b-slate" id="m365-ct">0 licenses</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Assigned Email</th>
+                  <th>License Type</th>
+                  <th>Category</th>
+                  <th>Expiry Date</th>
+                  <th>Monthly Cost</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="m365-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ════════════════ GLOBE MOBILE PLANS (UPDATED TABLE) ════════════════ -->
+      <!-- Replace existing page-globe section -->
+      <section class="page" id="page-globe">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">Globe Mobile Plans</div>
+            <div class="pg-sub">Employee mobile subscriptions · Click row for details</div>
+          </div>
+          <div class="pg-actions" id="globe-actions">
+            <button class="btn btn-green btn-sm" onclick="openAddGlobe()">➕ Add Plan</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">📱 Mobile Plan Registry</div>
+            <div class="card-actions">
+              <span class="badge b-amber" id="globe-renew-ct">0 renewing soon</span>
+              <span class="badge b-slate" id="globe-ct">0 plans</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Mobile Number</th>
+                  <th>Plan Name</th>
+                  <th>Monthly Cost</th>
+                  <th>Renewal Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="globe-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ════════════════ SUBSCRIPTIONS (FULLY REPLACED) ════════════════ -->
+      <!-- Replace existing page-subscriptions section -->
+      <section class="page" id="page-subscriptions">
         <div class="pg-header">
           <div>
             <div class="pg-title">Subscriptions</div>
-            <div class="pg-sub">Manage all subscriptions (M365, Globe, Others)</div>
+            <div class="pg-sub">Software, security, and cloud subscriptions · Click row for details</div>
           </div>
           <div class="pg-actions">
-            <button class="btn btn-green btn-sm" onclick="openM('m-sub-add')">+ Add</button>
+            <button class="btn btn-green btn-sm" onclick="openM('m-sub-add')">➕ Add Subscription</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🔐 Subscription Registry</div>
+            <div class="card-actions">
+              <span class="badge b-red"   id="sub-exp-ct">0 expired</span>
+              <span class="badge b-slate" id="sub-ct">0 subscriptions</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Assigned To</th>
+                  <th>Supplier</th>
+                  <th>Monthly Cost</th>
+                  <th>Expiry</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sub-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ════════════════ MASTER SUBSCRIPTIONS (NEW MODULE — Add when ready) ════════════════ -->
+      <!--
+        Uncomment this section and add 'master-subscriptions' to ADMIN_NAV in main.js
+        when you're ready to enable the unified view.
+      -->
+      <!--
+      <section class="page" id="page-master-subscriptions">
+        <div class="pg-header">
+          <div>
+            <div class="pg-title">All Subscriptions</div>
+            <div class="pg-sub">Unified view across M365 · Globe · Other — read only</div>
+          </div>
+          <div class="pg-actions">
+            <button class="btn btn-outline btn-sm" onclick="exportMasterSubscriptions()">📥 Export</button>
           </div>
         </div>
 
-        <table class="tbl">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Category</th>
-              <th>Assigned To</th>
-              <th>Account</th>
-              <th>Plan</th>
-              <th>Expiry</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="sub-tbody"></tbody>
-        </table>
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card blue">
+            <div class="stat-icon si-blue">📊</div>
+            <div>
+              <div class="stat-num" id="ms-total">—</div>
+              <div class="stat-label">Total Subscriptions</div>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon si-green">✅</div>
+            <div>
+              <div class="stat-num" id="ms-active">—</div>
+              <div class="stat-label">Active</div>
+            </div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-icon si-amber">⚠️</div>
+            <div>
+              <div class="stat-num" id="ms-expiring">—</div>
+              <div class="stat-label">Expiring Soon</div>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon si-red">❌</div>
+            <div>
+              <div class="stat-num" id="ms-expired">—</div>
+              <div class="stat-label">Expired</div>
+            </div>
+          </div>
+        </div>
 
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">🔗 All Subscriptions</div>
+            <div class="card-actions">
+              <select class="form-ctrl" id="ms-filter-source" onchange="renderMasterSubscriptions()"
+                style="font-size:12px;padding:5px 10px;width:auto">
+                <option value="all">Source: All</option>
+                <option value="M365">M365</option>
+                <option value="Globe">Globe</option>
+                <option value="Subscription">Other</option>
+              </select>
+              <select class="form-ctrl" id="ms-filter-status" onchange="renderMasterSubscriptions()"
+                style="font-size:12px;padding:5px 10px;width:auto">
+                <option value="all">Status: All</option>
+                <option value="Active">Active</option>
+                <option value="Expiring Soon">Expiring Soon</option>
+                <option value="For Renewal">For Renewal</option>
+                <option value="Expired">Expired</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Name / Plan</th>
+                  <th>Assigned To</th>
+                  <th>Supplier</th>
+                  <th>Monthly Cost</th>
+                  <th>Expiry / Renewal</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="ms-tbody"></tbody>
+            </table>
+          </div>
+          <div style="padding:12px 20px;border-top:1.5px solid var(--slate-100);
+            display:flex;align-items:center;justify-content:space-between">
+            <span id="ms-total-cost" style="font-size:13px;font-weight:700;color:var(--slate-700)">
+              Total active monthly: —
+            </span>
+          </div>
+        </div>
       </section>
+      -->
+
 
 
 
@@ -546,7 +739,7 @@
             <div class="pg-title">Insurance</div>
             <div class="pg-sub">Employee insurance tracking</div>
           </div>
-          <button class="btn btn-green btn-sm" onclick="openM('m-ins-add')">+ Add</button>
+          <div id="ins-actions"></div>
         </div>
 
         <table class="tbl">
@@ -563,67 +756,6 @@
 
       </section>
 
-
-
-      <!-- ════════════════ GLOBE MOBILE PLAN ════════════════ -->
-      <section class="page" id="page-globe">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Globe Mobile Plans</div>
-            <div class="pg-sub">Employee mobile subscriptions · Admin only · Click row for details</div>
-          </div>
-          <div class="pg-actions" id="globe-actions"></div>
-        </div>
-        <div class="card">
-          <div class="card-hd">
-            <div class="card-title">📱 Mobile Plan Registry</div>
-            <div class="card-actions">
-              <span class="badge b-amber" id="globe-renew-ct">0 renewing soon</span>
-              <span class="badge b-slate" id="globe-ct">0 plans</span>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>Employee Name</th><th>Mobile Number</th><th>Plan Name</th>
-                <th>Monthly Cost</th><th>Renewal Date</th><th>Status</th><th>Actions</th>
-              </tr></thead>
-              <tbody id="globe-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-
-
-      <!-- ════════════════ M365 LICENSES ════════════════ -->
-      <section class="page" id="page-m365">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">M365 Licenses</div>
-            <div class="pg-sub">Microsoft 365 subscriptions · Admin only · Click row for details</div>
-          </div>
-          <div class="pg-actions" id="m365-actions"></div>
-        </div>
-        <div class="card">
-          <div class="card-hd">
-            <div class="card-title">💼 License Registry</div>
-            <div class="card-actions">
-              <span class="badge b-red" id="m365-exp-ct">0 expired</span>
-              <span class="badge b-slate" id="m365-ct">0 licenses</span>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th>Assigned Email</th><th>License Type</th><th>Category</th>
-                <th>Expiry Date</th><th>Monthly Cost</th><th>Status</th><th>Actions</th>
-              </tr></thead>
-              <tbody id="m365-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
 
 
 
@@ -1669,55 +1801,173 @@
 
 
 
-<!-- ════════════════ GLOBE MOBILE PLAN MODULE ════════════════ -->
+<!-- ============================================================
+     MODAL ADDITIONS / REPLACEMENTS
+     Add these to index.html (replace or add alongside existing modals)
+     ============================================================ -->
 
-<!-- Globe Mobile Plan Modal -->
+
+<!-- ════════════════ M365 — ADD / EDIT (UPDATED) ════════════════ -->
+<!-- Replace existing m-add-m365 with this -->
+<div class="modal-overlay" id="m-add-m365">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">💼 M365 License</div>
+      <button class="modal-close" onclick="closeM('m-add-m365')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Assigned Email *</label>
+          <input class="form-ctrl" id="m365-f-email" type="email" placeholder="user@domain.com" maxlength="100"/>
+        </div>
+        <div class="form-grp">
+          <label>License Type *</label>
+          <select class="form-ctrl" id="m365-f-type">
+            <option value="">Select type…</option>
+            <option>Microsoft 365 Business Basic</option>
+            <option>Microsoft 365 Business Standard</option>
+            <option>Microsoft 365 Business Premium</option>
+            <option>Microsoft 365 Apps</option>
+            <option>Microsoft 365 E1</option>
+            <option>Microsoft 365 E3</option>
+            <option>Microsoft 365 E5</option>
+            <option>Office 2021 (Perpetual)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Category *</label>
+          <select class="form-ctrl" id="m365-f-cat">
+            <option value="">Select category…</option>
+            <option>Business</option>
+            <option>Enterprise</option>
+            <option>Education</option>
+            <option>Perpetual</option>
+            <option>Trial</option>
+          </select>
+        </div>
+        <div class="form-grp">
+          <label>Monthly Cost (₱)</label>
+          <input class="form-ctrl" id="m365-f-cost" type="number" min="0" placeholder="0.00"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Start Date</label>
+          <input class="form-ctrl" id="m365-f-start" type="date"/>
+        </div>
+        <div class="form-grp">
+          <label>Expiry Date</label>
+          <input class="form-ctrl" id="m365-f-expiry" type="date"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Renewal Date</label>
+          <input class="form-ctrl" id="m365-f-renew" type="date"/>
+        </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="m365-f-remarks" rows="2" maxlength="255"
+          placeholder="Optional notes…"></textarea>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-add-m365')">Cancel</button>
+        <button class="btn btn-green"   onclick="saveM365()">✅ Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete M365 -->
+<div class="modal-overlay" id="m-confirm-m365-del">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete License</div>
+      <button onclick="closeM('m-confirm-m365-del')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Delete this M365 license? This cannot be undone.</p>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-m365-del')">Cancel</button>
+        <button class="btn btn-red"     onclick="confirmDeleteM365()">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════ GLOBE — ADD / EDIT (UPDATED) ════════════════ -->
+<!-- Replace existing m-add-globe with this -->
 <div class="modal-overlay" id="m-add-globe">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">📱 Add Mobile Plan</div>
+      <div class="modal-title">📱 Globe Mobile Plan</div>
       <button class="modal-close" onclick="closeM('m-add-globe')">✕</button>
     </div>
     <div class="modal-body">
+
       <div class="form-row">
         <div class="form-grp">
           <label>Employee *</label>
           <div class="search-select">
-            <input id="globe-f-user" class="form-ctrl" placeholder="Type user name..." />
+            <input id="globe-f-user" class="form-ctrl" placeholder="Type name…"/>
             <div id="globe-f-user-list" class="select-list"></div>
           </div>
         </div>
-        <div class="form-grp"><label>Mobile Number</label>
-        <input 
-          id="globe-f-num" 
-          maxlength="13"
-          placeholder="0917-123-4567"
-          class="form-ctrl"
-        />
+        <div class="form-grp">
+          <label>Mobile Number *</label>
+          <input id="globe-f-num" class="form-ctrl" placeholder="0917-123-4567" maxlength="13"/>
         </div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>Account Number</label><input class="form-ctrl" id="globe-f-acct" placeholder="Account no." maxlength="50"/></div>
-        <div class="form-grp"><label>Plan Name</label><input class="form-ctrl" id="globe-f-plan" placeholder="e.g. Globe Postpaid Plan 999" maxlength="50"/></div>
+        <div class="form-grp">
+          <label>Account Number</label>
+          <input class="form-ctrl" id="globe-f-acct" placeholder="Account no." maxlength="50"/>
+        </div>
+        <div class="form-grp">
+          <label>Plan Name *</label>
+          <input class="form-ctrl" id="globe-f-plan" placeholder="e.g. Globe Plan 999" maxlength="100"/>
+        </div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>Monthly Cost (₱)</label><input class="form-ctrl" id="globe-f-cost" type="number" placeholder="0"/></div>
-        <div class="form-grp"><label>Data Allocation</label><input class="form-ctrl" id="globe-f-data" placeholder="e.g. 50GB" maxlength="50"/></div>
+        <div class="form-grp">
+          <label>Monthly Cost (₱)</label>
+          <input class="form-ctrl" id="globe-f-cost" type="number" min="0" placeholder="0"/>
+        </div>
+        <div class="form-grp">
+          <label>Data Allocation</label>
+          <input class="form-ctrl" id="globe-f-data" placeholder="e.g. 50 GB" maxlength="50"/>
+        </div>
       </div>
+
       <div class="form-row">
         <div class="form-grp">
           <label>Start Date</label>
-          <input id="globe-f-start" type="date" class="form-ctrl" />
+          <input id="globe-f-start" type="date" class="form-ctrl"/>
         </div>
-
         <div class="form-grp">
-          <label>Renewal Date</label>
-          <input id="globe-f-renew" type="date" class="form-ctrl" />
+          <label>Renewal Date *</label>
+          <input id="globe-f-renew" type="date" class="form-ctrl"/>
         </div>
       </div>
 
       <div class="form-row">
-        <div class="form-grp"><label>Credit Limit (₱)</label><input class="form-ctrl" id="globe-f-credit" type="number" placeholder="0"/></div>
+        <div class="form-grp">
+          <label>Credit Limit (₱)</label>
+          <input class="form-ctrl" id="globe-f-credit" type="number" min="0" placeholder="0"/>
+        </div>
         <div class="form-grp">
           <label>Status</label>
           <select id="globe-f-status" class="form-ctrl">
@@ -1727,129 +1977,148 @@
           </select>
         </div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="globe-f-remarks" rows="2" placeholder="Optional notes..."></textarea></div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="globe-f-remarks" rows="2" maxlength="255"
+          placeholder="Optional notes…"></textarea>
+      </div>
+
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-globe')">Cancel</button>
-        <button class="btn btn-green" onclick="saveGlobe()">✅ Add Plan</button>
+        <button class="btn btn-green"   onclick="saveGlobe()">✅ Save</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Confirm Delete Globe Plan -->
+<!-- Confirm delete Globe -->
 <div class="modal-overlay" id="m-confirm-globe-del">
-  <div class="modal">
+  <div class="modal" style="max-width:380px">
     <div class="modal-hd">
       <div class="modal-title">⚠️ Delete Plan</div>
       <button onclick="closeM('m-confirm-globe-del')">✕</button>
     </div>
-
     <div class="modal-body">
-      <p>Delete this mobile plan?</p>
-
+      <p>Delete this Globe mobile plan?</p>
       <div class="form-footer">
-        <button class="btn btn-outline" onclick="closeM('m-confirm-globe-del')">
-          Cancel
-        </button>
-        <button class="btn btn-red" onclick="confirmDeleteGlobe()">
-          Delete
-        </button>
+        <button class="btn btn-outline" onclick="closeM('m-confirm-globe-del')">Cancel</button>
+        <button class="btn btn-red"     onclick="confirmDeleteGlobe()">🗑️ Delete</button>
       </div>
     </div>
   </div>
 </div>
 
 
-
-
-
-
-
-
-<!-- ════════════════ M365 MODULE ════════════════ -->
-
-<!-- M365 License Modal -->
-<div class="modal-overlay" id="m-add-m365">
+<!-- ════════════════ SUBSCRIPTIONS — ADD / EDIT (NEW) ════════════════ -->
+<div class="modal-overlay" id="m-sub-add">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">💼 Add M365 License</div>
-      <button class="modal-close" onclick="closeM('m-add-m365')">✕</button>
+      <div class="modal-title">🔐 Subscription</div>
+      <button class="modal-close" onclick="closeM('m-sub-add')">✕</button>
     </div>
     <div class="modal-body">
+
       <div class="form-row">
-        <div class="form-grp"><label>Assigned Email *</label><input class="form-ctrl" id="m365-f-email" type="email" placeholder="user@gpcci.org" maxlength="50"/></div>
-        <div class="form-grp"><label>License Type</label>
-          <select class="form-ctrl" id="m365-f-type">
-            <option>Microsoft 365 Business Basic</option>
-            <option>Microsoft 365 Business Standard</option>
-            <option>Microsoft 365 Business Premium</option>
-            <option>Microsoft 365 Apps</option>
-            <option>Office 2021 (Perpetual)</option>
+        <div class="form-grp">
+          <label>Subscription Name *</label>
+          <input class="form-ctrl" id="sub-f-name" placeholder="e.g. Zoom, Adobe CC" maxlength="100"/>
+        </div>
+        <div class="form-grp">
+          <label>Category *</label>
+          <select class="form-ctrl" id="sub-f-cat">
+            <option value="">Select category…</option>
+            <option>Software</option>
+            <option>Security</option>
+            <option>Communications</option>
+            <option>Cloud Storage</option>
+            <option>Productivity</option>
+            <option>Design</option>
+            <option>Marketing</option>
+            <option>Other</option>
           </select>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Category</label>
-          <select class="form-ctrl" id="m365-f-cat">
-            <option>Subscription</option>
-            <option>Perpetual</option>
-            <option>Trial</option>
+          <label>Supplier / Vendor</label>
+          <input class="form-ctrl" id="sub-f-supplier" placeholder="e.g. Zoom Video Communications" maxlength="100"/>
+        </div>
+        <div class="form-grp">
+          <label>Assigned To</label>
+          <input class="form-ctrl" id="sub-f-assigned" placeholder="Person or department" maxlength="100"/>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp">
+          <label>Monthly Cost (₱)</label>
+          <input class="form-ctrl" id="sub-f-cost" type="number" min="0" placeholder="0.00"/>
+        </div>
+        <div class="form-grp">
+          <label>Billing Cycle</label>
+          <select class="form-ctrl" id="sub-f-cycle">
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+            <option value="one-time">One-time</option>
           </select>
         </div>
+      </div>
 
+      <div class="form-row">
         <div class="form-grp">
           <label>Start Date</label>
-          <input class="form-ctrl" id="m365-f-start" type="date"/>
+          <input class="form-ctrl" id="sub-f-start" type="date"/>
         </div>
-      </div>
-
-      <div class="form-row">
         <div class="form-grp">
           <label>Expiry Date</label>
-          <input class="form-ctrl" id="m365-f-expiry" type="date"/>
-        </div>
-
-        <div class="form-grp">
-          <label>Renewal Date</label>
-          <input class="form-ctrl" id="m365-f-renew" type="date"/>
+          <input class="form-ctrl" id="sub-f-expiry" type="date"/>
         </div>
       </div>
+
       <div class="form-row">
-        <div class="form-grp"><label>Monthly Cost (₱)</label><input class="form-ctrl" id="m365-f-cost" type="number" placeholder="0.00"/></div>
+        <div class="form-grp">
+          <label>Status</label>
+          <select class="form-ctrl" id="sub-f-status">
+            <option value="Active">Active</option>
+            <option value="Expired">Expired</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
       </div>
-      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="m365-f-remarks" rows="2" placeholder="Optional notes..." maxlength="255"></textarea></div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="sub-f-remarks" rows="2" maxlength="255"
+          placeholder="Optional notes…"></textarea>
+      </div>
+
       <div class="form-footer">
-        <button class="btn btn-outline" onclick="closeM('m-add-m365')">Cancel</button>
-        <button class="btn btn-green" onclick="saveM365()">✅ Add License</button>
+        <button class="btn btn-outline" onclick="closeM('m-sub-add')">Cancel</button>
+        <button class="btn btn-green"   onclick="saveSubscription()">✅ Save</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Confirm Delete M365 -->
-<div class="modal-overlay" id="m-confirm-m365-del">
-  <div class="modal">
+<!-- Confirm delete Subscription -->
+<div class="modal-overlay" id="m-confirm-sub-del">
+  <div class="modal" style="max-width:380px">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete M365 License</div>
-      <button onclick="closeM('m-confirm-m365-del')">✕</button>
+      <div class="modal-title">⚠️ Delete Subscription</div>
+      <button onclick="closeM('m-confirm-sub-del')">✕</button>
     </div>
-
     <div class="modal-body">
-      <p>Are you sure you want to delete this license?</p>
-
+      <p>Delete this subscription? This cannot be undone.</p>
       <div class="form-footer">
-        <button class="btn btn-outline" onclick="closeM('m-confirm-m365-del')">
-          Cancel
-        </button>
-        <button class="btn btn-red" onclick="confirmDeleteM365()">
-          Delete
-        </button>
+        <button class="btn btn-outline" onclick="closeM('m-confirm-sub-del')">Cancel</button>
+        <button class="btn btn-red"     onclick="confirmDeleteSubscription()">🗑️ Delete</button>
       </div>
     </div>
   </div>
 </div>
+
 
 
 
@@ -2187,6 +2456,7 @@
 <script src="js/nav.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/orders.js"></script>
+<script src="js/subscriptions.js"></script>
 <script src="js/main.js"></script>
 <script src="js/users.js"></script>
 

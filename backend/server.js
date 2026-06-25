@@ -65,3 +65,11 @@ app.use('/api/attachments', require('./routes/attachments'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 
 app.use('/api/insurance', require('./routes/insurance'));
+
+
+
+app.use('/api/insurance', require('./routes/routes_attachments'));
+app.use('/api/insurance', require('./routes/routes_globe'));
+app.use('/api/insurance', require('./routes/routes_m365'));
+app.use('/api/insurance', require('./routes/routes_subscriptions'));
+app.use('/api/insurance', require('./routes/routes_subscriptionsMaster'));
