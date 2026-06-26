@@ -2,123 +2,13 @@
    SESSION / AUTH
 ────────────────────────────────────────────────────────────── */
 let currentUser = null; // { name, role, initials }
-
-
-
-
-/* ──────────────────────────────────────────────────────────────
-   SIDEBAR
-────────────────────────────────────────────────────────────── */
-const ADMIN_NAV = [
-  { id:'dashboard',   icon:'🏠', label:'Dashboard',            badge:null },
-  { id:'inventory',   icon:'📦', label:'Inventory Management', badge:'inv' },
-    { id:'orders',      icon:'🛒', label:'Purchase Orders',      badge:'po' },
-  { id:'furniture',   icon:'🪑', label:'Office Furniture',     badge:null },
-  { id:'itsupplies',  icon:'🖨️', label:'IT Supplies',          badge:'it' },
-  { id:'laptops',     icon:'💻', label:'Laptops',              badge:null },
-  { id:'vehicles',    icon:'🚗', label:'Vehicle Management',   badge:null },
-  { id:'contracts', icon:'📄', label:'Contracts', badge:null },
-  { id:'subscriptions', icon:'🔐', label:'Subscriptions', badge:null, admin:true },
-  { id:'insurance', icon:'🛡️', label:'Insurance', badge:null, admin:true },
-  { id:'finance', icon:'📁', label:'Finance Documents', badge:null, admin:true },
-  { id:'logs',        icon:'📜', label:'System Logs',          badge:null, admin:true },
-  { id: 'users', label: 'Users', icon: '👤', page: 'page-users', admin:true },
-];
-
-const EMP_NAV = ['dashboard','inventory','orders','furniture','itsupplies','laptops','vehicles','contracts','subscriptions'];
-
-
-
-
-
-/* ──────────────────────────────────────────────────────────────
-   NAVIGATION
-────────────────────────────────────────────────────────────── */
-const PAGE_META = {
-  dashboard:  { title:'Dashboard',         parent:'Asset Management System' },
-  inventory:  { title:'Inventory Management', parent:'Asset Management System' },
-  orders:     { title:'Purchase Orders',   parent:'Asset Management System' },
-  furniture:  { title:'Office Furniture',  parent:'Asset Management System' },
-  itsupplies: { title:'IT Supplies',       parent:'Asset Management System' },
-  laptops:    { title:'Laptop Management', parent:'Asset Management System' },
-  vehicles:   { title:'Vehicle Management',parent:'Asset Management System' },
-  contracts: { title:'Contracts', parent:'Asset Management System' },
-  globe:      { title:'Globe Mobile Plans',parent:'Asset Management System' },
-  m365:       { title:'M365 Licenses',     parent:'Asset Management System' },
-  subscriptions: { title:'Subscriptions', parent:'Asset Management System' },
-  'master-subscriptions': { title: 'All Subscriptions', parent: 'Asset Management System' },
-  insurance:     { title:'Insurance', parent:'Asset Management System' },
-  finance: { title:'Finance Documents', parent:'Asset Management System' },
-  logs:       { title:'System Logs',       parent:'Asset Management System' },
-  users:      { title:'Users',             parent:'Asset Management System' },
-};
-
+let _currentContract = null;
 let currentPage = 'dashboard';
+let editState = { id: null, type: null }; 
 
 function isAdminUser() {
   return currentUser.role === "admin" || currentUser.role === "super_admin";
 }
-
-
-
-
-
-/* ──────────────────────────────────────────────────────────────
-   DETAIL PANEL ENGINE
-────────────────────────────────────────────────────────────── */
-let dpOpen = false;
-let dpSelectedRow = null;
-let dpCurrentType = null;
-let dpCurrentId   = null;
-
-function openDP(type, id, row) {
-  if (dpSelectedRow) dpSelectedRow.classList.remove('selected');
-  dpSelectedRow = row;
-  dpCurrentType = type;
-  dpCurrentId   = id;
-  if (row) row.classList.add('selected');
-
-  document.getElementById('detail-panel').classList.add('open');
-  document.getElementById('app-body').classList.add('panel-open');
-  dpOpen = true;
-
-  const renderers = {
-    inventory: dpInventory,
-    furniture: dpFurniture,
-    order:     dpOrder,
-    itsupplies: dpITSupplies,
-    laptop:    dpLaptop,
-    vehicle:   dpVehicle,
-    contracts: dpContract,
-    subscriptions: dpSubscriptions,
-    globe:     dpGlobe,
-    m365:      dpM365,
-    finance:   dpFinance,
-    log:       dpLog,
-  };
-  if (renderers[type]) {
-    renderers[type](id);
-  }
-}
-
-function closeDP() {
-  document.getElementById('detail-panel').classList.remove('open');
-  document.getElementById('app-body').classList.remove('panel-open');
-  if (dpSelectedRow) { dpSelectedRow.classList.remove('selected'); dpSelectedRow = null; }
-  dpOpen = false; dpCurrentType = null; dpCurrentId = null;
-}
-
-function setDPHeader(icon, iconBg, title, sub) {
-  const el = document.getElementById('dp-icon');
-  el.textContent = icon; el.style.background = iconBg;
-  document.getElementById('dp-title').textContent    = title;
-  document.getElementById('dp-subtitle').textContent = sub;
-}
-
-
-
-
-
 
 
 
@@ -1028,33 +918,34 @@ async function openAssign(id) {
   openM('m-assign');
 }
 
+let currentLpId = null;
+
 function doAssign() {
   const userName = document.getElementById("assign-user").value;
-  const user_id = userMap[userName]; 
+  const user_id  = userMap[userName];
 
-  fetch(`${API_URL}/api/laptops/${currentLpId}`, {
+  if (!user_id) {
+    showToast("Select a valid user", "t-error");
+    return;
+  }
+
+  // ✅ FIX: use /assign/:id (not /:id which now handles full edit)
+  fetch(`${API_URL}/api/laptops/assign/${currentLpId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      current_user_id: user_id
-    })
+    body: JSON.stringify({ current_user_id: user_id })
   })
-  .then(() => {
-    showToast("Laptop Assigned", "t-success");
-
-    addLog(
-      "UPDATE",
-      "LAPTOP",
-      "Assigned laptop to " + userName,
-      currentLpId
-    );
-
-    closeM('m-assign');
+  .then(res => {
+    if (!res.ok) throw new Error("Assign failed");
+    showToast("Laptop assigned", "t-success");
+    addLog("UPDATE", "LAPTOP", `Assigned laptop to ${userName}`, currentLpId);
+    closeM("m-assign");
     renderLaptops();
-
-    if (dpOpen && dpCurrentType === "laptop") {
-      dpLaptop(dpCurrentId);
-    }
+    if (dpOpen && dpCurrentType === "laptop") dpLaptop(dpCurrentId);
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error assigning laptop", "t-error");
   });
 }
 
@@ -1372,27 +1263,6 @@ function savePO() {
   });
 }
 
-async function markDelivered(id) {
-  const o = poItems.find(x => x.id === id);
-  if (!o) return;
-  o.status    = 'DELIVERED';
-  o.delivered = todayStr();
-  const res = await fetch(`${API_URL}/api/inventory`);
-  const items = await res.json();
-  // Auto-update inventory if item matches
-  const invMatch = items.find(i => i.name.toLowerCase() === o.item.toLowerCase() && i.cat === o.cat);
-  let invMsg = '';
-  if (invMatch) {
-    invMsg = ` Inventory updated: "${invMatch.name}" +${o.qty} ${o.unit} (now ${invMatch.qty}).`;
-    renderInventory();
-  }
-
-  addLog('DELIVER','Purchase Orders',`PO Delivered: "${o.item}" x${o.qty} from ${o.supplier}.${invMsg}`,o.poNum);
-  renderOrders();
-  if (dpOpen && dpCurrentType==='order' && dpCurrentId===o.id) dpOrder(o.id);
-  showToast(`Delivered: ${o.item}! ${invMsg}`,'t-success');
-}
-
 function deletePO(id) {
   const o = poItems.find(x => x.id === id);
   if (!o || !confirm(`Delete ${o.poNum}?`)) return;
@@ -1408,16 +1278,22 @@ function markDelivered(id) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      user_id: currentUser.user_id,
+      user_id:      currentUser.user_id,
       performed_by: currentUser.name,
-      role: currentUser.role
+      role:         currentUser.role
     })
   })
-  .then(() => {
+  .then(res => {
+    if (!res.ok) throw new Error("Delivery failed");
     showToast("Delivery confirmed", "t-success");
+    addLog("UPDATE", "ORDER", `Marked PO #${id} as delivered`, id);
     renderOrders();
     renderInventory();
     closeDP();
+  })
+  .catch(err => {
+    console.error(err);
+    showToast("Error confirming delivery", "t-error");
   });
 }
 
@@ -1524,79 +1400,103 @@ async function submitReceive() {
 let deleteContractId = null;
 
 async function renderContracts() {
-  const res = await fetch(`${API_URL}/api/contracts`);
-  const data = await res.json();
+  try {
+    const res  = await fetch(`${API_URL}/api/contracts`);
+    const data = await res.json();
 
-  const tbody = document.getElementById("con-tbody");
-  tbody.innerHTML = "";
+    const tbody = document.getElementById("con-tbody");
+    tbody.innerHTML = "";
 
-  data.forEach(c => {
+    data.forEach(c => {
+      let validity = c.validity_type === "YEAR"
+        ? c.valid_year
+        : `${c.valid_from} — ${c.valid_to}`;
 
-    let validity = c.validity_type === "YEAR"
-      ? c.valid_year
-      : `${c.valid_from} - ${c.valid_to}`;
+      // Compute expiry badge
+      const expiryDate = c.validity_type === "YEAR"
+        ? new Date(`${c.valid_year}-12-31`)
+        : c.valid_to ? new Date(c.valid_to) : null;
 
-    const tr = document.createElement("tr");
-    tr.className = "tr-clickable";
+      let expiryBadge = "";
+      if (expiryDate) {
+        const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+        if (days < 0)        expiryBadge = `<span class="badge b-red">Expired</span>`;
+        else if (days <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${days}d</span>`;
+        else                 expiryBadge = `<span class="badge b-green">Valid</span>`;
+      }
 
-    tr.innerHTML = `
-      <td>${c.contract_date}</td>
-      <td>${c.other_party}</td>
-      <td>${c.description}</td>
-      <td>${validity}</td>
-    `;
+      const tr = document.createElement("tr");
+      tr.className = "tr-clickable";
+      tr.innerHTML = `
+        <td>${c.contract_date}</td>
+        <td>${c.other_party}</td>
+        <td>${c.description}</td>
+        <td>${validity}</td>
+        <td>${expiryBadge}</td>
+      `;
+      tr.onclick = () => openDP("contracts", c.contract_id, tr);
+      tbody.appendChild(tr);
+    });
 
-    tr.onclick = () => openDP("contracts", c.contract_id, tr);
-
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById("con-ct").innerText = data.length + " records";
+    document.getElementById("con-ct").textContent = data.length + " records";
+  } catch (err) {
+    console.error("renderContracts error:", err);
+    showToast("Failed to load contracts", "t-error");
+  }
 }
+
 
 async function dpContract(id) {
   const res = await fetch(`${API_URL}/api/contracts/${id}`);
-  const c = await res.json();
-
+  const c   = await res.json();
   if (!c) return;
+
+  // ✅ FIX: store so contract action functions can reference it safely
+  _currentContract = c;
 
   setDPHeader("📄", "#eef2ff", c.other_party, c.description);
 
   let validity = c.validity_type === "YEAR"
     ? c.valid_year
-    : `${c.valid_from} - ${c.valid_to}`;
+    : `${c.valid_from} — ${c.valid_to}`;
+
+  // Compute expiry for badge
+  let expiryBadge = "";
+  const expiryDate = c.validity_type === "YEAR"
+    ? new Date(`${c.valid_year}-12-31`)
+    : c.valid_to ? new Date(c.valid_to) : null;
+
+  if (expiryDate) {
+    const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+    if (days < 0)       expiryBadge = `<span class="badge b-red">Expired</span>`;
+    else if (days <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${days}d</span>`;
+    else                 expiryBadge = `<span class="badge b-green">Valid</span>`;
+  }
 
   const statusBadge = `
-    <span class="badge ${c.status === 'IN_STORAGE' ? 'b-green' : 'b-blue'}">
+    <span class="badge ${c.status === "IN_STORAGE" ? "b-green" : "b-blue"}">
       ${c.status}
-    </span>
-  `;
+    </span>`;
 
   const html = `
     <div class="dp-section">
       <div class="dp-section-hd">📋 Details</div>
       <div class="dp-grid">
-        ${dpField("Date", c.contract_date)}
+        ${dpField("Date",        c.contract_date)}
         ${dpField("Other Party", c.other_party)}
         ${dpField("Description", c.description)}
-        ${dpField("Validity", validity)}
-        ${dpField("Status", statusBadge)}
+        ${dpField("Validity",    validity)}
+        ${dpField("Status",      statusBadge)}
+        ${expiryDate ? dpField("Expiry Status", expiryBadge) : ""}
       </div>
     </div>
-
     <div class="dp-section">
       <div class="dp-section-hd">📝 Remarks</div>
-      <div class="dp-grid">
-        ${dpFieldFull("Notes", c.remarks || "No remarks")}
-      </div>
+      <div class="dp-grid">${dpFieldFull("Notes", c.remarks || "No remarks")}</div>
     </div>
-
-    <!-- container for actions -->
-    <div id="contract-actions"></div>
-  `;
+    <div id="contract-actions"></div>`;
 
   document.getElementById("dp-body").innerHTML = html;
-
   renderContractActions(c);
 }
 
@@ -1858,106 +1758,69 @@ function confirmDeleteContract() {
 function requestContract(id) {
   fetch(`${API_URL}/api/contracts/request`, {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      contract_id: id,
-      user_id: currentUser.user_id
-    })
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contract_id: id, user_id: currentUser.user_id })
   })
-  .then(() => {
-    showToast("Contract Request sent", "t-success");
-
-    addLog(
-      "REQUEST",
-      "CONTRACT",
-      `Requested Contract | ${c.other_party}`,
-      id
-    );
-
-    dpContract(id); // ✅ refresh
-    refreshContractUI(id);
-  });
+  .then(res => {
+    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
+    showToast("Contract request sent", "t-success");
+    // ✅ FIX: use _currentContract instead of undefined `c`
+    addLog("REQUEST", "CONTRACT",
+      `Requested contract | ${_currentContract?.other_party || id}`, id);
+    dpContract(id);
+  })
+  .catch(err => showToast(err.message || "Request failed", "t-error"));
 }
 
 function approveRequest(id) {
   fetch(`${API_URL}/api/contracts/request/${id}/approve`, {
     method: "PUT",
-    headers: {"Content-Type":"application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ admin_id: currentUser.user_id })
   })
   .then(() => {
-    showToast("Contract Approved", "t-success");
-
-    addLog(
-      "REQUEST",
-      "CONTRACT",
-      `Approved Request | ${c.other_party}`,
-      id
-    );
-
+    showToast("Contract approved", "t-success");
+    addLog("UPDATE", "CONTRACT",
+      `Approved request | ${_currentContract?.other_party || id}`, id);
     renderContracts();
     dpContract(dpCurrentId);
-    refreshContractUI(id);
-  });
+  })
+  .catch(err => showToast("Approve failed", "t-error"));
 }
 
 function returnContract(id) {
-  fetch(`${API_URL}/api/contracts/request/${id}/return`, {
-    method: "PUT"
-  })
-  .then(() => {
-    showToast("Contract Returned", "t-success");
-
-  addLog(
-    "REQUEST",
-    "CONTRACT",
-    `Returned Contract | ${c.other_party}`,
-    id
-  );
-
-    renderContracts();
-    dpContract(dpCurrentId);
-    refreshContractUI(id);
-  });
+  fetch(`${API_URL}/api/contracts/request/${id}/return`, { method: "PUT" })
+    .then(() => {
+      showToast("Contract returned", "t-success");
+      addLog("UPDATE", "CONTRACT",
+        `Returned contract | ${_currentContract?.other_party || id}`, id);
+      renderContracts();
+      dpContract(dpCurrentId);
+    })
+    .catch(() => showToast("Return failed", "t-error"));
 }
 
 function cancelRequest(id) {
-  fetch(`${API_URL}/api/contracts/request/${id}`, {
-    method: "DELETE"
-  })
-  .then(() => {
-    showToast("Request cancelled", "t-warning");
-
-    addLog(
-      "REQUEST",
-      "CONTRACT",
-      `Cancelled request Contract | ${c.other_party}`,
-      id
-    );
-
-    dpContract(dpCurrentId);
-    refreshContractUI(id);
-  });
+  fetch(`${API_URL}/api/contracts/request/${id}`, { method: "DELETE" })
+    .then(() => {
+      showToast("Request cancelled", "t-warning");
+      addLog("DELETE", "CONTRACT",
+        `Cancelled request | ${_currentContract?.other_party || id}`, id);
+      dpContract(dpCurrentId);
+    })
+    .catch(() => showToast("Cancel failed", "t-error"));
 }
 
 function denyRequest(id) {
-  fetch(`${API_URL}/api/contracts/request/${id}/deny`, {
-    method: "PUT"
-  })
-  .then(() => {
-    showToast("Request denied", "t-warning");
-
-    addLog(
-      "REQUEST",
-      "CONTRACT",
-      `Denied Request | ${c.other_party}`,
-      id
-    );
-
-    renderContracts();
-    dpContract(dpCurrentId);
-    refreshContractUI(id);
-  });
+  fetch(`${API_URL}/api/contracts/request/${id}/deny`, { method: "PUT" })
+    .then(() => {
+      showToast("Request denied", "t-warning");
+      addLog("UPDATE", "CONTRACT",
+        `Denied request | ${_currentContract?.other_party || id}`, id);
+      renderContracts();
+      dpContract(dpCurrentId);
+    })
+    .catch(() => showToast("Deny failed", "t-error"));
 }
 
 function toggleValidity() {
@@ -3361,6 +3224,43 @@ function _esc(str) {
 }
 
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   IMPROVEMENT: Dashboard — click items to navigate + open DP
+   Replace _emptyMsg panels' panel-row onClick stubs with
+   this helper. Call navigateAndOpen() from dashboard rows.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/**
+ * Navigate to a page, then open the detail panel for a record.
+ * @param {string} page     - page id (e.g. "inventory", "contracts")
+ * @param {string} dpType   - DP type key (e.g. "inventory", "contracts")
+ * @param {number} recordId - the record's primary key
+ */
+function navigateAndOpen(page, dpType, recordId) {
+  // 1. Navigate to the page
+  const navEl = document.getElementById("nav-" + page);
+  navigate(page, navEl);
+
+  // 2. After a short paint delay, open the DP
+  // We need the table row to mark as selected — find it by ID match
+  setTimeout(() => {
+    // Try to find the matching row in the rendered table
+    const allRows = document.querySelectorAll(`#page-${page} .tr-clickable`);
+    let targetRow = null;
+
+    // Most tables render the PK in the first cell or as data-id
+    allRows.forEach(row => {
+      const firstCell = row.querySelector("td");
+      if (firstCell && String(firstCell.textContent).trim() === String(recordId)) {
+        targetRow = row;
+      }
+    });
+
+    openDP(dpType, recordId, targetRow);
+  }, 250); // 250ms gives the page time to render
+}
+
+
 
 
 
@@ -3419,7 +3319,6 @@ function initAllModules() {
   renderFinance();
   renderLogs();
   renderUsers();
-  renderVehicles()
   renderContracts();
   loadFurLocations();
   loadFinanceCategories()
@@ -3469,6 +3368,14 @@ setInterval(async () => {
 
 
 
+setInterval(() => {
+  if (document.hidden) return;
+  if (currentPage !== "dashboard") return;
+  // refreshDashboard() already uses _setText/_setHTML which only
+  // mutate individual element text/innerHTML — no full re-render.
+  refreshDashboard();
+}, 5 * 60 * 1000);
+
 
 
 
@@ -3511,4 +3418,38 @@ async function renderLogs() {
 window.onload = function () {
   autoLogin();
 };
+
+async function exportLogs() {
+  try {
+    const res  = await fetch(`${API_URL}/api/logs`);
+    const logs = await res.json();
+
+    if (!logs.length) { showToast("No logs to export", "t-error"); return; }
+
+    const headers = ["Timestamp", "User", "Action", "Module", "Description", "Performed By"];
+    const rows = logs.map(l => [
+      `"${new Date(l.date_time).toLocaleString()}"`,
+      `"${l.name || ""}"`,
+      `"${l.action_type || ""}"`,
+      `"${l.module || ""}"`,
+      `"${(l.description || "").replace(/"/g, '""')}"`,
+      `"${l.performed_by || ""}"`
+    ].join(","));
+
+    const csv  = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `SystemLogs_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Logs exported", "t-success");
+  } catch (err) {
+    console.error(err);
+    showToast("Export failed", "t-error");
+  }
+}
 

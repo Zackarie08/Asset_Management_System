@@ -1,5 +1,4 @@
-NOTE: CHECKED BY AI, PLEASE DOUBLE CHECK SA EXCEL ASSET PLANNING 
-
+For reference, this is the existing database:
 
 -- =========================
 -- USERS ----- DONE
@@ -245,3 +244,114 @@ CREATE TABLE contract_requests (
   status VARCHAR(50) DEFAULT 'PENDING',
   remarks TEXT
 );
+
+
+-----SABI NI AI------
+
+
+
+-- ═══════════════════════════════════════════════════════
+-- MIGRATION: Feature Upgrade Pack
+-- Run this on your Railway PostgreSQL database
+-- ═══════════════════════════════════════════════════════
+
+-- ─────────────────────────────────────────────────────
+-- 1. ATTACHMENTS TABLE (global)
+-- ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS attachments (
+  attachment_id SERIAL PRIMARY KEY,
+  module        TEXT NOT NULL,        
+  record_id     INT  NOT NULL,
+  file_name     TEXT NOT NULL,
+  file_url      TEXT NOT NULL,     
+  file_type     TEXT,            
+  uploaded_by   INT REFERENCES users(user_id) ON DELETE SET NULL,
+  uploaded_at   TIMESTAMP DEFAULT NOW()
+);
+
+-- ─────────────────────────────────────────────────────
+-- 2. INVENTORY — add supplier fields
+-- ─────────────────────────────────────────────────────
+ALTER TABLE inventory_gen
+  ADD COLUMN IF NOT EXISTS supplier_name    TEXT,
+  ADD COLUMN IF NOT EXISTS supplier_contact TEXT;
+
+-- ─────────────────────────────────────────────────────
+-- 3. PURCHASE ORDERS — partial receiving
+-- ─────────────────────────────────────────────────────
+ALTER TABLE purchase_orders
+  ADD COLUMN IF NOT EXISTS received_quantity INT     DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS performed_by      TEXT;
+
+-- Update old DELIVERED rows so received = ordered
+UPDATE purchase_orders
+SET received_quantity = quantity_ordered
+WHERE status = 'DELIVERED' AND received_quantity = 0;
+
+-- ─────────────────────────────────────────────────────
+-- 4. SUBSCRIPTIONS TABLE (replaces globe + m365)
+-- ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS subscriptions (
+  subscription_id    SERIAL PRIMARY KEY,
+  category           TEXT NOT NULL,  
+  assigned_to        TEXT,         
+  account_identifier TEXT,   
+  plan_type          TEXT,
+  monthly_cost       NUMERIC(12,2),
+  start_date         DATE,
+  expiry_date        DATE,
+  status             TEXT DEFAULT 'Active',
+  remarks            TEXT,
+  created_at         TIMESTAMP DEFAULT NOW()
+);
+
+-- ─────────────────────────────────────────────────────
+-- 5. INSURANCE TABLE
+-- ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS insurance (
+  insurance_id  SERIAL PRIMARY KEY,
+  employee_name TEXT NOT NULL,
+  provider      TEXT NOT NULL,
+  policy_number TEXT,
+  start_date    DATE,
+  expiry_date   DATE,
+  remarks       TEXT,
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- ─────────────────────────────────────────────────────
+-- 6. VEHICLE — rework for flexible maintenance types
+-- ─────────────────────────────────────────────────────
+
+-- Drop old odometer/threshold columns, add renewal_month
+ALTER TABLE vehicle
+  ADD COLUMN IF NOT EXISTS renewal_month    INT,   
+  ADD COLUMN IF NOT EXISTS odometer         INT    DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS remarks_extra    TEXT;
+
+-- Remove old flat columns safely (ignore if already missing)
+ALTER TABLE vehicle
+  DROP COLUMN IF EXISTS last_maintenance_km,
+  DROP COLUMN IF EXISTS maintenance_threshold;
+
+-- Maintenance type definitions per vehicle
+CREATE TABLE IF NOT EXISTS vehicle_maintenance_types (
+  maint_type_id        SERIAL PRIMARY KEY,
+  vehicle_id           INT  REFERENCES vehicle(vehicle_id) ON DELETE CASCADE,
+  name                 TEXT NOT NULL,          
+  basis                TEXT NOT NULL,       
+  threshold_km         INT,                 
+  last_maintenance_km  INT  DEFAULT 0,         
+  interval_unit        TEXT,                
+  interval_value       INT,              
+  last_performed_date  DATE,         
+  created_at           TIMESTAMP DEFAULT NOW()
+);
+
+-- Maintenance history (each service event)
+-- Reuse existing vehicle_maintenance table but add maint_type_id
+ALTER TABLE vehicle_maintenance
+  ADD COLUMN IF NOT EXISTS maint_type_id INT REFERENCES vehicle_maintenance_types(maint_type_id) ON DELETE SET NULL;
+
+
+  ALL THIS IS IMPLEMENTED, NOTE THAT WE CHANGED THE SUPPLIER FROM THEN INVENTORY TO THE PURCHASE ORDER
