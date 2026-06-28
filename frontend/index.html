@@ -321,13 +321,65 @@
 
       <!-- ════════════════ OFFICE FURNITURE ════════════════ -->
       <section class="page" id="page-furniture">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Office Furniture</div>
-            <div class="pg-sub">Furniture assets · Click any row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="fur-search"
+              class="form-ctrl"
+              placeholder="🔍 Search name or supplier..."
+              style="font-size:12px; padding:5px 10px; width:200px;"
+            />
+
+            <!-- Location filter -->
+            <select class="form-ctrl" id="fur-filter-location" onchange="applyFurFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Location: All</option>
+            </select>
+
+            <!-- Condition filter -->
+            <select class="form-ctrl" id="fur-filter-condition" onchange="applyFurFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Condition: All</option>
+              <option value="New">New</option>
+              <option value="Good">Good</option>
+              <option value="Fair">Fair</option>
+              <option value="For Repair">For Repair</option>
+            </select>
+
+            <!-- Date filter -->
+            <select class="form-ctrl" id="fur-filter-date" onchange="applyFurFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Date: All Time</option>
+              <option value="this_year">This Year</option>
+              <option value="last_year">Last Year</option>
+              <option value="custom">Custom Range</option>
+            </select>
+
+            <!-- Custom date range -->
+            <div id="fur-custom-range" style="display:none; gap:6px;" class="flex-gap">
+              <input type="date" id="fur-date-from" class="form-ctrl"
+                onchange="applyFurFilters()"
+                style="font-size:12px; padding:5px 10px; width:auto;"/>
+              <span style="align-self:center; color:var(--slate-400); font-size:12px;">to</span>
+              <input type="date" id="fur-date-to" class="form-ctrl"
+                onchange="applyFurFilters()"
+                style="font-size:12px; padding:5px 10px; width:auto;"/>
+            </div>
+
           </div>
-          <div class="pg-actions" id="fur-actions"></div>
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
+            <div id="fur-actions"></div>
+          </div>
         </div>
+
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">🪑 Furniture Register</div>
@@ -336,44 +388,99 @@
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Asset Name</th><th>Qty</th><th>Date Purchased</th>
-                <th>Supplier</th><th>Price (₱)</th><th>Location</th><th>Condition</th><th>Actions</th>
+                <th>Asset Name</th>
+                <th>Qty</th>
+                <th>Date Purchased</th>
+                <th>Supplier</th>
+                <th>Price (₱)</th>
+                <th>Location</th>
+                <th>Condition</th>
               </tr></thead>
               <tbody id="fur-tbody"></tbody>
             </table>
           </div>
+          <div id="fur-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
+
       </section>
 
 
 
       <!-- ════════════════ IT SUPPLIES ════════════════ -->
       <section class="page" id="page-itsupplies">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">IT Supplies</div>
-            <div class="pg-sub">Hardware & peripherals · Serial tracked · Click row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="it-search"
+              class="form-ctrl"
+              placeholder="🔍 Search name, serial, supplier..."
+              style="font-size:12px; padding:5px 10px; width:220px;"
+            />
+
+            <!-- Location filter -->
+            <select class="form-ctrl" id="it-filter-location" onchange="applyITFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Location: All</option>
+            </select>
+
+            <!-- Status filter -->
+            <select class="form-ctrl" id="it-filter-status" onchange="applyITFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Status: All</option>
+              <option value="Available">Available</option>
+              <option value="In Use">In Use</option>
+              <option value="Damaged">Damaged</option>
+            </select>
+
+            <!-- Warranty filter -->
+            <select class="form-ctrl" id="it-filter-warranty" onchange="applyITFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Warranty: All</option>
+              <option value="active">Active</option>
+              <option value="expiring">Expiring Soon</option>
+              <option value="expired">Expired</option>
+            </select>
+
           </div>
-          <div class="pg-actions" id="it-actions"></div>
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
+            <div id="it-actions"></div>
+          </div>
         </div>
+
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">🖨️ IT Supply Inventory</div>
             <div class="card-actions">
-              <span class="badge b-red" id="it-low-ct">0 low stock</span>
               <span class="badge b-slate" id="it-total-ct">0 items</span>
             </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Asset Name</th><th>Serial / Model</th><th>Quantity</th>
-                <th>Reorder Level</th><th>Warranty</th><th>Supplier</th><th>Status</th><th>Actions</th>
+                <th>Asset Name</th>
+                <th>Serial / Model</th>
+                <th>Quantity</th>
+                <th>Warranty</th>
+                <th>Supplier</th>
+                <th>Location</th>
+                <th>Status</th>
               </tr></thead>
               <tbody id="it-tbody"></tbody>
             </table>
           </div>
+          <div id="it-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
+
       </section>
 
 
@@ -438,36 +545,95 @@
 
       <!-- ════════════════ CONTRACTS ════════════════ -->
       <section class="page" id="page-contracts">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Contracts</div>
-            <div class="pg-sub">Company contracts · Click to view details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="con-search"
+              class="form-ctrl"
+              placeholder="🔍 Search party..."
+              style="font-size:12px; padding:5px 10px; width:180px;"
+            />
+
+            <!-- Validity Type filter -->
+            <select class="form-ctrl" id="con-filter-validity" onchange="applyConFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Validity: All</option>
+              <option value="YEAR">Year</option>
+              <option value="RANGE">Range</option>
+            </select>
+
+            <!-- Expiry Status filter -->
+            <select class="form-ctrl" id="con-filter-expiry" onchange="applyConFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Expiry: All</option>
+              <option value="valid">Valid</option>
+              <option value="expiring">Expiring Soon</option>
+              <option value="expired">Expired</option>
+            </select>
+
+            <!-- Status filter -->
+            <select class="form-ctrl" id="con-filter-status" onchange="applyConFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Status: All</option>
+              <option value="IN_STORAGE">In Storage</option>
+              <option value="WITH_EMPLOYEE">With Employee</option>
+            </select>
+
+            <!-- Date filter -->
+            <select class="form-ctrl" id="con-filter-date" onchange="applyConFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Date: All Time</option>
+              <option value="this_year">This Year</option>
+              <option value="last_year">Last Year</option>
+              <option value="custom">Custom Range</option>
+            </select>
+
+            <!-- Custom date range -->
+            <div id="con-custom-range" style="display:none; gap:6px;" class="flex-gap">
+              <input type="date" id="con-date-from" class="form-ctrl"
+                onchange="applyConFilters()"
+                style="font-size:12px; padding:5px 10px; width:auto;"/>
+              <span style="align-self:center; color:var(--slate-400); font-size:12px;">to</span>
+              <input type="date" id="con-date-to" class="form-ctrl"
+                onchange="applyConFilters()"
+                style="font-size:12px; padding:5px 10px; width:auto;"/>
+            </div>
+
           </div>
-          <div class="pg-actions" id="con-actions"></div>
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
+            <div id="con-actions"></div>
+          </div>
         </div>
 
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">📄 Contract Records</div>
             <span class="badge b-slate" id="con-ct">0 records</span>
           </div>
-
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Other Party</th>
-                  <th>Description</th>
-                  <th>Validity</th>
-                  <th>Expiry Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>Date</th>
+                <th>Other Party</th>
+                <th>Validity</th>
+                <th>Expiry Status</th>
+                <th>Status</th>
+              </tr></thead>
               <tbody id="con-tbody"></tbody>
             </table>
           </div>
+          <div id="con-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
+
       </section>
 
 
@@ -683,16 +849,82 @@
 
       <!-- ════════════════ SYSTEM LOGS ════════════════ -->
       <section class="page" id="page-logs">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">System Logs</div>
-            <div class="pg-sub">Full audit trail — all user actions · Click row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="log-search"
+              class="form-ctrl"
+              placeholder="🔍 Search user..."
+              style="font-size:12px; padding:5px 10px; width:180px;"
+            />
+
+            <!-- Action filter -->
+            <select class="form-ctrl" id="log-filter-action" onchange="applyLogFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Action: All</option>
+              <option value="CREATE">CREATE</option>
+              <option value="UPDATE">UPDATE</option>
+              <option value="DELETE">DELETE</option>
+              <option value="WITHDRAW">WITHDRAW</option>
+              <option value="LOGIN">LOGIN</option>
+              <option value="LOGOUT">LOGOUT</option>
+            </select>
+
+            <!-- Module filter -->
+            <select class="form-ctrl" id="log-filter-module" onchange="applyLogFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Module: All</option>
+              <option value="INVENTORY">Inventory</option>
+              <option value="ORDER">Orders</option>
+              <option value="LAPTOP">Laptops</option>
+              <option value="VEHICLE">Vehicles</option>
+              <option value="CONTRACT">Contracts</option>
+              <option value="FURNITURE">Furniture</option>
+              <option value="IT SUPPLY">IT Supplies</option>
+              <option value="FINANCE">Finance</option>
+              <option value="INSURANCE">Insurance</option>
+              <option value="M365 LICENSE">M365</option>
+              <option value="GLOBE PLAN">Globe</option>
+              <option value="SUBSCRIPTION">Subscriptions</option>
+              <option value="USER">Users</option>
+            </select>
+
+            <!-- Date preset filter -->
+            <select class="form-ctrl" id="log-filter-date" onchange="applyLogFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Date: All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="custom">Custom Range</option>
+            </select>
+
+            <!-- Custom range (hidden by default) -->
+            <div id="log-custom-range" style="display:none; gap:6px;" class="flex-gap">
+              <input type="date" id="log-date-from" class="form-ctrl"
+                onchange="applyLogFilters()"
+                style="font-size:12px; padding:5px 10px; width:auto;"/>
+              <span style="align-self:center; color:var(--slate-400); font-size:12px;">to</span>
+              <input type="date" id="log-date-to" class="form-ctrl"
+                onchange="applyLogFilters()"
+                style="font-size:12px; padding:5px 10px; width:auto;"/>
+            </div>
+
           </div>
-          <div class="pg-actions">
+
+          <!-- Right side actions -->
+          <div class="flex-gap" style="flex-shrink:0;">
             <button class="btn btn-outline btn-sm" onclick="clearLogs()">🗑️ Clear Logs</button>
             <button class="btn btn-outline btn-sm" onclick="exportLogs()">📥 Export</button>
           </div>
         </div>
+
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">📜 Activity Log</div>
@@ -701,37 +933,78 @@
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Timestamp</th><th>User</th><th>Action</th>
-                <th>Module</th><th>Description</th><th>Performed by</th>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Module</th>
+                <th>Description</th>
+                <th>Performed by</th>
               </tr></thead>
               <tbody id="log-tbody"></tbody>
             </table>
           </div>
+          <div id="log-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
+
       </section>
 
 
 
-            <!-- ════════════════ USER MANAGEMENT ════════════════ -->
+      <!-- ════════════════ USER MANAGEMENT ════════════════ -->
       <section class="page" id="page-users">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">User Management</div>
-            <div class="pg-sub">System users · Manage access and roles</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="user-search"
+              class="form-ctrl"
+              placeholder="🔍 Search name or email..."
+              style="font-size:12px; padding:5px 10px; width:200px;"
+            />
+
+            <!-- Department filter -->
+            <select class="form-ctrl" id="user-filter-dept" onchange="applyUserFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Department: All</option>
+              <option value="Internal Organization">Internal Organization</option>
+              <option value="Chamber Services">Chamber Services</option>
+              <option value="Trade Promotion">Trade Promotion</option>
+              <option value="Dual Education & Training">Dual Education & Training</option>
+              <option value="Government Affairs">Government Affairs</option>
+              <option value="Communications">Communications</option>
+            </select>
+
+            <!-- Role filter -->
+            <select class="form-ctrl" id="user-filter-role" onchange="applyUserFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Role: All</option>
+              <option value="super_admin">Super Admin</option>
+              <option value="admin">Admin</option>
+              <option value="employee">Employee</option>
+              <option value="intern">Intern</option>
+            </select>
+
           </div>
-          <div class="pg-actions" id="user-actions">
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
             <button class="btn btn-green btn-sm" onclick="openM('m-add-user')">
               ➕ Add User
             </button>
           </div>
         </div>
 
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">👤 Users</div>
             <span class="badge b-slate" id="user-ct">0 users</span>
           </div>
-
           <div class="table-wrap">
             <table>
               <thead>
@@ -741,13 +1014,15 @@
                   <th>Email</th>
                   <th>Department</th>
                   <th>Role</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="user-tbody"></tbody>
             </table>
           </div>
+          <div id="user-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
+
       </section>
 
     </div><!-- end main-content -->

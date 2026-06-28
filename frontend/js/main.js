@@ -89,6 +89,7 @@ const DP_RENDERERS = {
   insurance:     dpInsurance,   // ✅ NEW
   finance:       dpFinance,
   log:           dpLog,
+  user:          dpUser,
 };
 
 // Replace the openDP function in main.js with this cleaner version:
@@ -140,231 +141,312 @@ function setDPHeader(icon, iconBg, title, sub) {
    OFFICE FURNITURE
 ────────────────────────────────────────────────────────────── */
 
-let furEditId = null;
+let furEditId        = null;
+let furSearchQuery   = '';
+let furFilterLocation = 'all';
+let furFilterCondition = 'all';
+let furFilterDate    = 'all';
+let furDateFrom      = '';
+let furDateTo        = '';
+let currentFurPage   = 1;
+const furPerPage     = 20;
+let _allFurniture    = [];
 
-async function renderFurniture() {
-  const res = await fetch(`${API_URL}/api/furniture`);
-  const data = await res.json();
+function applyFurFilters() {
+  furFilterLocation  = document.getElementById('fur-filter-location').value;
+  furFilterCondition = document.getElementById('fur-filter-condition').value;
+  furFilterDate      = document.getElementById('fur-filter-date').value;
+  furDateFrom        = document.getElementById('fur-date-from')?.value || '';
+  furDateTo          = document.getElementById('fur-date-to')?.value   || '';
+  currentFurPage     = 1;
+
+  const customRange = document.getElementById('fur-custom-range');
+  if (customRange) {
+    customRange.style.display = furFilterDate === 'custom' ? 'flex' : 'none';
+  }
+
+  _renderFurTable();
+}
+
+function _filterFurniture(data) {
+  const now      = new Date();
+  const thisYear = now.getFullYear();
+
+  return data.filter(f => {
+
+    // Search — name or supplier
+    if (furSearchQuery) {
+      const haystack = `${f.furniture_name} ${f.supplier || ''}`.toLowerCase();
+      if (!haystack.includes(furSearchQuery)) return false;
+    }
+
+    // Location filter
+    if (furFilterLocation !== 'all' && f.location_name !== furFilterLocation) return false;
+
+    // Condition filter
+    if (furFilterCondition !== 'all' && f.condition !== furFilterCondition) return false;
+
+    // Date filter
+    if (furFilterDate !== 'all' && f.date_of_purchase) {
+      const d = new Date(f.date_of_purchase);
+
+      if (furFilterDate === 'this_year') {
+        if (d.getFullYear() !== thisYear) return false;
+
+      } else if (furFilterDate === 'last_year') {
+        if (d.getFullYear() !== thisYear - 1) return false;
+
+      } else if (furFilterDate === 'custom') {
+        if (furDateFrom && d < new Date(furDateFrom)) return false;
+        if (furDateTo) {
+          const to = new Date(furDateTo);
+          to.setHours(23, 59, 59, 999);
+          if (d > to) return false;
+        }
+      }
+    }
+
+    return true;
+  });
+}
+
+function _renderFurPagination(total) {
+  const container = document.getElementById('fur-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / furPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentFurPage === 1;
+  prev.onclick = () => { currentFurPage--; _renderFurTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentFurPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentFurPage = i; _renderFurTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentFurPage === totalPages;
+  next.onclick = () => { currentFurPage++; _renderFurTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
+function _renderFurTable() {
+  const filtered  = _filterFurniture(_allFurniture);
+  const total     = filtered.length;
+  const start     = (currentFurPage - 1) * furPerPage;
+  const paginated = filtered.slice(start, start + furPerPage);
 
   const tbody = document.getElementById('fur-tbody');
   tbody.innerHTML = '';
 
-  data.forEach(f => {
-    const tr = document.createElement('tr');
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--slate-400)">No furniture found.</td></tr>`;
+  } else {
+    paginated.forEach(f => {
+      const condCls = {
+        New:        'b-blue',
+        Good:       'b-green',
+        Fair:       'b-amber',
+        'For Repair': 'b-red'
+      }[f.condition] || 'b-slate';
 
-    tr.className = 'tr-clickable';
-
-    tr.innerHTML = `
-      <td>${f.furniture_name}</td>
-      <td>${f.quantity}</td>
-      <td>${f.date_of_purchase || '-'}</td>
-      <td>₱${f.price?.toLocaleString() || 0}</td>
-      <td>${f.location_name || '-'}</td>
-      <td>${f.remarks || '-'}</td>
-    `;
-
-    tr.addEventListener('click', () => {
-      openDP('furniture', f.office_furniture_id, tr);
+      const tr = document.createElement('tr');
+      tr.className = 'tr-clickable';
+      tr.innerHTML = `
+        <td class="td-strong">${f.furniture_name}</td>
+        <td>${f.quantity}</td>
+        <td class="td-mono">${f.date_of_purchase ? new Date(f.date_of_purchase).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : '—'}</td>
+        <td>${f.supplier || '—'}</td>
+        <td>${f.price ? '₱' + Number(f.price).toLocaleString() : '—'}</td>
+        <td>${f.location_name || '—'}</td>
+        <td>${f.condition ? `<span class="badge ${condCls}">${f.condition}</span>` : '—'}</td>
+      `;
+      tr.addEventListener('click', () => openDP('furniture', f.office_furniture_id, tr));
+      tbody.appendChild(tr);
     });
+  }
 
-    tbody.appendChild(tr);
-  });
+  document.getElementById('fur-ct').textContent = `${total} items`;
+  _renderFurPagination(total);
+}
+
+async function _loadFurLocationsFilter() {
+  try {
+    const res  = await fetch(`${API_URL}/api/location`);
+    const data = await res.json();
+    const select = document.getElementById('fur-filter-location');
+    if (!select) return;
+    const prev = select.value;
+    select.innerHTML = '<option value="all">Location: All</option>';
+    data.forEach(loc => {
+      const opt = document.createElement('option');
+      opt.value = loc.location_name;
+      opt.textContent = loc.location_name;
+      select.appendChild(opt);
+    });
+    if ([...select.options].some(o => o.value === prev)) select.value = prev;
+  } catch (err) {
+    console.error('Failed to load location filter', err);
+  }
+}
+
+async function renderFurniture() {
+  try {
+    const res   = await fetch(`${API_URL}/api/furniture`);
+    _allFurniture = await res.json();
+    await _loadFurLocationsFilter();
+    currentFurPage = 1;
+    _renderFurTable();
+  } catch (err) {
+    console.error('renderFurniture error:', err);
+    showToast('Failed to load furniture', 't-error');
+  }
 }
 
 async function dpFurniture(id) {
-  const res = await fetch(`${API_URL}/api/furniture`);
-  const data = await res.json();
-
-  const f = data.find(x => x.office_furniture_id === id);
+  const f = _allFurniture.find(x => x.office_furniture_id === id);
   if (!f) return;
 
-  setDPHeader('🪑','#fffbeb', f.furniture_name, 'Office Furniture');
+  const condCls = {
+    New:        'b-blue',
+    Good:       'b-green',
+    Fair:       'b-amber',
+    'For Repair': 'b-red'
+  }[f.condition] || 'b-slate';
 
-  const html = `
+  setDPHeader('🪑', '#fffbeb', f.furniture_name, 'Office Furniture');
+
+  document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">📦 Furniture Details</div>
+      <div class="dp-section-hd">📦 Asset Information</div>
       <div class="dp-grid">
-        ${dpField("Name", f.furniture_name)}
-        ${dpField("Quantity", f.quantity)}
-        ${dpField("Date Purchased", f.date_of_purchase || '-')}
-        ${dpField("Price", f.price ? '₱' + f.price : '-')}
-        ${dpField("Location", f.location_name || '-')}
-        ${dpField("Remarks", f.remarks || '-')}
+        ${dpFieldFull('Asset Name', `<strong>${f.furniture_name}</strong>`)}
+        ${dpField('Quantity', f.quantity)}
+        ${dpField('Date Purchased', f.date_of_purchase ? new Date(f.date_of_purchase).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—')}
+        ${dpField('Supplier', f.supplier || '—')}
+        ${dpField('Price / Unit', f.price ? '₱' + Number(f.price).toLocaleString() : '—')}
+        ${dpField('Total Value', f.price && f.quantity ? '₱' + (Number(f.price) * f.quantity).toLocaleString() : '—')}
+        ${dpField('Location', f.location_name || '—')}
+        ${dpField('Condition', f.condition ? `<span class="badge ${condCls}">${f.condition}</span>` : '—')}
+        ${dpFieldFull('Remarks', f.remarks || '—')}
       </div>
     </div>
 
+    ${isAdminUser() ? `
     <div class="dp-section">
+      <div class="dp-section-hd">⚡ Actions</div>
       <div class="dp-action-row">
-        ${isAdminUser() ? `
-          <button class="btn btn-primary btn-sm"
-            onclick="editFur(${f.office_furniture_id})">
-            ✏️ Edit
-          </button>
-
-          <button class="btn btn-red btn-sm"
-            onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name}')">
-            🗑️ Delete
-          </button>
-        ` : ""}
+        <button class="btn btn-primary btn-sm" onclick="editFur(${f.office_furniture_id})">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name.replace(/'/g,"\\'")}')">🗑️ Delete</button>
       </div>
-    </div>
+    </div>` : ''}
   `;
 
-  document.getElementById("dp-body").innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
 }
 
 function saveFurniture() {
-  const name = document.getElementById('fur-f-name').value;
-  const qty = document.getElementById('fur-f-qty').value;
-  const date = document.getElementById('fur-f-date').value;
-  const price = document.getElementById('fur-f-price').value;
-  const loc = document.getElementById('fur-f-loc').value;
+  const name    = document.getElementById('fur-f-name').value.trim();
+  const qty     = document.getElementById('fur-f-qty').value;
+  const date    = document.getElementById('fur-f-date').value;
+  const price   = document.getElementById('fur-f-price').value;
+  const loc     = document.getElementById('fur-f-loc').value;
   const remarks = document.getElementById('fur-f-remarks').value;
 
   if (!name || !qty || !loc) {
-    showToast("Fill required fields", "t-error");
+    showToast('Fill required fields', 't-error');
     return;
   }
 
-  // ✅ EDIT MODE
-  if (furEditId) {
-    fetch(`${API_URL}/api/furniture/${furEditId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        furniture_name: name,
-        quantity: qty,
-        date_of_purchase: date,
-        price,
-        remarks,
-        current_location: loc
-      })
+  const url    = furEditId ? `${API_URL}/api/furniture/${furEditId}` : `${API_URL}/api/furniture`;
+  const method = furEditId ? 'PUT' : 'POST';
+
+  fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      furniture_name:   name,
+      quantity:         qty,
+      date_of_purchase: date,
+      price,
+      remarks,
+      current_location: loc
     })
-    .then(res => {
-      if (!res.ok) throw new Error("Update failed");
-
-      showToast("Furniture updated", "t-success");
-
-      addLog(
-        "UPDATE",
-        "FURNITURE",
-        `Updated furniture: ${name}`,
-        name
-      );
-
-      furEditId = null;
-      closeM("m-add-fur");
-      renderFurniture();
-    });
-
-  } else {
-    // ✅ ADD MODE
-    fetch(`${API_URL}/api/furniture`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        furniture_name: name,
-        quantity: qty,
-        date_of_purchase: date,
-        price,
-        remarks,
-        current_location: loc
-      })
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Failed");
-
-      showToast("Furniture added", "t-success");
-
-      addLog(
-        "CREATE",
-        "FURNITURE",
-        `Added furniture: ${name} (Qty: ${qty})`,
-        name
-      );
-
-      closeM("m-add-fur");
-      renderFurniture();
-    });
-  }
+  })
+  .then(res => { if (!res.ok) throw new Error('Failed'); })
+  .then(() => {
+    showToast(furEditId ? 'Furniture updated' : 'Furniture added', 't-success');
+    addLog(furEditId ? 'UPDATE' : 'CREATE', 'FURNITURE',
+      `${furEditId ? 'Updated' : 'Added'} furniture: ${name}`, name);
+    furEditId = null;
+    closeM('m-add-fur');
+    renderFurniture();
+    if (dpOpen && dpCurrentType === 'furniture') dpFurniture(dpCurrentId);
+  })
+  .catch(() => showToast('Error saving furniture', 't-error'));
 }
 
 async function editFur(id) {
-  const res = await fetch(`${API_URL}/api/furniture`);
-  const data = await res.json();
-
-  const f = data.find(x => x.office_furniture_id === id);
+  const f = _allFurniture.find(x => x.office_furniture_id === id);
   if (!f) return;
 
   furEditId = id;
-
   openM('m-add-fur');
-
   await loadFurLocations();
 
-  document.getElementById('fur-f-name').value = f.furniture_name;
-  document.getElementById('fur-f-qty').value = f.quantity;
-  let dateVal = "";
-
-  if (f.date_of_purchase) {
-    const d = new Date(f.date_of_purchase);
-    dateVal = d.toISOString().split("T")[0];
-  }
-
-  document.getElementById('fur-f-date').value = dateVal;
-  document.getElementById('fur-f-price').value = f.price || "";
-  document.getElementById('fur-f-loc').value = f.current_location;
-  document.getElementById('fur-f-remarks').value = f.remarks || "";
+  document.getElementById('fur-f-name').value    = f.furniture_name;
+  document.getElementById('fur-f-qty').value     = f.quantity;
+  document.getElementById('fur-f-date').value    = f.date_of_purchase ? new Date(f.date_of_purchase).toISOString().slice(0,10) : '';
+  document.getElementById('fur-f-price').value   = f.price || '';
+  document.getElementById('fur-f-loc').value     = f.current_location;
+  document.getElementById('fur-f-remarks').value = f.remarks || '';
 }
 
-
-let deleteFurId = null;
-let deleteFurName = "";
+let deleteFurId   = null;
+let deleteFurName = '';
 
 function deleteFur(id, name) {
-  deleteFurId = id;
+  deleteFurId   = id;
   deleteFurName = name;
-
-  openM("m-confirm-fur-del");
+  openM('m-confirm-fur-del');
 }
 
 function confirmDeleteFur() {
-  fetch(`${API_URL}/api/furniture/${deleteFurId}`, {
-    method: "DELETE"
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("Delete failed");
-
-    showToast("Furniture deleted ✅", "t-warning");
-
-    addLog(
-      "DELETE",
-      "FURNITURE",
-      `Deleted furniture: ${deleteFurName}`,
-      deleteFurName
-    );
-
-    closeM("m-confirm-fur-del");
+  fetch(`${API_URL}/api/furniture/${deleteFurId}`, { method: 'DELETE' })
+  .then(res => { if (!res.ok) throw new Error('Failed'); })
+  .then(() => {
+    showToast('Furniture deleted', 't-warning');
+    addLog('DELETE', 'FURNITURE', `Deleted furniture: ${deleteFurName}`, deleteFurName);
+    closeM('m-confirm-fur-del');
     closeDP();
     renderFurniture();
   })
-  .catch(err => console.error(err));
+  .catch(() => showToast('Error deleting furniture', 't-error'));
 }
 
-
 async function loadFurLocations() {
-  const res = await fetch(`${API_URL}/api/location`);
+  const res  = await fetch(`${API_URL}/api/location`);
   const data = await res.json();
-
-  const select = document.getElementById("fur-f-loc");
-  select.innerHTML = "";
-
+  const select = document.getElementById('fur-f-loc');
+  select.innerHTML = '';
   data.forEach(loc => {
-    const opt = document.createElement("option");
+    const opt = document.createElement('option');
     opt.value = loc.location_id;
     opt.textContent = loc.location_name;
     select.appendChild(opt);
@@ -399,262 +481,313 @@ function openAddFurniture() {
    IT SUPPLIES
 ────────────────────────────────────────────────────────────── */
 
-async function renderITSupplies() {
-  const res = await fetch(`${API_URL}/api/it-supplies`);
-  const data = await res.json();
+let itEditId          = null;
+let itSearchQuery     = '';
+let itFilterLocation  = 'all';
+let itFilterStatus    = 'all';
+let itFilterWarranty  = 'all';
+let currentITPage     = 1;
+const itPerPage       = 20;
+let _allITSupplies    = [];
 
-  const tbody = document.getElementById("it-tbody");
-  tbody.innerHTML = "";
+function applyITFilters() {
+  itFilterLocation = document.getElementById('it-filter-location').value;
+  itFilterStatus   = document.getElementById('it-filter-status').value;
+  itFilterWarranty = document.getElementById('it-filter-warranty').value;
+  currentITPage    = 1;
+  _renderITTable();
+}
 
-  data.forEach(it => {
-    const tr = document.createElement("tr");
+function _filterIT(data) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    tr.className = "tr-clickable";
+  return data.filter(it => {
 
-    const today = new Date();
-    let warrantyStatus = "OK";
-
-    if (it.warranty_end_date) {
-      const w = new Date(it.warranty_end_date);
-      const diffDays = (w - today) / (1000 * 60 * 60 * 24);
-
-      if (w < today) {
-        warrantyStatus = "EXPIRED";
-      } else if (diffDays < 30) {
-        warrantyStatus = "EXPIRING";
-      }
+    // Search — name, serial, supplier
+    if (itSearchQuery) {
+      const haystack = `${it.asset_name} ${it.serial_number || ''} ${it.supplier || ''}`.toLowerCase();
+      if (!haystack.includes(itSearchQuery)) return false;
     }
 
-    tr.innerHTML = `
-      <td>${it.asset_name}</td>
-      <td>${it.serial_number || '-'}</td>
-      <td>${it.quantity}</td>
-      <td>
-        ${it.warranty_end_date || '-'} <br/>
-        ${
-          warrantyStatus === "EXPIRED"
-            ? '<span class="badge b-red">Expired</span>'
-            : warrantyStatus === "EXPIRING"
-            ? '<span class="badge b-amber">Soon</span>'
-            : '<span class="badge b-green">OK</span>'
-        }
-      </td>
-      <td>${it.location_name || '-'}</td>
-      <td>${it.status || '-'}</td>
-    `;
+    // Location filter
+    if (itFilterLocation !== 'all' && it.location_name !== itFilterLocation) return false;
 
-    tr.addEventListener("click", () => {
-      openDP("itsupplies", it.it_supplies_id, tr);
-    });
+    // Status filter
+    if (itFilterStatus !== 'all' && it.status !== itFilterStatus) return false;
 
-    tbody.appendChild(tr);
+    // Warranty filter
+    if (itFilterWarranty !== 'all' && it.warranty_end_date) {
+      const w = new Date(it.warranty_end_date);
+      const daysLeft = Math.ceil((w - today) / (1000 * 60 * 60 * 24));
+
+      if (itFilterWarranty === 'active'   && daysLeft <= 30) return false;
+      if (itFilterWarranty === 'expiring' && (daysLeft > 30 || daysLeft < 0)) return false;
+      if (itFilterWarranty === 'expired'  && daysLeft >= 0) return false;
+    }
+
+    return true;
   });
+}
+
+function _renderITPagination(total) {
+  const container = document.getElementById('it-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / itPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentITPage === 1;
+  prev.onclick = () => { currentITPage--; _renderITTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentITPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentITPage = i; _renderITTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentITPage === totalPages;
+  next.onclick = () => { currentITPage++; _renderITTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
+function _warrantyBadge(warrantyDate) {
+  if (!warrantyDate) return '<span class="badge b-slate">No Warranty</span>';
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const w        = new Date(warrantyDate);
+  const daysLeft = Math.ceil((w - today) / (1000 * 60 * 60 * 24));
+
+  if (daysLeft < 0)   return `<span class="badge b-red">Expired</span>`;
+  if (daysLeft <= 30) return `<span class="badge b-amber">Expiring in ${daysLeft}d</span>`;
+  return `<span class="badge b-green">Active</span>`;
+}
+
+function _renderITTable() {
+  const filtered  = _filterIT(_allITSupplies);
+  const total     = filtered.length;
+  const start     = (currentITPage - 1) * itPerPage;
+  const paginated = filtered.slice(start, start + itPerPage);
+
+  const tbody = document.getElementById('it-tbody');
+  tbody.innerHTML = '';
+
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--slate-400)">No IT supplies found.</td></tr>`;
+  } else {
+    paginated.forEach(it => {
+      const statusCls = {
+        Available: 'b-green',
+        'In Use':  'b-blue',
+        Damaged:   'b-red'
+      }[it.status] || 'b-slate';
+
+      const tr = document.createElement('tr');
+      tr.className = 'tr-clickable';
+      tr.innerHTML = `
+        <td class="td-strong">${it.asset_name}</td>
+        <td class="td-mono">${it.serial_number || '—'}</td>
+        <td>${it.quantity}</td>
+        <td>${_warrantyBadge(it.warranty_end_date)}</td>
+        <td>${it.supplier || '—'}</td>
+        <td>${it.location_name || '—'}</td>
+        <td>${it.status ? `<span class="badge ${statusCls}">${it.status}</span>` : '—'}</td>
+      `;
+      tr.addEventListener('click', () => openDP('itsupplies', it.it_supplies_id, tr));
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('it-total-ct').textContent = `${total} items`;
+  _renderITPagination(total);
+}
+
+async function _loadITLocationsFilter() {
+  try {
+    const res    = await fetch(`${API_URL}/api/location`);
+    const data   = await res.json();
+    const select = document.getElementById('it-filter-location');
+    if (!select) return;
+    const prev = select.value;
+    select.innerHTML = '<option value="all">Location: All</option>';
+    data.forEach(loc => {
+      const opt = document.createElement('option');
+      opt.value = loc.location_name;
+      opt.textContent = loc.location_name;
+      select.appendChild(opt);
+    });
+    if ([...select.options].some(o => o.value === prev)) select.value = prev;
+  } catch (err) {
+    console.error('Failed to load IT location filter', err);
+  }
+}
+
+async function renderITSupplies() {
+  try {
+    const res      = await fetch(`${API_URL}/api/it-supplies`);
+    _allITSupplies = await res.json();
+    await _loadITLocationsFilter();
+    currentITPage  = 1;
+    _renderITTable();
+  } catch (err) {
+    console.error('renderITSupplies error:', err);
+    showToast('Failed to load IT supplies', 't-error');
+  }
 }
 
 async function dpITSupplies(id) {
-  const res = await fetch(`${API_URL}/api/it-supplies`);
-  const data = await res.json();
-
-  const it = data.find(x => x.it_supplies_id === id);
+  const it = _allITSupplies.find(x => x.it_supplies_id === id);
   if (!it) return;
+
+  const statusCls = {
+    Available: 'b-green',
+    'In Use':  'b-blue',
+    Damaged:   'b-red'
+  }[it.status] || 'b-slate';
 
   setDPHeader('🖨️', '#eef2ff', it.asset_name, 'IT Supply');
 
-  const today = new Date();
-  let warrantyStatus = "OK";
-
-  if (it.warranty_end_date) {
-    const w = new Date(it.warranty_end_date);
-    const diffDays = (w - today) / (1000 * 60 * 60 * 24);
-
-    if (w < today) {
-      warrantyStatus = "EXPIRED";
-    } else if (diffDays < 30) {
-      warrantyStatus = "EXPIRING";
-    }
-  }
-
-  const html = `
+  document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">📦 Supply Details</div>
+      <div class="dp-section-hd">💻 Asset Details</div>
       <div class="dp-grid">
-        ${dpField("Asset Name", it.asset_name)}
-        ${dpField("Serial / Model", it.serial_number || '-')}
-        ${dpField("Quantity", it.quantity)}
-        ${dpField("Date Purchased", it.date_of_purchase || '-')}
-        ${dpField("Warranty",
-          (it.warranty_end_date || '-') + " (" + warrantyStatus + ")"
-        )}
-        ${dpField("Price", it.price ? '₱' + it.price : '-')}
-        ${dpField("Location", it.location_name || '-')}
-        ${dpField("Status", it.status || '-')}
-        ${dpField("Remarks", it.remarks || '-')}
+        ${dpFieldFull('Asset Name', `<strong>${it.asset_name}</strong>`)}
+        ${dpField('Serial / Model', it.serial_number || '—', 'mono')}
+        ${dpField('Quantity', it.quantity)}
+        ${dpField('Reorder Level', it.reorder_level ?? '—')}
+        ${dpField('Date Purchased', it.date_of_purchase ? new Date(it.date_of_purchase).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—')}
+        ${dpField('Price', it.price ? '₱' + Number(it.price).toLocaleString() : '—')}
+        ${dpField('Location', it.location_name || '—')}
+        ${dpField('Status', it.status ? `<span class="badge ${statusCls}">${it.status}</span>` : '—')}
+        ${dpField('Warranty', _warrantyBadge(it.warranty_end_date))}
+        ${dpField('Warranty Expiry', it.warranty_end_date ? new Date(it.warranty_end_date).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—', 'mono')}
+        ${dpField('Supplier', it.supplier || '—')}
+        ${dpFieldFull('Remarks', it.remarks || '—')}
       </div>
     </div>
 
+    ${isAdminUser() ? `
     <div class="dp-section">
+      <div class="dp-section-hd">⚡ Actions</div>
       <div class="dp-action-row">
-        ${isAdminUser() ? `
-          <button class="btn btn-primary btn-sm"
-            onclick="editIT(${it.it_supplies_id})">
-            ✏️ Edit
-          </button>
-
-          <button class="btn btn-red btn-sm"
-            onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name}')">
-            🗑️ Delete
-          </button>
-        ` : ""}
+        <button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})">✏️ Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')">🗑️ Delete</button>
       </div>
-    </div>
+    </div>` : ''}
   `;
 
-  document.getElementById("dp-body").innerHTML = html;
+  document.getElementById('dp-footer').style.display = 'none';
 }
 
-let itEditId = null;
+let deleteITId   = null;
+let deleteITName = '';
 
 function saveITSupply() {
-  const name = document.getElementById("it-f-name").value;
-  const serial = document.getElementById("it-f-serial").value;
-  const qty = document.getElementById("it-f-qty").value;
-  const date = document.getElementById("it-f-date").value;
-  const price = document.getElementById("it-f-price").value;
-  const warranty = document.getElementById("it-f-warranty").value;
-  const loc = document.getElementById("it-f-loc").value;
-  const status = document.getElementById("it-f-status").value;
-  const remarks = document.getElementById("it-f-remarks").value;
+  const name     = document.getElementById('it-f-name').value.trim();
+  const serial   = document.getElementById('it-f-serial').value.trim();
+  const qty      = document.getElementById('it-f-qty').value;
+  const date     = document.getElementById('it-f-date').value;
+  const price    = document.getElementById('it-f-price').value;
+  const warranty = document.getElementById('it-f-warranty').value;
+  const loc      = document.getElementById('it-f-loc').value;
+  const status   = document.getElementById('it-f-status').value;
+  const remarks  = document.getElementById('it-f-remarks').value;
 
   if (!name || !qty || !loc) {
-    showToast("Fill required fields", "t-error");
+    showToast('Fill required fields', 't-error');
     return;
   }
 
-  const payload = {
-    asset_name: name,
-    serial_number: serial,
-    quantity: qty,
-    date_of_purchase: date,
-    price,
-    warranty_end_date: warranty,
-    location_id: loc,
-    status,
-    remarks
-  };
-
-  const url = itEditId
-    ? `${API_URL}/api/it-supplies/${itEditId}`
-    : `${API_URL}/api/it-supplies`;
-
-  const method = itEditId ? "PUT" : "POST";
+  const url    = itEditId ? `${API_URL}/api/it-supplies/${itEditId}` : `${API_URL}/api/it-supplies`;
+  const method = itEditId ? 'PUT' : 'POST';
 
   fetch(url, {
     method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      asset_name:       name,
+      serial_number:    serial,
+      quantity:         qty,
+      date_of_purchase: date,
+      price,
+      warranty_end_date: warranty,
+      location_id:      loc,
+      status,
+      remarks
+    })
   })
-  .then(res => {
-    if (!res.ok) throw new Error("Failed");
-
-    showToast(itEditId ? "Updated IT Supply" : "Added IT Supply", "t-success");
-
-    addLog(
-      itEditId ? "UPDATE" : "CREATE",
-      "IT SUPPLY",
-      `${itEditId ? "Updated IT Supply" : "Added IT Supply"} ${name}`,
-      name
-    );
-
-  itEditId = null;
-  closeM("m-add-it");
-  renderITSupplies();
-
-  // ✅ REFRESH DETAIL PANEL (NO CLOSE)
-  if (dpCurrentType === "itsupplies") {
-    dpITSupplies(dpCurrentId);
-  }
-  });
+  .then(res => { if (!res.ok) throw new Error('Failed'); })
+  .then(() => {
+    showToast(itEditId ? 'IT Supply updated' : 'IT Supply added', 't-success');
+    addLog(itEditId ? 'UPDATE' : 'CREATE', 'IT SUPPLY',
+      `${itEditId ? 'Updated' : 'Added'} IT supply: ${name}`, name);
+    itEditId = null;
+    closeM('m-add-it');
+    renderITSupplies();
+    if (dpOpen && dpCurrentType === 'itsupplies') dpITSupplies(dpCurrentId);
+  })
+  .catch(() => showToast('Error saving IT supply', 't-error'));
 }
 
 async function editIT(id) {
-  const res = await fetch(`${API_URL}/api/it-supplies`);
-  const data = await res.json();
-
-  const it = data.find(x => x.it_supplies_id === id);
+  const it = _allITSupplies.find(x => x.it_supplies_id === id);
   if (!it) return;
 
   itEditId = id;
-
-  openM("m-add-it");
+  openM('m-add-it');
   await loadITLocations();
 
-  document.getElementById("it-f-name").value = it.asset_name;
-  document.getElementById("it-f-serial").value = it.serial_number || "";
-  document.getElementById("it-f-qty").value = it.quantity;
-
-  let dateVal = "";
-  if (it.date_of_purchase) {
-    dateVal = new Date(it.date_of_purchase).toISOString().split("T")[0];
-  }
-  document.getElementById("it-f-date").value = dateVal;
-
-  document.getElementById("it-f-price").value = it.price || "";
-
-  let warrantyVal = "";
-  if (it.warranty_end_date) {
-    warrantyVal = new Date(it.warranty_end_date).toISOString().split("T")[0];
-  }
-  document.getElementById("it-f-warranty").value = warrantyVal;
-
-  document.getElementById("it-f-loc").value = it.location_id;
-  document.getElementById("it-f-status").value = it.status || "AVAILABLE";
-  document.getElementById("it-f-remarks").value = it.remarks || "";
+  document.getElementById('it-f-name').value     = it.asset_name;
+  document.getElementById('it-f-serial').value   = it.serial_number || '';
+  document.getElementById('it-f-qty').value      = it.quantity;
+  document.getElementById('it-f-date').value     = it.date_of_purchase ? new Date(it.date_of_purchase).toISOString().slice(0,10) : '';
+  document.getElementById('it-f-price').value    = it.price || '';
+  document.getElementById('it-f-warranty').value = it.warranty_end_date ? new Date(it.warranty_end_date).toISOString().slice(0,10) : '';
+  document.getElementById('it-f-loc').value      = it.location_id;
+  document.getElementById('it-f-status').value   = it.status || 'Available';
+  document.getElementById('it-f-remarks').value  = it.remarks || '';
 }
-``
-
-let deleteITId = null;
-let deleteITName = "";
 
 function deleteIT(id, name) {
-  deleteITId = id;
+  deleteITId   = id;
   deleteITName = name;
-
-  openM("m-confirm-it-del"); // (make modal later)
+  openM('m-confirm-it-del');
 }
 
 function confirmDeleteIT() {
-  fetch(`${API_URL}/api/it-supplies/${deleteITId}`, {
-    method: "DELETE"
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("Delete failed");
-
-    showToast("IT Supply deleted ✅", "t-warning");
-
-    addLog(
-      "DELETE",
-      "IT SUPPLY",
-      `Deleted IT Supply: ${deleteITName}`,
-      deleteITName
-    );
-
-    closeM("m-confirm-it-del");
+  fetch(`${API_URL}/api/it-supplies/${deleteITId}`, { method: 'DELETE' })
+  .then(res => { if (!res.ok) throw new Error('Failed'); })
+  .then(() => {
+    showToast('IT Supply deleted', 't-warning');
+    addLog('DELETE', 'IT SUPPLY', `Deleted IT supply: ${deleteITName}`, deleteITName);
+    closeM('m-confirm-it-del');
     closeDP();
     renderITSupplies();
   })
-  .catch(err => console.error(err));
+  .catch(() => showToast('Error deleting IT supply', 't-error'));
 }
 
-
 async function loadITLocations() {
-  const res = await fetch(`${API_URL}/api/location`);
-  const data = await res.json();
-
-  const select = document.getElementById("it-f-loc");
-  select.innerHTML = "";
-
+  const res    = await fetch(`${API_URL}/api/location`);
+  const data   = await res.json();
+  const select = document.getElementById('it-f-loc');
+  select.innerHTML = '';
   data.forEach(loc => {
-    const opt = document.createElement("option");
+    const opt = document.createElement('option');
     opt.value = loc.location_id;
     opt.textContent = loc.location_name;
     select.appendChild(opt);
@@ -663,7 +796,7 @@ async function loadITLocations() {
 
 function openAddIT() {
   itEditId = null;
-  openM("m-add-it");
+  openM('m-add-it');
   loadITLocations();
 }
 
@@ -2808,8 +2941,209 @@ function openAddFinance() {
 ────────────────────────────────────────────────────────────── */
 let logs = [];
 let logId = 1;
+let logSearchQuery   = '';
+let logFilterAction  = 'all';
+let logFilterModule  = 'all';
+let logFilterDate    = 'all';
+let logDateFrom      = '';
+let logDateTo        = '';
+let currentLogPage   = 1;
 
+const logsPerPage    = 20;
 const LOG_ICONS = { LOGIN:'🔐',LOGOUT:'🚪',CREATE:'✅',UPDATE:'✏️',DELETE:'🗑️',DELIVER:'📦',WITHDRAW:'➖',SYSTEM:'⚙️' };
+
+function applyLogFilters() {
+  logFilterAction = document.getElementById('log-filter-action').value;
+  logFilterModule = document.getElementById('log-filter-module').value;
+  logFilterDate   = document.getElementById('log-filter-date').value;
+  logDateFrom     = document.getElementById('log-date-from')?.value || '';
+  logDateTo       = document.getElementById('log-date-to')?.value   || '';
+  currentLogPage  = 1;
+
+  // Show/hide custom range inputs
+  const customRange = document.getElementById('log-custom-range');
+  if (customRange) {
+    customRange.style.display = logFilterDate === 'custom' ? 'flex' : 'none';
+  }
+
+  renderLogs();
+}
+
+function _filterLogs(logs) {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  return logs.filter(log => {
+
+    // Search — user name
+    if (logSearchQuery) {
+      const name = (log.name || '').toLowerCase();
+      if (!name.includes(logSearchQuery)) return false;
+    }
+
+    // Action filter
+    if (logFilterAction !== 'all' && log.action_type !== logFilterAction) return false;
+
+    // Module filter
+    if (logFilterModule !== 'all' && log.module !== logFilterModule) return false;
+
+    // Date filter
+    if (logFilterDate !== 'all') {
+      const logDate = new Date(log.date_time);
+
+      if (logFilterDate === 'today') {
+        if (logDate < today) return false;
+
+      } else if (logFilterDate === 'week') {
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        if (logDate < weekStart) return false;
+
+      } else if (logFilterDate === 'month') {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        if (logDate < monthStart) return false;
+
+      } else if (logFilterDate === 'custom') {
+        if (logDateFrom) {
+          const from = new Date(logDateFrom);
+          if (logDate < from) return false;
+        }
+        if (logDateTo) {
+          const to = new Date(logDateTo);
+          to.setHours(23, 59, 59, 999);
+          if (logDate > to) return false;
+        }
+      }
+    }
+
+    return true;
+  });
+}
+
+function _renderLogPagination(total) {
+  const container = document.getElementById('log-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / logsPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentLogPage === 1;
+  prev.onclick = () => { currentLogPage--; renderLogs(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentLogPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentLogPage = i; renderLogs(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentLogPage === totalPages;
+  next.onclick = () => { currentLogPage++; renderLogs(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
+async function renderLogs() {
+  try {
+    const res  = await fetch(`${API_URL}/api/logs`);
+    const logs = await res.json();
+
+    const filtered  = _filterLogs(logs);
+    const total     = filtered.length;
+    const start     = (currentLogPage - 1) * logsPerPage;
+    const paginated = filtered.slice(start, start + logsPerPage);
+
+    const tbody = document.getElementById('log-tbody');
+    tbody.innerHTML = '';
+
+    if (paginated.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--slate-400)">No logs found.</td></tr>`;
+    } else {
+      paginated.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.className = 'tr-clickable';
+        tr.innerHTML = `
+          <td style="font-size:11px; font-family:var(--mono)">${new Date(log.date_time).toLocaleString()}</td>
+          <td>${log.name || '—'}</td>
+          <td><span class="log-action-badge ${_logActionCls(log.action_type)}">${log.action_type}</span></td>
+          <td><span class="badge b-slate b-none">${log.module}</span></td>
+          <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px">${log.description || '—'}</td>
+          <td>${log.performed_by || '—'}</td>
+        `;
+        tr.addEventListener('click', () => openDP('log', log.log_id, tr));
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('log-ct').textContent = `${total} entries`;
+    _renderLogPagination(total);
+
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to load logs', 't-error');
+  }
+}
+
+function _logActionCls(action) {
+  const map = {
+    CREATE:   'la-create',
+    UPDATE:   'la-update',
+    DELETE:   'la-delete',
+    DELIVER:  'la-deliver',
+    WITHDRAW: 'la-withdraw',
+    LOGIN:    'la-system',
+    LOGOUT:   'la-system',
+  };
+  return map[action] || 'la-system';
+}
+
+async function exportLogs() {
+  try {
+    const res  = await fetch(`${API_URL}/api/logs`);
+    const logs = await res.json();
+    const filtered = _filterLogs(logs);
+
+    if (!filtered.length) { showToast('No logs to export', 't-error'); return; }
+
+    const headers = ['Timestamp', 'User', 'Action', 'Module', 'Description', 'Performed By'];
+    const rows = filtered.map(l => [
+      `"${new Date(l.date_time).toLocaleString()}"`,
+      `"${l.name || ''}"`,
+      `"${l.action_type || ''}"`,
+      `"${l.module || ''}"`,
+      `"${(l.description || '').replace(/"/g, '""')}"`,
+      `"${l.performed_by || ''}"`
+    ].join(','));
+
+    const csv  = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `SystemLogs_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Logs exported', 't-success');
+  } catch (err) {
+    console.error(err);
+    showToast('Export failed', 't-error');
+  }
+}
 
 function addLog(action, module, desc, ref='—') {
   if (!currentUser) return;
@@ -2830,24 +3164,42 @@ function addLog(action, module, desc, ref='—') {
 }
 
 function dpLog(id) {
-  const l = logs.find(x => x.id === id);
-  if (!l) return;
-  const clsMap = {CREATE:'la-create',UPDATE:'la-update',DELETE:'la-delete',DELIVER:'la-deliver',WITHDRAW:'la-withdraw',LOGIN:'la-system',LOGOUT:'la-system',SYSTEM:'la-system'};
-  setDPHeader(LOG_ICONS[l.action]||'📝','#f8fafc', `Log #${l.id}`, l.module);
-  document.getElementById('dp-body').innerHTML = `
-    <div class="dp-section">
-      <div class="dp-section-hd">📜 Log Entry</div>
-      <div class="dp-grid">
-        ${dpField('Log ID', `#${l.id}`, 'mono')}
-        ${dpField('Timestamp', l.ts, 'mono')}
-        ${dpField('User', l.user)}
-        ${dpField('Action', `<span class="log-action-badge ${clsMap[l.action]||'la-system'}">${LOG_ICONS[l.action]||'📝'} ${l.action}</span>`)}
-        ${dpField('Module', l.module)}
-        ${dpField('Reference', l.ref, 'mono')}
-        ${dpFieldFull('Description', l.desc)}
-      </div>
-    </div>`;
-  document.getElementById('dp-footer').style.display = 'none';
+  // dp body is already rendered from the row click
+  // fetch single log for detail panel
+  fetch(`${API_URL}/api/logs`)
+    .then(r => r.json())
+    .then(logs => {
+      const l = logs.find(x => x.log_id === id);
+      if (!l) return;
+
+      const clsMap = {
+        CREATE:'la-create', UPDATE:'la-update', DELETE:'la-delete',
+        DELIVER:'la-deliver', WITHDRAW:'la-withdraw',
+        LOGIN:'la-system', LOGOUT:'la-system'
+      };
+
+      setDPHeader(
+        '📜', '#f8fafc',
+        `Log #${l.log_id}`,
+        l.module
+      );
+
+      document.getElementById('dp-body').innerHTML = `
+        <div class="dp-section">
+          <div class="dp-section-hd">📜 Log Entry</div>
+          <div class="dp-grid">
+            ${dpField('Log ID',      `#${l.log_id}`,   'mono')}
+            ${dpField('Timestamp',   new Date(l.date_time).toLocaleString(), 'mono')}
+            ${dpField('User',        l.name || '—')}
+            ${dpField('Action',      `<span class="log-action-badge ${clsMap[l.action_type] || 'la-system'}">${l.action_type}</span>`)}
+            ${dpField('Module',      l.module)}
+            ${dpField('Performed By',l.performed_by || '—')}
+            ${dpFieldFull('Description', l.description || '—')}
+          </div>
+        </div>`;
+
+      document.getElementById('dp-footer').style.display = 'none';
+    });
 }
 
 function clearLogs() {
@@ -2859,9 +3211,58 @@ function clearLogs() {
 }
 
 
+/* 
+USER MANAGEMENT 
+*/
 
+/* ── DETAIL PANEL ───────────────────────────────────────── */
+function dpUser(id) {
+  const u = _allUsers.find(x => x.user_id === id);
+  if (!u) return;
 
+  const roleCls = {
+    super_admin: 'b-red',
+    admin:       'b-amber',
+    employee:    'b-green',
+    intern:      'b-blue',
+  }[u.role] || 'b-slate';
 
+  setDPHeader('👤', '#eff6ff', u.name, u.role);
+
+  const isSelf      = currentUser.user_id === u.user_id;
+  const isSuper     = u.role === 'super_admin';
+  const canModify   = isAdminUser() && !isSuper;
+
+  document.getElementById('dp-body').innerHTML = `
+    <div class="dp-section">
+      <div class="dp-section-hd">👤 User Details</div>
+      <div class="dp-grid">
+        ${dpField('ID',         `#${u.user_id}`, 'mono')}
+        ${dpField('Name',       u.name)}
+        ${dpField('Email',      u.email)}
+        ${dpField('Department', u.department || '—')}
+        ${dpField('Role',       `<span class="badge ${roleCls}">${u.role}</span>`)}
+      </div>
+    </div>
+
+    ${isAdminUser() ? `
+    <div class="dp-section">
+      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-action-row">
+        ${canModify ? `
+          <button class="btn btn-primary btn-sm"
+            onclick="editUser(${u.user_id})">✏️ Edit</button>
+          <button class="btn btn-outline btn-sm"
+            onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')">🔑 Reset Password</button>
+          <button class="btn btn-red btn-sm"
+            onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')">🗑️ Delete</button>
+        ` : `<span class="td-muted">Super Admin — protected</span>`}
+      </div>
+    </div>` : ''}
+  `;
+
+  document.getElementById('dp-footer').style.display = 'none';
+}
 
 
 
@@ -3450,6 +3851,46 @@ function initAllModules() {
       if (dpOpen) closeDP();
     }
   });
+
+  // ── Log search listener ──
+  const logSearch = document.getElementById('log-search');
+  if (logSearch) {
+    logSearch.addEventListener('input', () => {
+      logSearchQuery = logSearch.value.trim().toLowerCase();
+      currentLogPage = 1;
+      renderLogs();
+    });
+  }
+
+  // ── User search listener ──
+  const userSearch = document.getElementById('user-search');
+  if (userSearch) {
+    userSearch.addEventListener('input', () => {
+      userSearchQuery = userSearch.value.trim().toLowerCase();
+      currentUserPage = 1;
+      _renderUserTable();
+    });
+  }
+
+  // ── Furniture search listener ──
+  const furSearch = document.getElementById('fur-search');
+  if (furSearch) {
+    furSearch.addEventListener('input', () => {
+      furSearchQuery = furSearch.value.trim().toLowerCase();
+      currentFurPage = 1;
+      _renderFurTable();
+    });
+  }
+
+  // ── IT Supplies search listener ──
+  const itSearch = document.getElementById('it-search');
+  if (itSearch) {
+    itSearch.addEventListener('input', () => {
+      itSearchQuery = itSearch.value.trim().toLowerCase();
+      currentITPage = 1;
+      _renderITTable();
+    });
+  }
 }
 
 let lastRequestCheck = 0;
@@ -3505,68 +3946,6 @@ setInterval(() => {
 /* ──────────────────────────────────────────────────────────────
    LOGS
 ────────────────────────────────────────────────────────────── */
-
-async function renderLogs() {
-  const res = await fetch(`${API_URL}/api/logs`);
-  const logs = await res.json();
-
-  const tbody = document.getElementById("log-tbody");
-  tbody.innerHTML = "";
-
-  logs.forEach(log => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${new Date(log.date_time).toLocaleString()}</td>
-      <td>${log.name || "Unknown"}</td>
-      <td>${log.action_type}</td>
-      <td>${log.module}</td>
-      <td>${log.description}</td>
-      <td>${log.performed_by || "-"}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById("log-ct").innerText =
-    logs.length + " entries";
-}
-
 window.onload = function () {
   autoLogin();
 };
-
-async function exportLogs() {
-  try {
-    const res  = await fetch(`${API_URL}/api/logs`);
-    const logs = await res.json();
-
-    if (!logs.length) { showToast("No logs to export", "t-error"); return; }
-
-    const headers = ["Timestamp", "User", "Action", "Module", "Description", "Performed By"];
-    const rows = logs.map(l => [
-      `"${new Date(l.date_time).toLocaleString()}"`,
-      `"${l.name || ""}"`,
-      `"${l.action_type || ""}"`,
-      `"${l.module || ""}"`,
-      `"${(l.description || "").replace(/"/g, '""')}"`,
-      `"${l.performed_by || ""}"`
-    ].join(","));
-
-    const csv  = "\uFEFF" + [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `SystemLogs_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast("Logs exported", "t-success");
-  } catch (err) {
-    console.error(err);
-    showToast("Export failed", "t-error");
-  }
-}
-

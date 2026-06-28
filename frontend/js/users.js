@@ -1,258 +1,237 @@
 // ============================================================
-// users.js — User management (add, edit, delete, reset pw)
-// BUG FIX: saveUser() had an unconditional password.length < 6
-//           check that fired in EDIT mode too, blocking all
-//           user updates. Fixed: password validation now only
-//           runs when creating a new user (userEditId === null)
+// users.js — User management with search, filter, pagination
 // ============================================================
 
-let resetUserEmail  = "";
-let userEditId      = null;
+let userEditId     = null;
+let resetUserEmail = "";
+let selectedUserId = null;
 
-/* ── RENDER USERS TABLE ─────────────────────────────────── */
+// Filter + pagination state
+let userSearchQuery  = '';
+let userFilterDept   = 'all';
+let userFilterRole   = 'all';
+let currentUserPage  = 1;
+const usersPerPage   = 20;
+
+// Cache full user list for client-side filtering
+let _allUsers = [];
+
+/* ── APPLY FILTERS ──────────────────────────────────────── */
+function applyUserFilters() {
+  userFilterDept  = document.getElementById('user-filter-dept').value;
+  userFilterRole  = document.getElementById('user-filter-role').value;
+  currentUserPage = 1;
+  _renderUserTable();
+}
+
+/* ── FILTER LOGIC ───────────────────────────────────────── */
+function _filterUsers(users) {
+  return users.filter(u => {
+
+    // Search — name or email
+    if (userSearchQuery) {
+      const haystack = `${u.name} ${u.email}`.toLowerCase();
+      if (!haystack.includes(userSearchQuery)) return false;
+    }
+
+    // Department filter
+    if (userFilterDept !== 'all' && u.department !== userFilterDept) return false;
+
+    // Role filter
+    if (userFilterRole !== 'all' && u.role !== userFilterRole) return false;
+
+    return true;
+  });
+}
+
+/* ── PAGINATION ─────────────────────────────────────────── */
+function _renderUserPagination(total) {
+  const container = document.getElementById('user-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / usersPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentUserPage === 1;
+  prev.onclick = () => { currentUserPage--; _renderUserTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentUserPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentUserPage = i; _renderUserTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentUserPage === totalPages;
+  next.onclick = () => { currentUserPage++; _renderUserTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
+/* ── RENDER TABLE (client-side filter + paginate) ───────── */
+function _renderUserTable() {
+  const filtered  = _filterUsers(_allUsers);
+  const total     = filtered.length;
+  const start     = (currentUserPage - 1) * usersPerPage;
+  const paginated = filtered.slice(start, start + usersPerPage);
+
+  const tbody = document.getElementById('user-tbody');
+  tbody.innerHTML = '';
+
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--slate-400)">No users found.</td></tr>`;
+  } else {
+    paginated.forEach(u => {
+      const roleCls = {
+        super_admin: 'b-red',
+        admin:       'b-amber',
+        employee:    'b-green',
+        intern:      'b-blue',
+      }[u.role] || 'b-slate';
+
+      const tr = document.createElement('tr');
+      tr.className = 'tr-clickable';
+      tr.innerHTML = `
+        <td class="td-mono">${u.user_id}</td>
+        <td class="td-strong">${u.name}</td>
+        <td class="td-muted">${u.email}</td>
+        <td>${u.department || '—'}</td>
+        <td><span class="badge ${roleCls}">${u.role}</span></td>
+      `;
+      tr.addEventListener('click', () => openDP('user', u.user_id, tr));
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('user-ct').textContent = `${total} users`;
+  _renderUserPagination(total);
+}
+
+/* ── FETCH + RENDER ─────────────────────────────────────── */
 async function renderUsers() {
   try {
     const res  = await fetch(`${API_URL}/api/auth/users`);
-    const data = await res.json();
-
-    const tbody = document.getElementById("user-tbody");
-    tbody.innerHTML = "";
-
-    document.getElementById("user-ct").textContent = data.length + " users";
-
-    data.forEach(u => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${u.user_id}</td>
-        <td>${u.name}</td>
-        <td>${u.email}</td>
-        <td>${u.department || "—"}</td>
-        <td>${u.role}</td>
-        <td>
-          <button class="btn btn-outline btn-xs"
-            onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')">
-            Reset Password
-          </button>
-          <button class="btn btn-outline btn-xs"
-            onclick="editUser(${u.user_id})">
-            Edit User
-          </button>
-          ${u.role !== "super_admin"
-            ? `<button class="btn btn-red btn-xs"
-                onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')">
-                Delete User
-               </button>`
-            : `<span class="btn btn-muted btn-xs">Protected</span>`
-          }
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    _allUsers  = await res.json();
+    currentUserPage = 1;
+    _renderUserTable();
   } catch (err) {
-    console.error("renderUsers error:", err);
-    showToast("Failed to load users", "t-error");
+    console.error('renderUsers error:', err);
+    showToast('Failed to load users', 't-error');
   }
 }
 
 /* ── SAVE USER (create OR edit) ─────────────────────────── */
 function saveUser() {
-  const name       = document.getElementById("u-name").value.trim();
-  const email      = document.getElementById("u-email").value.trim();
-  const password   = document.getElementById("u-password").value;
-  const role       = document.getElementById("u-role").value;
-  const department = document.getElementById("u-dept").value;
+  const name       = document.getElementById('u-name').value.trim();
+  const email      = document.getElementById('u-email').value.trim();
+  const password   = document.getElementById('u-password').value;
+  const role       = document.getElementById('u-role').value;
+  const department = document.getElementById('u-dept').value;
 
-  // ── Common validation ──
   if (!name || !email || !department) {
-    showToast("Please fill all required fields", "t-error");
+    showToast('Please fill all required fields', 't-error');
     return;
   }
-
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) {
-    showToast("Invalid email format", "t-error");
-    return;
-  }
-  if (name.length < 2) {
-    showToast("Name too short", "t-error");
-    return;
-  }
+  if (!emailPattern.test(email)) { showToast('Invalid email format', 't-error'); return; }
+  if (name.length < 2) { showToast('Name too short', 't-error'); return; }
 
-  // ── CREATE MODE — password required ──
   if (!userEditId) {
-    // ✅ FIX: password validation is ONLY inside this block now
     if (!password || password.length < 6) {
-      showToast("Password must be at least 6 characters", "t-error");
+      showToast('Password must be at least 6 characters', 't-error');
       return;
     }
-
     fetch(`${API_URL}/api/auth/users`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, role, department })
     })
-    .then(res => {
-      if (!res.ok) throw new Error("Failed");
-      showToast("User added", "t-success");
-      addLog("CREATE", "USER", `Added user: ${name} (${email})`, email);
-      closeM("m-add-user");
-      renderUsers();
-    })
-    .catch(err => {
-      console.error(err);
-      showToast("Error adding user", "t-error");
-    });
-
+    .then(res => { if (!res.ok) throw new Error('Failed'); showToast('User added', 't-success'); addLog('CREATE', 'USER', `Added user: ${name} (${email})`, email); closeM('m-add-user'); renderUsers(); })
+    .catch(() => showToast('Error adding user', 't-error'));
   } else {
-    // ── EDIT MODE — password is NOT touched ──
     fetch(`${API_URL}/api/auth/users/${userEditId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, role, department })
     })
-    .then(res => {
-      if (!res.ok) throw new Error("Update failed");
-      showToast("User updated", "t-success");
-      addLog("UPDATE", "USER", `Updated user: ${name} (${email})`, email);
-      userEditId = null;
-      closeM("m-add-user");
-      renderUsers();
-    })
-    .catch(err => {
-      console.error(err);
-      showToast("Error updating user", "t-error");
-    });
+    .then(res => { if (!res.ok) throw new Error('Failed'); showToast('User updated', 't-success'); addLog('UPDATE', 'USER', `Updated user: ${name} (${email})`, email); userEditId = null; closeM('m-add-user'); renderUsers(); if (dpOpen && dpCurrentType === 'user') dpUser(dpCurrentId); })
+    .catch(() => showToast('Error updating user', 't-error'));
   }
 }
 
-/* ── EDIT USER — open modal pre-filled ──────────────────── */
+/* ── EDIT USER ──────────────────────────────────────────── */
 function editUser(id) {
   fetch(`${API_URL}/api/auth/users`)
     .then(res => res.json())
     .then(data => {
       const u = data.find(x => x.user_id === id);
       if (!u) return;
-
       userEditId = id;
-
-      document.getElementById("u-name").value     = u.name;
-      document.getElementById("u-email").value    = u.email;
-      document.getElementById("u-dept").value     = u.department || "";
-      document.getElementById("u-role").value     = u.role;
-      document.getElementById("u-password").value = ""; // clear — not required in edit
-
-      const roleInput = document.getElementById("u-role");
-      roleInput.setAttribute("data-original", u.role);
-
-      // Protect super_admin role
-      if (u.role === "super_admin") {
-        roleInput.disabled = true;
-        showToast("Super admin role cannot be changed", "t-warning");
-      } else {
-        roleInput.disabled = false;
-      }
-
-      openM("m-add-user");
+      document.getElementById('u-name').value     = u.name;
+      document.getElementById('u-email').value    = u.email;
+      document.getElementById('u-dept').value     = u.department || '';
+      document.getElementById('u-role').value     = u.role;
+      document.getElementById('u-password').value = '';
+      const roleInput = document.getElementById('u-role');
+      roleInput.setAttribute('data-original', u.role);
+      roleInput.disabled = u.role === 'super_admin';
+      openM('m-add-user');
     });
-}
-
-/* ── UPDATE USER (from edit-user modal) ─────────────────── */
-// NOTE: This function handles the SEPARATE m-edit-user modal if used.
-//       saveUser() above handles the combined add/edit modal.
-function updateUser() {
-  const name       = document.getElementById("e-name").value.trim();
-  const email      = document.getElementById("e-email").value.trim();
-  const department = document.getElementById("e-dept").value;
-  const roleInput  = document.getElementById("e-role");
-  const role       = roleInput.value || roleInput.getAttribute("data-original");
-
-  if (!name || !email || !department) {
-    showToast("Fill all required fields", "t-error");
-    return;
-  }
-
-  fetch(`${API_URL}/api/auth/users/${userEditId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, department, role })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error("Update failed");
-    showToast("User updated", "t-success");
-    addLog("UPDATE", "USER", `Updated user: ${name} (${email})`, email);
-    closeM("m-edit-user");
-    userEditId = null;
-    renderUsers();
-  })
-  .catch(err => {
-    console.error(err);
-    showToast("Error updating user", "t-error");
-  });
 }
 
 /* ── DELETE USER ────────────────────────────────────────── */
 let deleteUserId    = null;
-let deleteUserName  = "";
-let deleteUserEmail = "";
+let deleteUserName  = '';
+let deleteUserEmail = '';
 
 function deleteUser(id, name, email, role) {
-  if (role === "super_admin") {
-    showToast("Cannot delete super admin", "t-error");
-    return;
-  }
+  if (role === 'super_admin') { showToast('Cannot delete super admin', 't-error'); return; }
   deleteUserId    = id;
   deleteUserName  = name;
   deleteUserEmail = email;
-  openM("m-confirm-user-del");
+  openM('m-confirm-user-del');
 }
 
 function confirmDeleteUser() {
-  fetch(`${API_URL}/api/auth/users/${deleteUserId}`, { method: "DELETE" })
-    .then(res => {
-      if (!res.ok) throw new Error("Delete failed");
-      showToast("User deleted", "t-warning");
-      addLog("DELETE", "USER", `Deleted user: ${deleteUserName} (${deleteUserEmail})`, deleteUserEmail);
-      closeM("m-confirm-user-del");
-      renderUsers();
-    })
-    .catch(err => {
-      console.error(err);
-      showToast("Error deleting user", "t-error");
-    });
+  fetch(`${API_URL}/api/auth/users/${deleteUserId}`, { method: 'DELETE' })
+    .then(res => { if (!res.ok) throw new Error('Failed'); showToast('User deleted', 't-warning'); addLog('DELETE', 'USER', `Deleted user: ${deleteUserName} (${deleteUserEmail})`, deleteUserEmail); closeM('m-confirm-user-del'); closeDP(); renderUsers(); })
+    .catch(() => showToast('Error deleting user', 't-error'));
 }
 
 /* ── RESET PASSWORD ─────────────────────────────────────── */
-let selectedUserId = null;
-
 function resetPassword(id, name, email) {
   selectedUserId = id;
   resetUserEmail = email;
-  document.getElementById("rp-user-name").textContent = name;
-  document.getElementById("rp-pass").value  = "";
-  document.getElementById("rp-pass2").value = "";
-  openM("m-reset-pass");
+  document.getElementById('rp-user-name').textContent = name;
+  document.getElementById('rp-pass').value  = '';
+  document.getElementById('rp-pass2').value = '';
+  openM('m-reset-pass');
 }
 
 function confirmResetPassword() {
-  const pass1 = document.getElementById("rp-pass").value;
-  const pass2 = document.getElementById("rp-pass2").value;
-
-  if (!pass1 || !pass2) { showToast("Fill all fields", "t-error"); return; }
-  if (pass1 !== pass2)   { showToast("Passwords do not match", "t-error"); return; }
-  if (pass1.length < 6)  { showToast("Password too short", "t-error"); return; }
-
+  const pass1 = document.getElementById('rp-pass').value;
+  const pass2 = document.getElementById('rp-pass2').value;
+  if (!pass1 || !pass2)  { showToast('Fill all fields', 't-error'); return; }
+  if (pass1 !== pass2)   { showToast('Passwords do not match', 't-error'); return; }
+  if (pass1.length < 6)  { showToast('Password too short', 't-error'); return; }
   fetch(`${API_URL}/api/auth/users/reset-password/${selectedUserId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ new_password: pass1 })
   })
-  .then(() => {
-    showToast("Password reset", "t-success");
-    addLog("UPDATE", "USER", `Password reset for ${resetUserEmail}`, resetUserEmail);
-    closeM("m-reset-pass");
-  })
-  .catch(err => {
-    console.error(err);
-    showToast("Error resetting password", "t-error");
-  });
+  .then(() => { showToast('Password reset', 't-success'); addLog('UPDATE', 'USER', `Password reset for ${resetUserEmail}`, resetUserEmail); closeM('m-reset-pass'); })
+  .catch(() => showToast('Error resetting password', 't-error'));
 }
