@@ -1,2 +1,1 @@
-const API_URL = "https://assetmanagementsystem-production-0cb6.up.railway.app";
-
+const API_URL = "https://assetmanagementsystem-production-51d8.up.railway.app";
