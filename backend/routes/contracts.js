@@ -1,12 +1,8 @@
-// ============================================================
-// contracts.js — Contract management
-// BUG FIX: Two router.post("/request") handlers existed.
-//           Express runs the FIRST match only, so the
-//           duplicate-check version was silently ignored,
-//           allowing users to create duplicate requests.
-// FIX:  Removed the first (no-check) version.
-//       Only the version with duplicate-check guard remains.
-// ============================================================
+// backend/routes/contracts.js — FIXED VERSION
+// Changes:
+//   • Added 'NA' validity_type (no expiry)
+//   • NA contracts never appear in expiry alerts
+
 const router = require("express").Router();
 const db     = require("../db");
 
@@ -45,6 +41,7 @@ router.get("/requests", async (req, res) => {
 });
 
 /* ── CREATE CONTRACT ────────────────────────────────────── */
+// ✅ Added NA validity_type support
 router.post("/", async (req, res) => {
   try {
     const {
@@ -52,11 +49,16 @@ router.post("/", async (req, res) => {
       validity_type, valid_year, valid_from, valid_to, remarks
     } = req.body;
 
+    // ✅ For NA: clear date fields
+    const cleanYear = validity_type === 'NA' ? null : valid_year;
+    const cleanFrom = validity_type === 'NA' ? null : valid_from;
+    const cleanTo   = validity_type === 'NA' ? null : valid_to;
+
     await db.query(`
       INSERT INTO contracts
         (contract_date, other_party, description, validity_type, valid_year, valid_from, valid_to, remarks)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-    `, [contract_date, other_party, description, validity_type, valid_year, valid_from, valid_to, remarks]);
+    `, [contract_date, other_party, description, validity_type, cleanYear, cleanFrom, cleanTo, remarks]);
 
     res.json({ success: true });
   } catch (err) {
@@ -66,13 +68,10 @@ router.post("/", async (req, res) => {
 });
 
 /* ── CREATE REQUEST — with duplicate guard ──────────────── */
-// ✅ FIX: was defined TWICE. First (no-check) version removed.
-//         Only this version (with duplicate check) is kept.
 router.post("/request", async (req, res) => {
   try {
     const { contract_id, user_id } = req.body;
 
-    // Prevent duplicate active requests for the same contract
     const existing = await db.query(`
       SELECT * FROM contract_requests
       WHERE contract_id=$1
@@ -98,7 +97,7 @@ router.post("/request", async (req, res) => {
 /* ── APPROVE REQUEST ────────────────────────────────────── */
 router.put("/request/:id/approve", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id }      = req.params;
     const { admin_id } = req.body;
 
     const reqData = await db.query(
@@ -112,9 +111,10 @@ router.put("/request/:id/approve", async (req, res) => {
       WHERE request_id=$2
     `, [admin_id, id]);
 
-    await db.query(`
-      UPDATE contracts SET status='WITH_EMPLOYEE' WHERE contract_id=$1
-    `, [contract_id]);
+    await db.query(
+      "UPDATE contracts SET status='WITH_EMPLOYEE' WHERE contract_id=$1",
+      [contract_id]
+    );
 
     res.json({ success: true });
   } catch (err) {
@@ -126,18 +126,14 @@ router.put("/request/:id/approve", async (req, res) => {
 /* ── RETURN CONTRACT ────────────────────────────────────── */
 router.put("/request/:id/return", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id }  = req.params;
     const reqData = await db.query(
       "SELECT * FROM contract_requests WHERE request_id=$1", [id]
     );
     const contract_id = reqData.rows[0].contract_id;
 
-    await db.query(
-      "UPDATE contract_requests SET status='RETURNED' WHERE request_id=$1", [id]
-    );
-    await db.query(
-      "UPDATE contracts SET status='IN_STORAGE' WHERE contract_id=$1", [contract_id]
-    );
+    await db.query("UPDATE contract_requests SET status='RETURNED' WHERE request_id=$1", [id]);
+    await db.query("UPDATE contracts SET status='IN_STORAGE' WHERE contract_id=$1", [contract_id]);
 
     res.json({ success: true });
   } catch (err) {
@@ -195,6 +191,11 @@ router.put("/:id", async (req, res) => {
       validity_type, valid_year, valid_from, valid_to, remarks, status
     } = req.body;
 
+    // ✅ Clear date fields for NA
+    const cleanYear = validity_type === 'NA' ? null : valid_year;
+    const cleanFrom = validity_type === 'NA' ? null : valid_from;
+    const cleanTo   = validity_type === 'NA' ? null : valid_to;
+
     await db.query(`
       UPDATE contracts SET
         contract_date  = $1,
@@ -207,7 +208,7 @@ router.put("/:id", async (req, res) => {
         remarks        = $8,
         status         = $9
       WHERE contract_id = $10
-    `, [contract_date, other_party, description, validity_type, valid_year, valid_from, valid_to, remarks, status, req.params.id]);
+    `, [contract_date, other_party, description, validity_type, cleanYear, cleanFrom, cleanTo, remarks, status, req.params.id]);
 
     res.json({ success: true });
   } catch (err) {

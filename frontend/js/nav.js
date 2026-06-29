@@ -126,7 +126,7 @@ function refreshPageActions(page) {
     insurance:  () => {
       const el = document.getElementById("ins-actions");
       if (el) el.innerHTML = isAdmin
-        ? `<button class="btn btn-green btn-sm" onclick="openM('m-ins-add')">➕ Add Insurance</button>` : "";
+        ? `<button class="btn btn-green btn-sm" onclick="openAddInsurance()">➕ Add Insurance</button>` : "";
     },
     finance:    () => {
       const el = document.getElementById("fin-actions");

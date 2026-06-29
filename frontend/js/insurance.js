@@ -1,10 +1,58 @@
-// ============================================================
-// insurance.js — Employee Insurance module
-// NEW: This module was referenced in the HTML but had no JS.
-// Follows the same pattern as other modules (table + DP + modals)
-// ============================================================
+// frontend/js/insurance.js — UPDATED
+// Changes:
+//   • coverage_type: GENERAL or SPECIFIC
+//   • Employee checkbox selection for SPECIFIC coverage
+//   • dpInsurance shows assigned employees or "All employees" label
+//   • saveInsurance sends employee_ids array
 
 let insEditId = null;
+let _allInsuranceUsers = []; // cache of all users for checkboxes
+
+/* ── LOAD USERS FOR EMPLOYEE SELECTION ─────────────────── */
+async function loadInsuranceUsers() {
+  try {
+    const res       = await fetch(`${API_URL}/api/auth/users`);
+    _allInsuranceUsers = await res.json();
+  } catch (err) {
+    console.error('Failed to load users for insurance:', err);
+  }
+}
+
+/* ── COVERAGE TYPE TOGGLE ───────────────────────────────── */
+function toggleCoverageType() {
+  const type = document.getElementById('ins-f-coverage').value;
+  const empSection = document.getElementById('ins-emp-section');
+  if (empSection) {
+    empSection.style.display = type === 'SPECIFIC' ? 'block' : 'none';
+  }
+}
+
+/* ── BUILD EMPLOYEE CHECKBOX LIST ───────────────────────── */
+function buildEmployeeCheckboxes(selectedIds = []) {
+  const container = document.getElementById('ins-emp-list');
+  if (!container) return;
+
+  if (!_allInsuranceUsers.length) {
+    container.innerHTML = '<div style="color:var(--slate-400);font-size:12px">Loading users...</div>';
+    return;
+  }
+
+  container.innerHTML = _allInsuranceUsers.map(u => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13px;border-bottom:1px solid var(--slate-100)">
+      <input type="checkbox" value="${u.user_id}"
+        ${selectedIds.includes(u.user_id) ? 'checked' : ''}
+        style="width:14px;height:14px;cursor:pointer;accent-color:var(--blue-600)"/>
+      <span style="font-weight:600">${u.name}</span>
+      ${u.department ? `<span style="color:var(--slate-400);font-size:11px;margin-left:auto">${u.department}</span>` : ''}
+    </label>
+  `).join('');
+}
+
+/* ── GET SELECTED EMPLOYEE IDS ──────────────────────────── */
+function getSelectedEmployeeIds() {
+  const checkboxes = document.querySelectorAll('#ins-emp-list input[type="checkbox"]:checked');
+  return Array.from(checkboxes).map(cb => parseInt(cb.value));
+}
 
 /* ── RENDER TABLE ───────────────────────────────────────── */
 async function renderInsurance() {
@@ -26,7 +74,11 @@ async function renderInsurance() {
       if (daysLeft === null)    expiryBadge = `<span class="badge b-slate">No expiry</span>`;
       else if (daysLeft < 0)   expiryBadge = `<span class="badge b-red">Expired</span>`;
       else if (daysLeft <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${daysLeft}d</span>`;
-      else                      expiryBadge = `<span class="badge b-green">Active</span>`;
+      else                     expiryBadge = `<span class="badge b-green">Active</span>`;
+
+      const coverageBadge = ins.coverage_type === 'SPECIFIC'
+        ? `<span class="badge b-blue">Specific</span>`
+        : `<span class="badge b-slate">General</span>`;
 
       const tr = document.createElement("tr");
       tr.className = "tr-clickable";
@@ -36,6 +88,7 @@ async function renderInsurance() {
         <td class="td-mono">${ins.policy_number || "—"}</td>
         <td>${ins.expiry_date ? new Date(ins.expiry_date).toLocaleDateString("en-PH", { year:"numeric", month:"short", day:"numeric" }) : "—"}</td>
         <td>${expiryBadge}</td>
+        <td>${coverageBadge}</td>
       `;
       tr.addEventListener("click", () => openDP("insurance", ins.insurance_id, tr));
       tbody.appendChild(tr);
@@ -64,25 +117,67 @@ async function dpInsurance(id) {
     if (daysLeft === null)    statusBadgeHtml = `<span class="badge b-slate">No expiry set</span>`;
     else if (daysLeft < 0)   statusBadgeHtml = `<span class="badge b-red">Expired</span>`;
     else if (daysLeft <= 30) statusBadgeHtml = `<span class="badge b-amber">Expires in ${daysLeft} days</span>`;
-    else                      statusBadgeHtml = `<span class="badge b-green">Active</span>`;
+    else                     statusBadgeHtml = `<span class="badge b-green">Active</span>`;
 
     setDPHeader("🛡️", "#f0fdf4", ins.employee_name, "Insurance Record");
+
+    // Coverage section
+    const isSpecific = ins.coverage_type === 'SPECIFIC';
+    const employees  = ins.assigned_employees || [];
+
+    let coverageHTML = '';
+    if (isSpecific) {
+      if (employees.length > 0) {
+        coverageHTML = `
+          <div class="dp-section">
+            <div class="dp-section-hd">👥 Assigned Employees (${employees.length})</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              ${employees.map(e => `
+                <div style="display:flex;align-items:center;gap:8px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:8px 10px">
+                  <span style="font-size:16px">👤</span>
+                  <div>
+                    <div style="font-size:13px;font-weight:600">${e.name}</div>
+                    ${e.department ? `<div style="font-size:11px;color:var(--slate-400)">${e.department}</div>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      } else {
+        coverageHTML = `
+          <div class="dp-section">
+            <div class="dp-section-hd">👥 Assigned Employees</div>
+            <div style="color:var(--slate-400);font-size:12px">No employees assigned yet.</div>
+          </div>`;
+      }
+    } else {
+      coverageHTML = `
+        <div class="dp-section">
+          <div class="dp-section-hd">👥 Coverage</div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);padding:10px 12px">
+            <span style="font-size:18px">🌐</span>
+            <span style="font-size:13px;font-weight:600;color:#166534">Applies to all employees</span>
+          </div>
+        </div>`;
+    }
 
     const html = `
       <div class="dp-status-row">
         ${statusBadgeHtml}
         <span class="dp-status-label">Policy status</span>
+        <span style="margin-left:auto"><span class="badge ${isSpecific ? 'b-blue' : 'b-slate'}">${isSpecific ? 'Specific' : 'General'} Coverage</span></span>
       </div>
       <div class="dp-section">
         <div class="dp-section-hd">📋 Policy Details</div>
         <div class="dp-grid">
-          ${dpField("Employee",      ins.employee_name)}
-          ${dpField("Provider",      ins.provider    || "—")}
+          ${dpField("Policy Name",   ins.employee_name)}
+          ${dpField("Provider",      ins.provider || "—")}
           ${dpField("Policy Number", ins.policy_number || "—")}
           ${dpField("Start Date",    ins.start_date  ? new Date(ins.start_date).toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"}) : "—")}
           ${dpField("Expiry Date",   ins.expiry_date ? new Date(ins.expiry_date).toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"}) : "—")}
         </div>
       </div>
+      ${coverageHTML}
       ${ins.remarks ? `
         <div class="dp-section">
           <div class="dp-section-hd">📝 Remarks</div>
@@ -101,7 +196,6 @@ async function dpInsurance(id) {
     document.getElementById("dp-body").innerHTML = html;
     document.getElementById("dp-footer").style.display = "none";
 
-    // Attachments panel (always shown)
     attachmentPanel("insurance", id, `dp-att-ins-${id}`);
   } catch (err) {
     console.error("dpInsurance error:", err);
@@ -110,20 +204,29 @@ async function dpInsurance(id) {
 }
 
 /* ── SAVE (create or edit) ──────────────────────────────── */
-function saveInsurance() {
-  const employee_name  = document.getElementById("ins-f-name").value.trim();
-  const provider       = document.getElementById("ins-f-provider").value.trim();
-  const policy_number  = document.getElementById("ins-f-policy").value.trim();
-  const start_date     = document.getElementById("ins-f-start").value || null;
-  const expiry_date    = document.getElementById("ins-f-expiry").value || null;
-  const remarks        = document.getElementById("ins-f-remarks").value;
+async function saveInsurance() {
+  const employee_name = document.getElementById("ins-f-name").value.trim();
+  const provider      = document.getElementById("ins-f-provider").value.trim();
+  const policy_number = document.getElementById("ins-f-policy").value.trim();
+  const start_date    = document.getElementById("ins-f-start").value || null;
+  const expiry_date   = document.getElementById("ins-f-expiry").value || null;
+  const remarks       = document.getElementById("ins-f-remarks").value;
+  const coverage_type = document.getElementById("ins-f-coverage").value || 'GENERAL';
 
   if (!employee_name || !provider) {
-    showToast("Employee name and provider are required", "t-error");
+    showToast("Policy name and provider are required", "t-error");
     return;
   }
 
-  const payload = { employee_name, provider, policy_number, start_date, expiry_date, remarks };
+  // Get selected employees
+  const employee_ids = coverage_type === 'SPECIFIC' ? getSelectedEmployeeIds() : [];
+
+  if (coverage_type === 'SPECIFIC' && employee_ids.length === 0) {
+    showToast("Select at least one employee for specific coverage", "t-error");
+    return;
+  }
+
+  const payload = { employee_name, provider, policy_number, start_date, expiry_date, remarks, coverage_type, employee_ids };
   const url     = insEditId ? `${API_URL}/api/insurance/${insEditId}` : `${API_URL}/api/insurance`;
   const method  = insEditId ? "PUT" : "POST";
 
@@ -136,7 +239,7 @@ function saveInsurance() {
   .then(() => {
     showToast(insEditId ? "Record updated" : "Record added", "t-success");
     addLog(insEditId ? "UPDATE" : "CREATE", "INSURANCE",
-      `${insEditId ? "Updated" : "Added"} insurance for ${employee_name}`, insEditId || null);
+      `${insEditId ? "Updated" : "Added"} insurance: ${employee_name}`, insEditId || null);
     insEditId = null;
     closeM("m-ins-add");
     renderInsurance();
@@ -161,10 +264,19 @@ async function editInsurance(id) {
     document.getElementById("ins-f-provider").value = ins.provider       || "";
     document.getElementById("ins-f-policy").value   = ins.policy_number  || "";
     document.getElementById("ins-f-remarks").value  = ins.remarks        || "";
+    document.getElementById("ins-f-coverage").value = ins.coverage_type  || "GENERAL";
     document.getElementById("ins-f-start").value    = ins.start_date
       ? new Date(ins.start_date).toISOString().slice(0,10) : "";
     document.getElementById("ins-f-expiry").value   = ins.expiry_date
       ? new Date(ins.expiry_date).toISOString().slice(0,10) : "";
+
+    // Show/hide employee section
+    toggleCoverageType();
+
+    // Build checkboxes with pre-selected employees
+    const selectedIds = (ins.assigned_employees || []).map(e => e.user_id);
+    await loadInsuranceUsers();
+    buildEmployeeCheckboxes(selectedIds);
 
     openM("m-ins-add");
   } catch (err) {
@@ -195,4 +307,13 @@ function confirmDeleteInsurance() {
       console.error(err);
       showToast("Error deleting record", "t-error");
     });
+}
+
+/* ── OPEN ADD ───────────────────────────────────────────── */
+async function openAddInsurance() {
+  insEditId = null;
+  await loadInsuranceUsers();
+  buildEmployeeCheckboxes([]);
+  toggleCoverageType();
+  openM("m-ins-add");
 }

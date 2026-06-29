@@ -795,11 +795,12 @@
             <table>
               <thead>
                 <tr>
-                  <th>Employee</th>
+                  <th>Policy / Plan Name</th>
                   <th>Provider</th>
                   <th>Policy No.</th>
                   <th>Expiry Date</th>
                   <th>Status</th>
+                  <th>Coverage</th>
                 </tr>
               </thead>
               <tbody id="ins-tbody"></tbody>
@@ -1742,9 +1743,11 @@
       <div class="form-row">
         <div class="form-grp">
           <label>Validity Type</label>
+          <!-- ✅ Added NA option -->
           <select id="con-f-type" class="form-ctrl" onchange="toggleValidity()">
             <option value="YEAR">Year</option>
             <option value="RANGE">Range</option>
+            <option value="NA">NA — No Expiration</option>
           </select>
         </div>
 
@@ -1761,6 +1764,13 @@
         <div class="form-grp" id="con-range2" style="display:none;">
           <label>To</label>
           <input class="form-ctrl" type="date" id="con-f-to">
+        </div>
+      </div>
+
+      <!-- ✅ NA notice (shown when NA selected) -->
+      <div id="con-na-notice" style="display:none;background:var(--slate-50);border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px">
+        <div style="font-size:12.5px;color:var(--slate-600)">
+          📌 <strong>No Expiration</strong> — This contract does not expire. It will not appear in expiry alerts.
         </div>
       </div>
 
@@ -2474,28 +2484,42 @@
 
 <!-- Add / Edit Insurance -->
 <div class="modal-overlay" id="m-ins-add">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-hd">
       <div class="modal-title">🛡️ Insurance Record</div>
       <button class="modal-close" onclick="closeM('m-ins-add')">✕</button>
     </div>
     <div class="modal-body">
+
+      <!-- Row 1: Name + Provider -->
       <div class="form-row">
         <div class="form-grp">
-          <label>Employee Name *</label>
-          <input class="form-ctrl" id="ins-f-name" placeholder="Full name" maxlength="100"/>
+          <label>Policy / Plan Name *</label>
+          <input class="form-ctrl" id="ins-f-name" placeholder="e.g. HMO Plan 2025 / Employee Name" maxlength="100"/>
+          <span class="form-note">For general policies, enter a plan name. For specific, enter the primary contact.</span>
         </div>
         <div class="form-grp">
           <label>Provider *</label>
           <input class="form-ctrl" id="ins-f-provider" placeholder="e.g. PhilHealth, HMO" maxlength="100"/>
         </div>
       </div>
+
+      <!-- Row 2: Policy No + Coverage Type -->
       <div class="form-row">
         <div class="form-grp">
           <label>Policy Number</label>
           <input class="form-ctrl" id="ins-f-policy" placeholder="Policy / membership no." maxlength="100"/>
         </div>
+        <div class="form-grp">
+          <label>Coverage Type *</label>
+          <select class="form-ctrl" id="ins-f-coverage" onchange="toggleCoverageType()">
+            <option value="GENERAL">General — Applies to all employees</option>
+            <option value="SPECIFIC">Specific — Assign employees manually</option>
+          </select>
+        </div>
       </div>
+
+      <!-- Row 3: Dates -->
       <div class="form-row">
         <div class="form-grp">
           <label>Start Date</label>
@@ -2506,11 +2530,28 @@
           <input class="form-ctrl" id="ins-f-expiry" type="date"/>
         </div>
       </div>
+
+      <!-- Remarks -->
       <div class="form-grp">
         <label>Remarks</label>
         <textarea class="form-ctrl" id="ins-f-remarks" rows="2" maxlength="255"
           placeholder="Optional notes…"></textarea>
       </div>
+
+      <!-- ✅ EMPLOYEE SELECTION (shown only for SPECIFIC coverage) -->
+      <div id="ins-emp-section" style="display:none;margin-top:8px">
+        <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:12.5px;font-weight:700;color:#1e40af;margin-bottom:4px">👥 Select Covered Employees</div>
+          <div style="font-size:11.5px;color:#3b5bdb">Check all employees covered under this policy.</div>
+        </div>
+        <div style="max-height:240px;overflow-y:auto;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:8px 12px">
+          <div id="ins-emp-list">
+            <!-- Populated by buildEmployeeCheckboxes() -->
+            <div style="color:var(--slate-400);font-size:12px;padding:8px 0">Loading employees...</div>
+          </div>
+        </div>
+      </div>
+
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-ins-add')">Cancel</button>
         <button class="btn btn-green"   onclick="saveInsurance()">✅ Save</button>
@@ -2518,6 +2559,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- Confirm Delete Insurance -->
 <div class="modal-overlay" id="m-confirm-ins-del">

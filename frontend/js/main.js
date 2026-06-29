@@ -1658,21 +1658,30 @@ async function renderContracts() {
     tbody.innerHTML = "";
 
     data.forEach(c => {
-      let validity = c.validity_type === "YEAR"
-        ? c.valid_year
-        : `${c.valid_from} — ${c.valid_to}`;
+      let validity = '—';
+      if (c.validity_type === 'NA') {
+        validity = '<span class="badge b-slate">No Expiration</span>';
+      } else if (c.validity_type === 'YEAR') {
+        validity = c.valid_year || '—';
+      } else {
+        validity = `${c.valid_from || '—'} — ${c.valid_to || '—'}`;
+      }
 
-      // Compute expiry badge
-      const expiryDate = c.validity_type === "YEAR"
-        ? new Date(`${c.valid_year}-12-31`)
-        : c.valid_to ? new Date(c.valid_to) : null;
-
+      // ✅ NA: never expired, never expiring
       let expiryBadge = "";
-      if (expiryDate) {
-        const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-        if (days < 0)        expiryBadge = `<span class="badge b-red">Expired</span>`;
-        else if (days <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${days}d</span>`;
-        else                 expiryBadge = `<span class="badge b-green">Valid</span>`;
+      if (c.validity_type === 'NA') {
+        expiryBadge = `<span class="badge b-slate">N/A</span>`;
+      } else {
+        const expiryDate = c.validity_type === "YEAR"
+          ? new Date(`${c.valid_year}-12-31`)
+          : c.valid_to ? new Date(c.valid_to) : null;
+
+        if (expiryDate) {
+          const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+          if (days < 0)        expiryBadge = `<span class="badge b-red">Expired</span>`;
+          else if (days <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${days}d</span>`;
+          else                 expiryBadge = `<span class="badge b-green">Valid</span>`;
+        }
       }
 
       const tr = document.createElement("tr");
@@ -1701,26 +1710,34 @@ async function dpContract(id) {
   const c   = await res.json();
   if (!c) return;
 
-  // ✅ FIX: store so contract action functions can reference it safely
   _currentContract = c;
 
   setDPHeader("📄", "#eef2ff", c.other_party, c.description);
 
-  let validity = c.validity_type === "YEAR"
-    ? c.valid_year
-    : `${c.valid_from} — ${c.valid_to}`;
+  let validity = '—';
+  if (c.validity_type === 'NA') {
+    validity = 'No Expiration (NA)';
+  } else if (c.validity_type === 'YEAR') {
+    validity = c.valid_year || '—';
+  } else {
+    validity = `${c.valid_from || '—'} — ${c.valid_to || '—'}`;
+  }
 
-  // Compute expiry for badge
+  // ✅ NA: skip expiry badge
   let expiryBadge = "";
-  const expiryDate = c.validity_type === "YEAR"
-    ? new Date(`${c.valid_year}-12-31`)
-    : c.valid_to ? new Date(c.valid_to) : null;
+  if (c.validity_type === 'NA') {
+    expiryBadge = `<span class="badge b-slate">No Expiration</span>`;
+  } else {
+    const expiryDate = c.validity_type === "YEAR"
+      ? new Date(`${c.valid_year}-12-31`)
+      : c.valid_to ? new Date(c.valid_to) : null;
 
-  if (expiryDate) {
-    const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-    if (days < 0)       expiryBadge = `<span class="badge b-red">Expired</span>`;
-    else if (days <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${days}d</span>`;
-    else                 expiryBadge = `<span class="badge b-green">Valid</span>`;
+    if (expiryDate) {
+      const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+      if (days < 0)       expiryBadge = `<span class="badge b-red">Expired</span>`;
+      else if (days <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${days}d</span>`;
+      else                 expiryBadge = `<span class="badge b-green">Valid</span>`;
+    }
   }
 
   const statusBadge = `
@@ -1732,12 +1749,13 @@ async function dpContract(id) {
     <div class="dp-section">
       <div class="dp-section-hd">📋 Details</div>
       <div class="dp-grid">
-        ${dpField("Date",        c.contract_date)}
-        ${dpField("Other Party", c.other_party)}
-        ${dpField("Description", c.description)}
-        ${dpField("Validity",    validity)}
-        ${dpField("Status",      statusBadge)}
-        ${expiryDate ? dpField("Expiry Status", expiryBadge) : ""}
+        ${dpField("Date",          c.contract_date)}
+        ${dpField("Other Party",   c.other_party)}
+        ${dpField("Description",   c.description)}
+        ${dpField("Validity Type", c.validity_type)}
+        ${dpField("Validity",      validity)}
+        ${dpField("Status",        statusBadge)}
+        ${dpField("Expiry Status", expiryBadge)}
       </div>
     </div>
     <div class="dp-section">
@@ -1751,45 +1769,40 @@ async function dpContract(id) {
 }
 
 async function saveContract() {
-
   const type = document.getElementById("con-f-type").value;
-
-  const url = window.editContractId
-    ? `${API_URL}/api/contracts/${window.editContractId}`
-    : `${API_URL}/api/contracts`;
-
-  const method = window.editContractId ? "PUT" : "POST";
 
   const payload = {
     contract_date: document.getElementById("con-f-date").value,
-    other_party: document.getElementById("con-f-party").value,
-    description: document.getElementById("con-f-desc").value,
-
+    other_party:   document.getElementById("con-f-party").value,
+    description:   document.getElementById("con-f-desc").value,
     validity_type: type,
-    valid_year: type === "YEAR" ? document.getElementById("con-f-year").value : null,
+    // ✅ For NA: don't send date fields
+    valid_year: type === "YEAR"  ? document.getElementById("con-f-year").value : null,
     valid_from: type === "RANGE" ? document.getElementById("con-f-from").value : null,
-    valid_to: type === "RANGE" ? document.getElementById("con-f-to").value : null,
-
-    remarks: document.getElementById("con-f-remarks").value
+    valid_to:   type === "RANGE" ? document.getElementById("con-f-to").value   : null,
+    remarks:    document.getElementById("con-f-remarks").value
   };
 
-  await fetch(`${API_URL}/api/contracts`, {
-    method: "POST",
+  const url    = window.editContractId ? `${API_URL}/api/contracts/${window.editContractId}` : `${API_URL}/api/contracts`;
+  const method = window.editContractId ? "PUT" : "POST";
+
+  await fetch(url, {
+    method,
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify(payload)
   });
 
   showToast("Contract Saved", "t-success");
-  refreshContractUI();
+  addLog(
+    window.editContractId ? "UPDATE" : "CREATE",
+    "CONTRACT",
+    `${window.editContractId ? "Updated" : "Added"} Contract | ${payload.other_party}`,
+    window.editContractId || null
+  );
+
+  window.editContractId = null;
   closeM("m-add-con");
   renderContracts();
-
-  addLog(
-    editState.id ? "UPDATE" : "CREATE",
-    "CONTRACT",
-    `${editState.id ? "Updated" : "Added"} Contract | ${payload.other_party}`,
-    editState.id || null
-  );
 }
 
 async function renderContractActions(c) {
@@ -1949,26 +1962,20 @@ function editContract(id) {
   fetch(`${API_URL}/api/contracts/${id}`)
     .then(res => res.json())
     .then(c => {
-
       openM("m-add-con");
-
       setTimeout(() => {
-        document.getElementById("con-f-date").value = c.contract_date;
-        document.getElementById("con-f-party").value = c.other_party;
-        document.getElementById("con-f-desc").value = c.description;
-
-        document.getElementById("con-f-type").value = c.validity_type;
+        document.getElementById("con-f-date").value  = c.contract_date   || "";
+        document.getElementById("con-f-party").value = c.other_party     || "";
+        document.getElementById("con-f-desc").value  = c.description     || "";
+        document.getElementById("con-f-type").value  = c.validity_type   || "YEAR";
         toggleValidity();
 
-        document.getElementById("con-f-year").value = c.valid_year || "";
-        document.getElementById("con-f-from").value = c.valid_from || "";
-        document.getElementById("con-f-to").value = c.valid_to || "";
+        document.getElementById("con-f-year").value  = c.valid_year || "";
+        document.getElementById("con-f-from").value  = c.valid_from || "";
+        document.getElementById("con-f-to").value    = c.valid_to   || "";
+        document.getElementById("con-f-remarks").value = c.remarks  || "";
 
-        document.getElementById("con-f-remarks").value = c.remarks || "";
-
-        // ✅ store edit mode
         window.editContractId = id;
-
       }, 100);
     });
 }
@@ -2076,10 +2083,21 @@ function denyRequest(id) {
 function toggleValidity() {
   const type = document.getElementById("con-f-type").value;
 
-  document.getElementById("con-year").style.display = type === "YEAR" ? "block" : "none";
-  document.getElementById("con-range").style.display = type === "RANGE" ? "block" : "none";
-  document.getElementById("con-range2").style.display = type === "RANGE" ? "block" : "none";
+  // Show/hide year field
+  const yearEl = document.getElementById("con-year");
+  if (yearEl) yearEl.style.display = type === "YEAR" ? "block" : "none";
+
+  // Show/hide range fields
+  const rangeEl  = document.getElementById("con-range");
+  const range2El = document.getElementById("con-range2");
+  if (rangeEl)  rangeEl.style.display  = type === "RANGE" ? "block" : "none";
+  if (range2El) range2El.style.display = type === "RANGE" ? "block" : "none";
+
+  // ✅ Show NA notice
+  const naNotice = document.getElementById("con-na-notice");
+  if (naNotice) naNotice.style.display = type === "NA" ? "block" : "none";
 }
+
 
 function refreshContractUI(id = null) {
   renderContracts();
@@ -3571,7 +3589,9 @@ async function refreshDashboard() {
   const contractAlerts = [];
 
   contracts.forEach(c => {
-    // Determine expiry date
+    // ✅ Skip NA contracts — they never expire
+    if (c.validity_type === 'NA') return;
+
     let expiryDate = null;
     if (c.validity_type === 'YEAR' && c.valid_year) {
       expiryDate = new Date(`${c.valid_year}-12-31`);
@@ -3582,17 +3602,9 @@ async function refreshDashboard() {
     if (!expiryDate) return;
 
     const daysLeft = daysFromNow(expiryDate);
-
-    if (daysLeft < 0) {
-      contractAlerts.push({ c, reason: 'Expired', cls: 'red', daysLeft });
-    } else if (daysLeft <= 30) {
-      contractAlerts.push({ c, reason: `Expires in ${daysLeft}d`, cls: 'amber', daysLeft });
-    }
-
-    // Admin: pending approvals
-    if (isAdminUser() && c.status === 'PENDING') {
-      contractAlerts.push({ c, reason: 'Approval needed', cls: 'blue', daysLeft: null });
-    }
+    if (daysLeft < 0)      contractAlerts.push({ c, reason: 'Expired', cls: 'red', daysLeft });
+    else if (daysLeft <= 30) contractAlerts.push({ c, reason: `Expires in ${daysLeft}d`, cls: 'amber', daysLeft });
+    if (isAdminUser() && c.status === 'PENDING') contractAlerts.push({ c, reason: 'Approval needed', cls: 'blue', daysLeft: null });
   });
 
   _setText('dash-con-ct', `${contractAlerts.length} alerts`);

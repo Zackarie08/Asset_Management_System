@@ -1,4 +1,9 @@
-// backend/routes/po.js — FULL REPLACEMENT (adds partial receiving)
+// backend/routes/po.js — FIXED VERSION
+// Changes:
+//   • Cancel now works for PARTIAL orders (was blocking with wrong check)
+//   • Status logic: ORDERED → PARTIAL → DELIVERED / CANCELLED
+//   • Receive blocked when CANCELLED
+
 const express   = require('express');
 const router    = express.Router();
 const pool      = require('../db');
@@ -24,50 +29,29 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      item_id,
-      quantity,
-      order_date,
-      expected_delivery_date,
-      remarks,
-      unit,
-      user_id,
-      performed_by,
-      supplier_name,
-      supplier_contact,
-      unit_price
+      item_id, quantity, order_date, expected_delivery_date,
+      remarks, unit, user_id, performed_by,
+      supplier_name, supplier_contact, unit_price
     } = req.body;
 
     await pool.query(
       `INSERT INTO purchase_orders
       (item_id, quantity_ordered, received_quantity, order_date,
       expected_delivery_date, status, remarks, unit,
-      performed_by,
-      supplier_name,
-      supplier_contact,
-      unit_price)
+      performed_by, supplier_name, supplier_contact, unit_price)
       VALUES ($1,$2,0,$3,$4,'ORDERED',$5,$6,$7,$8,$9,$10)`,
       [
-        item_id,
-        quantity,
-        order_date,
-        expected_delivery_date || null,
-        remarks || null,
-        unit || null,
-        performed_by || null,
-        supplier_name || null,
-        supplier_contact || null,
-        unit_price || null
+        item_id, quantity, order_date,
+        expected_delivery_date || null, remarks || null,
+        unit || null, performed_by || null,
+        supplier_name || null, supplier_contact || null, unit_price || null
       ]
     );
 
     await logAction({
-      user_id,
-      action_type: 'CREATED PO',
-      module: 'ORDER',
+      user_id, action_type: 'CREATED PO', module: 'ORDER',
       description: `Created PO for item ID ${item_id} (Qty: ${quantity})`,
-      quantity,
-      reference_type: 'MANUAL',
-      performed_by
+      quantity, reference_type: 'MANUAL', performed_by
     });
 
     res.sendStatus(200);
@@ -77,26 +61,21 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ── PARTIAL RECEIVE ─────────────────────────────────────────
-// POST /api/po/receive/:id
-// Body: { received_qty, user_id, performed_by }
+// ── PARTIAL RECEIVE ──────────────────────────────────────────
 router.post('/receive/:id', async (req, res) => {
   try {
     const { received_qty, user_id, performed_by } = req.body;
     const qty = parseInt(received_qty);
 
-    if (!qty || qty <= 0) {
-      return res.status(400).send('Invalid quantity');
-    }
+    if (!qty || qty <= 0) return res.status(400).send('Invalid quantity');
 
-    // Get current PO
     const poRes = await pool.query(
-      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1',
-      [req.params.id]
+      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1', [req.params.id]
     );
     const po = poRes.rows[0];
     if (!po) return res.status(404).send('PO not found');
 
+    // ✅ FIX: Block receive if CANCELLED (was only blocking DELIVERED)
     if (po.status === 'DELIVERED' || po.status === 'CANCELLED') {
       return res.status(400).send(`Cannot receive on ${po.status} order`);
     }
@@ -104,59 +83,36 @@ router.post('/receive/:id', async (req, res) => {
     const alreadyReceived = po.received_quantity || 0;
     const remaining       = po.quantity_ordered - alreadyReceived;
 
-    if (qty > remaining) {
-      return res.status(400).send(`Cannot receive more than remaining (${remaining})`);
-    }
-    if (remaining <= 0) {
-      return res.status(400).send('Already fully received');
-    }
-
+    if (qty > remaining) return res.status(400).send(`Cannot receive more than remaining (${remaining})`);
+    if (remaining <= 0)  return res.status(400).send('Already fully received');
 
     const newReceived = alreadyReceived + qty;
     let newStatus = 'ORDERED';
+    if (newReceived >= po.quantity_ordered) newStatus = 'DELIVERED';
+    else if (newReceived > 0)               newStatus = 'PARTIAL';
 
-    if (newReceived >= po.quantity_ordered) {
-      newStatus = 'DELIVERED';
-    } else if (newReceived > 0) {
-      newStatus = 'PARTIAL';
-    }
-    
     let deliveryDate = null;
+    if (newStatus === 'DELIVERED') deliveryDate = new Date().toISOString().slice(0, 10);
 
-    if (newStatus === 'DELIVERED') {
-      deliveryDate = new Date().toISOString().slice(0, 10);
-    }
-
-
-    // Update PO
     await pool.query(
       `UPDATE purchase_orders SET
-        received_quantity=$1,
-        status=$2,
+        received_quantity=$1, status=$2,
         actual_delivery_date=COALESCE($3::DATE, actual_delivery_date),
         performed_by=$4
        WHERE purchase_order_id=$5`,
       [newReceived, newStatus, deliveryDate, performed_by || null, req.params.id]
     );
 
-    // Add to inventory
     await pool.query(
-      `UPDATE inventory_gen
-       SET current_quantity = current_quantity + $1,
-           last_updated = NOW()
-       WHERE inventory_gen_id = $2`,
+      `UPDATE inventory_gen SET current_quantity=current_quantity+$1, last_updated=NOW()
+       WHERE inventory_gen_id=$2`,
       [qty, po.item_id]
     );
 
     await logAction({
-      user_id,
-      action_type: 'RECEIVE PO',
-      module: 'ORDER',
+      user_id, action_type: 'RECEIVE PO', module: 'ORDER',
       description: `Received ${qty} of ${po.quantity_ordered} for PO #${po.purchase_order_id} (${newStatus})`,
-      quantity: qty,
-      movement_type: 'ADD',
-      reference_type: 'DELIVERY',
-      performed_by
+      quantity: qty, movement_type: 'ADD', reference_type: 'DELIVERY', performed_by
     });
 
     res.json({ status: newStatus, received: newReceived, remaining: po.quantity_ordered - newReceived });
@@ -167,6 +123,7 @@ router.post('/receive/:id', async (req, res) => {
 });
 
 // ── CANCEL ──────────────────────────────────────────────────
+// ✅ FIX: Now works for PARTIAL orders (was checking po.status === 'DELIVERED' only)
 router.post('/cancel/:id', async (req, res) => {
   try {
     const { user_id, performed_by, role } = req.body;
@@ -175,12 +132,14 @@ router.post('/cancel/:id', async (req, res) => {
     }
 
     const poRes = await pool.query(
-      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1',
-      [req.params.id]
+      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1', [req.params.id]
     );
     const po = poRes.rows[0];
     if (!po) return res.status(404).send('Not found');
-    if (po.status === 'DELIVERED') return res.status(400).send('Already delivered');
+
+    // ✅ FIX: Only block cancel for DELIVERED, not PARTIAL
+    if (po.status === 'DELIVERED') return res.status(400).send('Already delivered — cannot cancel');
+    if (po.status === 'CANCELLED') return res.status(400).send('Already cancelled');
 
     await pool.query(
       "UPDATE purchase_orders SET status='CANCELLED' WHERE purchase_order_id=$1",
@@ -188,13 +147,9 @@ router.post('/cancel/:id', async (req, res) => {
     );
 
     await logAction({
-      user_id,
-      action_type: 'CANCELED PO',
-      module: 'ORDER',
-      description: `Cancelled PO #${po.purchase_order_id}`,
-      quantity: po.quantity_ordered,
-      reference_type: 'MANUAL',
-      performed_by
+      user_id, action_type: 'CANCELED PO', module: 'ORDER',
+      description: `Cancelled PO #${po.purchase_order_id} (was ${po.status})`,
+      quantity: po.quantity_ordered, reference_type: 'MANUAL', performed_by
     });
 
     res.sendStatus(200);
@@ -204,15 +159,14 @@ router.post('/cancel/:id', async (req, res) => {
   }
 });
 
-// Keep legacy /deliver for backward compat (redirects to full receive)
+// Legacy /deliver for backward compat
 router.post('/deliver/:id', async (req, res) => {
   const { user_id, performed_by, role } = req.body;
   if (role !== 'admin' && role !== 'super_admin') return res.status(403).send('Unauthorized');
 
   try {
     const poRes = await pool.query(
-      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1',
-      [req.params.id]
+      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1', [req.params.id]
     );
     const po = poRes.rows[0];
     if (!po) return res.status(404).send('Not found');
