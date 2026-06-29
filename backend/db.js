@@ -16,4 +16,13 @@ pool.query("SELECT NOW()", (err, res) => {
   }
 });
 
+
+pool.query("SELECT current_database(), inet_server_addr()", (err, res) => {
+  if (err) {
+    console.error("DB CHECK ERROR:", err);
+  } else {
+    console.log("CONNECTED TO DB:", res.rows[0]);
+  }
+});
+
 module.exports = pool;
