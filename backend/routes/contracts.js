@@ -2,7 +2,7 @@
 // Changes:
 //   • Added 'NA' validity_type (no expiry)
 //   • NA contracts never appear in expiry alerts
-
+const express = require("express");
 const router = require("express").Router();
 const db     = require("../db");
 
