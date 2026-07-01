@@ -30,7 +30,6 @@ app.use("/api/contracts",             require("./routes/contracts"));
 app.use("/api/attachments",           require("./routes/attachments"));
 app.use("/api/subscriptions",         require("./routes/subscriptions"));
 app.use("/api/insurance",             require("./routes/insurance"));
-// ✅ FIX: was incorrectly mounted at /api/insurance (conflict!)
 app.use("/api/subscriptions-master",  require("./routes/subscriptionsMaster"));
 app.use("/api/vehicle-plans",         require("./routes/vehicleMaintPlans"));
 
