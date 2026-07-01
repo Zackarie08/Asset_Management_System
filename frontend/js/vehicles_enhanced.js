@@ -372,15 +372,13 @@ async function dpVehicle(id) {
       <div class="dp-section">
         <div class="dp-section-hd">⚡ Actions</div>
         <div class="dp-action-row">
-          ${v.status !== 'UNDER_MAINTENANCE' ? `
-            <button class="btn btn-primary btn-sm"
-              onclick="openVehMaint(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
-              🔧 Log Maintenance
-            </button>
-            <button class="btn btn-outline btn-sm"
-              onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
-              📊 Update Odometer
-            </button>
+        ${v.status !== 'UNDER_MAINTENANCE' ? `
+          <button class="btn btn-primary btn-sm" onclick="openMaintenanceChecklist(${v.vehicle_id})">
+            🔧 Put Under Maintenance
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
+            📊 Update Odometer
+          </button>
           ` : `
             <button class="btn btn-green btn-sm"
               onclick="completeMaintenance(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
@@ -710,6 +708,82 @@ async function exportVehicles() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('Vehicles exported', 't-success');
+}
+
+/* ─────────────────────────────────────────────────────────
+   PUT UNDER MAINTENANCE — checklist of plans
+───────────────────────────────────────────────────────── */
+let _checklistVehicleId = null;
+
+async function openMaintenanceChecklist(vehicleId) {
+  _checklistVehicleId = vehicleId;
+  const plans = await fetchPlansForVehicle(vehicleId);
+
+  const listEl = document.getElementById('maint-checklist-list');
+  if (!plans.length) {
+    listEl.innerHTML = `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">
+      No maintenance plans set up for this vehicle yet.</div>`;
+  } else {
+    listEl.innerHTML = plans.map(p => `
+      <label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--slate-100);cursor:pointer">
+        <input type="checkbox" class="maint-check" value="${p.maint_type_id}" data-basis="${p.basis}"
+          style="width:14px;height:14px;accent-color:var(--blue-600)"/>
+        <span style="font-weight:600;font-size:13px">${_escVeh(p.name)}</span>
+        <span style="font-size:11px;color:var(--slate-400);text-transform:uppercase;margin-left:auto">${p.basis}</span>
+      </label>`).join('');
+  }
+
+  document.getElementById('maint-checklist-odo').value = '';
+  document.getElementById('maint-checklist-date').value = todayStr();
+  document.getElementById('maint-checklist-remarks').value = '';
+  openM('m-maint-checklist');
+}
+
+async function submitMaintenanceChecklist() {
+  const checked = [...document.querySelectorAll('.maint-check:checked')];
+  if (!checked.length) { showToast('Select at least one maintenance item', 't-error'); return; }
+
+  const odometer = document.getElementById('maint-checklist-odo').value || null;
+  const date     = document.getElementById('maint-checklist-date').value;
+  const remarks  = document.getElementById('maint-checklist-remarks').value;
+  const needsOdo = checked.some(c => c.dataset.basis === 'odometer');
+  if (needsOdo && !odometer) { showToast('Odometer reading is required for KM-based items', 't-error'); return; }
+
+  try {
+    await Promise.all(checked.map(c =>
+      fetch(`${API_URL}/api/vehicle-plans/perform/${c.value}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vehicle_id: _checklistVehicleId,
+          odometer, remarks, performed_date: date,
+          performed_by: currentUser?.name || null,
+        }),
+      })
+    ));
+
+    showToast(`Maintenance recorded for ${checked.length} item(s) ✅`, 't-success');
+    addLog('UPDATE', 'VEHICLE', `Performed ${checked.length} maintenance item(s)`, _checklistVehicleId);
+    delete _allVehPlans[_checklistVehicleId];
+    closeM('m-maint-checklist');
+    renderVehicles();
+    if (dpOpen && dpCurrentType === 'vehicle' && dpCurrentId === _checklistVehicleId) dpVehicle(_checklistVehicleId);
+  } catch {
+    showToast('Failed to record maintenance', 't-error');
+  }
+}
+
+function checkMonthlyOdoReminder() {
+  const today = new Date();
+  const day = today.getDate();
+  const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+
+  // ✅ first working day logic
+  const isWorkingDay = dayOfWeek !== 0 && dayOfWeek !== 6;
+
+  if (day <= 3 && isWorkingDay) {
+    showToast("📊 Monthly Odometer Update Required", "t-warning");
+  }
 }
 
 // Make renderVehicles the default

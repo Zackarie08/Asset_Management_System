@@ -61,7 +61,7 @@ function navigate(page, navEl) {
   document.getElementById("tb-current").textContent = meta.title  || page;
 
   currentPage = page;
-  localStorage.setItem("currentPage", page);
+  sessionStorage.setItem("currentPage", page);
 
   closeDP();
   refreshPageActions(page);

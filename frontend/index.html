@@ -223,17 +223,8 @@
             <div id="dash-con-list"></div>
           </div>
 
-          <!-- ⑥ RECENT SYSTEM LOGS (NEW) -->
-          <div class="panel">
-            <div class="panel-hd">
-              <div class="panel-title">📜 Recent Activity</div>
-              <span class="panel-count" id="dash-log-ct">—</span>
-            </div>
-            <div id="dash-log-list"></div>
-          </div>
-
           <!-- ⑦ ADMIN — SUBSCRIPTIONS (NEW, hidden for non-admins) -->
-          <div class="panel dash-grid-full" id="dash-admin-wrap" style="display:none">
+          <div class="panel" id="dash-admin-wrap">
             <div class="panel-hd">
               <div class="panel-title">🔐 Subscription Alerts <span style="font-size:11px;font-weight:400;color:var(--slate-400);margin-left:6px" id="dash-admin-subs"></span></div>
               <span class="panel-count" id="dash-admin-ct">—</span>
@@ -2078,6 +2069,30 @@
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-record-maint')">Cancel</button>
         <button class="btn btn-green"   onclick="saveRecordMaint()">✅ Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="m-maint-checklist">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔧 Put Under Maintenance</div>
+      <button class="modal-close" onclick="closeM('m-maint-checklist')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grp">
+        <label>Select items performed</label>
+        <div id="maint-checklist-list" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:6px 12px"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Date</label><input class="form-ctrl" id="maint-checklist-date" type="date"/></div>
+        <div class="form-grp"><label>Odometer (km) — required for KM-based items</label><input class="form-ctrl" id="maint-checklist-odo" type="number"/></div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="maint-checklist-remarks" rows="2" maxlength="255"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-maint-checklist')">Cancel</button>
+        <button class="btn btn-green" onclick="submitMaintenanceChecklist()">✅ Confirm</button>
       </div>
     </div>
   </div>

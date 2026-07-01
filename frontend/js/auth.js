@@ -49,7 +49,7 @@ function doLogin() {
     }
 
     // ✅ Save user
-    localStorage.setItem("user", JSON.stringify(data.user));
+    sessionStorage.setItem("user", JSON.stringify(data.user));   // was localStorage
 
     // ✅ Set current user (for your UI system)
     currentUser = {
@@ -58,6 +58,8 @@ function doLogin() {
       role: data.user.role,
       initials: data.user.name.substring(0,2).toUpperCase()
     };
+    addLog("LOGIN", "USER", `User ${currentUser.name} logged in`, currentUser.user_id); // Part 5
+
 
     // ✅ Hide login
     document.getElementById('login-screen').style.display = 'none';
@@ -75,7 +77,10 @@ function doLogin() {
 }
 
 function doLogout() {
-  localStorage.removeItem("user");
+  if (currentUser) {
+    addLog("LOGOUT", "USER", `User ${currentUser.name} logged out`, currentUser.user_id); // Part 5
+  }
+  sessionStorage.removeItem("user");   // was localStorage
   location.reload();
 }
 
