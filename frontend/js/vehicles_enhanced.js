@@ -1,15 +1,34 @@
 /* ============================================================
-   vehicles_enhanced.js  —  SECOND PASS (COMPLETE REWRITE)
-   
-   Changes from v1:
-   • Maintenance plans fully wired (odometer + time visual)
-   • Progress bars per plan with correct reset logic
-   • "Perform Maintenance" flow per plan
-   • Top stats (Total / Under Maint / Due Soon) now dynamic
-   • Attachment panel integrated into vehicle DP
-   • Filters: Status + Type + Due Maintenance
-   • Pagination (20/page)
-   • Search bar support
+   vehicles_enhanced.js  —  THIRD PASS (AUDIT FIX)
+
+   Changes from v2 (vehicles_enhanced.js SECOND PASS):
+   • ✅ FIX: Restored saveVehicle() — was referenced by the
+     "Add Vehicle" modal button but never defined anywhere.
+   • ✅ FIX: Restored editVehicle(id) — referenced by dpVehicle()
+     action row but never defined.
+   • ✅ FIX: Restored deleteVehicle()/confirmDeleteVehicle() —
+     referenced by dpVehicle() and the m-confirm-del modal but
+     never defined.
+   • ✅ FIX: Restored openUpdateOdo()/saveOdoUpdate() — referenced
+     by dpVehicle() and the m-update-odo modal but never defined.
+   • ✅ FIX: Restored completeMaintenance() — referenced by
+     dpVehicle() action row but never defined.
+   • ✅ FIX: openMaintenanceChecklist() / submitMaintenanceChecklist()
+     now actually call PUT /api/vehicle/start-maint/:id so the
+     vehicle record's status truly becomes UNDER_MAINTENANCE.
+     Previously only maintenance-plan history was recorded, so
+     status never changed and "Complete Maintenance" was
+     unreachable.
+   • ✅ FIX: Removed duplicate isAdminUser() — canonical version
+     now lives only in main.js (loaded after this file).
+   • ✅ FIX: Removed redundant `window.renderVehicles = renderVehicles`
+     (renderVehicles is already a global function declaration).
+   • ✅ FIX: Added vehSearchQuery / filter DOM wiring notes — see
+     accompanying index.html changes for veh-search / veh-filter-*
+     / veh-pagination elements that previously didn't exist.
+
+   Everything else preserved from v2: maintenance plans fully
+   wired, progress bars, checklist flow, attachments, exports.
    ============================================================ */
 
 /* ─────────────────────────────────────────────────────────
@@ -40,9 +59,9 @@ function _escVeh(str) {
     .replace(/'/g,'&#39;');
 }
 
-function isAdminUser() {
-  return currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin');
-}
+// ✅ FIX: isAdminUser() duplicate removed from this file.
+// The canonical definition lives in main.js (loaded after this
+// file in index.html), so it is still available globally here.
 
 function _daysUntil(dateStr) {
   if (!dateStr) return null;
@@ -527,6 +546,223 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
     </div>`;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   ✅ FIX — RESTORED: VEHICLE RECORD CRUD
+   These functions were referenced by index.html (m-add-veh
+   modal, m-confirm-del modal, m-update-odo modal) and by
+   dpVehicle()'s action row, but were never defined anywhere
+   in the codebase after the vehicles.js → vehicles_enhanced.js
+   rewrite. Restored here, wired to the existing (and already
+   working) backend endpoints in backend/routes/vehicle.js.
+═══════════════════════════════════════════════════════════ */
+
+let vehEditId = null;
+
+/* ── ADD VEHICLE ─────────────────────────────────────────── */
+// Called by: index.html #m-add-veh "✅ Add Vehicle" button
+function saveVehicle() {
+  const vehicle_name = document.getElementById('veh-f-name').value.trim();
+  const type          = document.getElementById('veh-f-type').value;
+  const plate_number  = document.getElementById('veh-f-plate').value.trim();
+  const odometer      = document.getElementById('veh-f-odometer').value || 0;
+  const purchase_date = document.getElementById('veh-f-date').value || null;
+  const price         = document.getElementById('veh-f-price').value || null;
+  const remarks       = document.getElementById('veh-f-remarks').value;
+
+  if (!vehicle_name || !plate_number) {
+    showToast('Vehicle name and plate number are required', 't-error');
+    return;
+  }
+
+  const payload = {
+    vehicle_name,
+    plate_number,
+    type,
+    purchase_date,
+    status: 'ACTIVE',
+    price,
+    remarks,
+    odometer,
+    last_maintenance_km: 0,
+    maintenance_threshold: 1000,
+  };
+
+  const url    = vehEditId ? `${API_URL}/api/vehicle/${vehEditId}` : `${API_URL}/api/vehicle`;
+  const method = vehEditId ? 'PUT' : 'POST';
+
+  // PUT requires all fields — merge with existing record when editing
+  const doSave = () => fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const finish = () => {
+    showToast(vehEditId ? 'Vehicle updated' : 'Vehicle added', 't-success');
+    addLog(vehEditId ? 'UPDATE' : 'CREATE', 'VEHICLE',
+      `${vehEditId ? 'Updated' : 'Added'} vehicle: ${vehicle_name} (${plate_number})`, vehEditId || plate_number);
+    const wasEdit = vehEditId;
+    vehEditId = null;
+    closeM('m-add-veh');
+    renderVehicles();
+    if (wasEdit && dpOpen && dpCurrentType === 'vehicle' && dpCurrentId === wasEdit) dpVehicle(wasEdit);
+  };
+
+  if (vehEditId) {
+    // Preserve fields not present in the add form (last_maintenance_km, maintenance_threshold, status)
+    fetchVehicles().then(list => {
+      const existing = list.find(v => v.vehicle_id === vehEditId);
+      if (existing) {
+        payload.status                 = existing.status;
+        payload.last_maintenance_km    = existing.last_maintenance_km;
+        payload.maintenance_threshold  = existing.maintenance_threshold;
+      }
+      doSave().then(res => { if (!res.ok) throw new Error('Save failed'); finish(); })
+        .catch(() => showToast('Error saving vehicle', 't-error'));
+    });
+  } else {
+    doSave().then(res => { if (!res.ok) throw new Error('Save failed'); finish(); })
+      .catch(() => showToast('Error saving vehicle', 't-error'));
+  }
+}
+
+/* ── EDIT VEHICLE ────────────────────────────────────────── */
+// Called by: dpVehicle() action row "✏️ Edit" button
+async function editVehicle(id) {
+  const list = await fetchVehicles();
+  const v = list.find(x => x.vehicle_id === id);
+  if (!v) return;
+
+  vehEditId = id;
+  closeDP();
+  openM('m-add-veh');
+
+  document.getElementById('veh-f-name').value      = v.vehicle_name || '';
+  document.getElementById('veh-f-type').value      = v.type || 'Car';
+  document.getElementById('veh-f-plate').value     = v.plate_number || '';
+  document.getElementById('veh-f-odometer').value  = v.odometer || 0;
+  document.getElementById('veh-f-date').value      = v.purchase_date
+    ? new Date(v.purchase_date).toISOString().slice(0, 10) : '';
+  document.getElementById('veh-f-price').value     = v.price || '';
+  document.getElementById('veh-f-remarks').value   = v.remarks || '';
+}
+
+/* ── DELETE VEHICLE ──────────────────────────────────────── */
+// Called by: dpVehicle() action row "🗑️ Delete" button
+//            + index.html #m-confirm-del modal "🗑️ Delete" button
+let deleteVehicleId   = null;
+let deleteVehiclePlate = '';
+
+function deleteVehicle(id, plate) {
+  deleteVehicleId    = id;
+  deleteVehiclePlate = plate;
+  openM('m-confirm-del');
+}
+
+function confirmDeleteVehicle() {
+  fetch(`${API_URL}/api/vehicle/${deleteVehicleId}`, { method: 'DELETE' })
+    .then(res => { if (!res.ok) throw new Error('Delete failed'); })
+    .then(() => {
+      showToast('Vehicle deleted', 't-warning');
+      addLog('DELETE', 'VEHICLE', `Deleted vehicle: ${deleteVehiclePlate}`, deleteVehicleId);
+      delete _allVehPlans[deleteVehicleId];
+      closeM('m-confirm-del');
+      closeDP();
+      renderVehicles();
+    })
+    .catch(() => showToast('Error deleting vehicle', 't-error'));
+}
+
+/* ── UPDATE ODOMETER ─────────────────────────────────────── */
+// Called by: dpVehicle() action row "📊 Update Odometer" button
+//            + index.html #m-update-odo modal "Save" button
+let _odoVehicleId = null;
+
+function openUpdateOdo(id, currentKm, plate) {
+  _odoVehicleId = id;
+  const label = document.getElementById('uo-km');
+  if (label) label.value = currentKm || 0;
+  const title = document.querySelector('#m-update-odo .modal-title');
+  if (title) title.textContent = `📊 Update Odometer — ${plate}`;
+  openM('m-update-odo');
+}
+
+function saveOdoUpdate() {
+  const odometer = parseInt(document.getElementById('uo-km').value);
+
+  if (!odometer && odometer !== 0) {
+    showToast('Enter a valid odometer reading', 't-error');
+    return;
+  }
+
+  fetch(`${API_URL}/api/vehicle/update-odo/${_odoVehicleId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ odometer }),
+  })
+  .then(res => { if (!res.ok) throw new Error('Update failed'); })
+  .then(() => {
+    showToast('Odometer updated', 't-success');
+    addLog('UPDATE', 'VEHICLE', `Updated odometer to ${odometer.toLocaleString()} km`, _odoVehicleId);
+    closeM('m-update-odo');
+    renderVehicles();
+    if (dpOpen && dpCurrentType === 'vehicle' && dpCurrentId === _odoVehicleId) dpVehicle(_odoVehicleId);
+  })
+  .catch(() => showToast('Error updating odometer', 't-error'));
+}
+
+/* ── COMPLETE MAINTENANCE ────────────────────────────────── */
+// Called by: dpVehicle() action row "✅ Complete Maintenance"
+// button, shown when v.status === 'UNDER_MAINTENANCE'
+function completeMaintenance(id, currentKm, plate) {
+  const odometer = prompt(`Complete maintenance for ${plate}.\n\nConfirm current odometer (km):`, currentKm);
+  if (odometer === null) return; // cancelled
+
+  const parsedOdo = parseInt(odometer);
+  if (isNaN(parsedOdo) || parsedOdo < 0) {
+    showToast('Invalid odometer value', 't-error');
+    return;
+  }
+
+  fetch(`${API_URL}/api/vehicle/complete-maint/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ odometer: parsedOdo }),
+  })
+  .then(res => { if (!res.ok) throw new Error('Failed'); })
+  .then(() => {
+    showToast('Maintenance completed — vehicle is now Active', 't-success');
+    addLog('UPDATE', 'VEHICLE', `Completed maintenance for ${plate}`, id);
+    renderVehicles();
+    if (dpOpen && dpCurrentType === 'vehicle' && dpCurrentId === id) dpVehicle(id);
+  })
+  .catch(() => showToast('Error completing maintenance', 't-error'));
+}
+
+/* ── EXPORT ────────────────────────────────────────────────
+   (unchanged from v2, kept here for completeness)
+───────────────────────────────────────────────────────── */
+async function exportVehicles() {
+  const vehicles = _allVehicles.length ? _allVehicles : await fetchVehicles();
+  const headers  = ['Vehicle Name','Plate','Type','Odometer (km)','Status','Purchase Date'];
+  const rows     = vehicles.map(v => [
+    `"${v.vehicle_name}"`,`"${v.plate_number}"`,`"${v.type}"`,
+    v.odometer || 0,`"${v.status}"`,`"${v.purchase_date || ''}"`
+  ].join(','));
+
+  const csv  = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `Vehicles_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Vehicles exported', 't-success');
+}
+
 /* ─────────────────────────────────────────────────────────
    PLAN MODAL — ADD / EDIT
 ───────────────────────────────────────────────────────── */
@@ -687,31 +923,12 @@ function saveRecordMaint() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   EXPORT
-───────────────────────────────────────────────────────── */
-async function exportVehicles() {
-  const vehicles = _allVehicles.length ? _allVehicles : await fetchVehicles();
-  const headers  = ['Vehicle Name','Plate','Type','Odometer (km)','Status','Purchase Date'];
-  const rows     = vehicles.map(v => [
-    `"${v.vehicle_name}"`,`"${v.plate_number}"`,`"${v.type}"`,
-    v.odometer || 0,`"${v.status}"`,`"${v.purchase_date || ''}"`
-  ].join(','));
-
-  const csv  = '\uFEFF' + [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `Vehicles_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Vehicles exported', 't-success');
-}
-
-/* ─────────────────────────────────────────────────────────
    PUT UNDER MAINTENANCE — checklist of plans
+   ✅ FIX: now also calls PUT /api/vehicle/start-maint/:id so
+   the vehicle's actual `status` column changes to
+   UNDER_MAINTENANCE. Previously this only recorded plan
+   history, so the vehicle never visually/logically entered
+   maintenance mode and "Complete Maintenance" was dead code.
 ───────────────────────────────────────────────────────── */
 let _checklistVehicleId = null;
 
@@ -722,7 +939,8 @@ async function openMaintenanceChecklist(vehicleId) {
   const listEl = document.getElementById('maint-checklist-list');
   if (!plans.length) {
     listEl.innerHTML = `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">
-      No maintenance plans set up for this vehicle yet.</div>`;
+      No maintenance plans set up for this vehicle yet. You can still put it under
+      maintenance without selecting any items.</div>`;
   } else {
     listEl.innerHTML = plans.map(p => `
       <label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--slate-100);cursor:pointer">
@@ -741,7 +959,6 @@ async function openMaintenanceChecklist(vehicleId) {
 
 async function submitMaintenanceChecklist() {
   const checked = [...document.querySelectorAll('.maint-check:checked')];
-  if (!checked.length) { showToast('Select at least one maintenance item', 't-error'); return; }
 
   const odometer = document.getElementById('maint-checklist-odo').value || null;
   const date     = document.getElementById('maint-checklist-date').value;
@@ -750,20 +967,35 @@ async function submitMaintenanceChecklist() {
   if (needsOdo && !odometer) { showToast('Odometer reading is required for KM-based items', 't-error'); return; }
 
   try {
-    await Promise.all(checked.map(c =>
-      fetch(`${API_URL}/api/vehicle-plans/perform/${c.value}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vehicle_id: _checklistVehicleId,
-          odometer, remarks, performed_date: date,
-          performed_by: currentUser?.name || null,
-        }),
-      })
-    ));
+    // ✅ FIX: mark vehicle status as UNDER_MAINTENANCE first
+    const statusRes = await fetch(`${API_URL}/api/vehicle/start-maint/${_checklistVehicleId}`, {
+      method: 'PUT',
+    });
+    if (!statusRes.ok) throw new Error('Failed to update vehicle status');
 
-    showToast(`Maintenance recorded for ${checked.length} item(s) ✅`, 't-success');
-    addLog('UPDATE', 'VEHICLE', `Performed ${checked.length} maintenance item(s)`, _checklistVehicleId);
+    if (checked.length) {
+      await Promise.all(checked.map(c =>
+        fetch(`${API_URL}/api/vehicle-plans/perform/${c.value}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vehicle_id: _checklistVehicleId,
+            odometer, remarks, performed_date: date,
+            performed_by: currentUser?.name || null,
+          }),
+        })
+      ));
+    }
+
+    showToast(
+      checked.length
+        ? `Vehicle under maintenance · ${checked.length} item(s) recorded ✅`
+        : 'Vehicle put under maintenance ✅',
+      't-success'
+    );
+    addLog('UPDATE', 'VEHICLE',
+      `Put vehicle #${_checklistVehicleId} under maintenance${checked.length ? ` (${checked.length} item(s))` : ''}`,
+      _checklistVehicleId);
     delete _allVehPlans[_checklistVehicleId];
     closeM('m-maint-checklist');
     renderVehicles();
@@ -786,5 +1018,6 @@ function checkMonthlyOdoReminder() {
   }
 }
 
-// Make renderVehicles the default
-window.renderVehicles = renderVehicles;
+// ✅ FIX: removed redundant `window.renderVehicles = renderVehicles;`
+// renderVehicles is already declared as a top-level function, which
+// is automatically attached to `window` in a non-module script.

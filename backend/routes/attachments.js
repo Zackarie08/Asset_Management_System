@@ -1,9 +1,13 @@
-// backend/routes/attachments.js — REFACTORED
+// backend/routes/attachments.js — REFACTORED (FIX PASS 2)
 // Changes:
 //   • Validates module + record_id on every write
 //   • Returns file_size_kb in listing
 //   • Stores uploaded_by (user_id) properly
 //   • All routes have try/catch + meaningful error messages
+//   • ✅ FIX: Added "insurance" to ALLOWED_MODULES — frontend's
+//             attachmentPanel('insurance', id, ...) call in
+//             insurance.js was failing 400 validation because
+//             this whitelist never included it.
 
 const express = require("express");
 const router  = express.Router();
@@ -14,6 +18,7 @@ const ALLOWED_MODULES = [
   "m365", "globe", "subscriptions",
   "inventory", "laptops", "furniture", "itsupplies",
   "vehicles", "contracts", "finance",
+  "insurance", // ✅ FIX: was missing — insurance.js calls attachmentPanel('insurance', ...)
 ];
 
 function validateModule(module) {
