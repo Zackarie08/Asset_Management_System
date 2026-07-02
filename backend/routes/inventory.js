@@ -54,6 +54,16 @@ router.post("/withdraw", async (req, res) => {
   try {
     const { id, qty, user_id, performed_by } = req.body;
 
+    // ✅ FIX: look up the item name BEFORE updating stock, so the log
+    // description is meaningful ("Withdrew 5 units of HDMI Cable")
+    // instead of the old generic "Withdraw 5" with no item context.
+    const itemRes = await pool.query(
+      "SELECT item_name, unit FROM inventory_gen WHERE inventory_gen_id = $1",
+      [id]
+    );
+    const itemName = itemRes.rows[0]?.item_name || `Item #${id}`;
+    const unitLabel = itemRes.rows[0]?.unit || "unit";
+
     await pool.query(
       "UPDATE inventory_gen SET current_quantity = current_quantity - $1 WHERE inventory_gen_id = $2",
       [qty, id]
@@ -63,7 +73,7 @@ router.post("/withdraw", async (req, res) => {
       user_id,
       action_type: "WITHDRAW",
       module: "INVENTORY",
-      description: `Withdraw ${qty}`,
+      description: `Withdrew ${qty} ${unitLabel}${qty == 1 ? '' : 's'} of ${itemName}`,
       quantity: qty,
       movement_type: "WITHDRAW",
       reference_type: "MANUAL",
