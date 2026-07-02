@@ -43,7 +43,7 @@ const ADMIN_NAV = [
 // Pages accessible to non-admin roles
 const EMP_NAV = [
   "dashboard","inventory","orders","furniture",
-  "itsupplies","laptops","vehicles","contracts","subscriptions"
+  "itsupplies","laptops","vehicles","contracts"
 ];
 
 /* ── PAGE METADATA (breadcrumb) ─────────────────────────── */
