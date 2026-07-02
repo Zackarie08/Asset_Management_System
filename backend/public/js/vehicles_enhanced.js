@@ -65,9 +65,7 @@ function _escVeh(str) {
 
 function _daysUntil(dateStr) {
   if (!dateStr) return null;
-  const target = new Date(dateStr + "T00:00:00");
-  const today  = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+  return Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -492,21 +490,19 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
         </div>
       </div>`;
 
-} else if (isTime) {
+  } else if (isTime) {
     const s = plan.status_computed || 'unknown';
-    const labelMap  = { overdue: '⚠️ Overdue', due_today: '⏰ Due Today', due_soon: '⚠️ Due Soon', ok: '✅ OK', pending: '⏳ Not Yet Done', unknown: '—' };
-    const classMap  = { overdue: 'b-red', due_today: 'b-red', due_soon: 'b-amber', ok: 'b-green', pending: 'b-slate', unknown: 'b-slate' };
+    const labelMap  = { overdue: '⚠️ Overdue', due_soon: '⚠️ Due Soon', ok: '✅ OK', pending: '⏳ Not Yet Done', unknown: '—' };
+    const classMap  = { overdue: 'b-red', due_soon: 'b-amber', ok: 'b-green', pending: 'b-slate', unknown: 'b-slate' };
     statusBadge = `<span class="badge ${classMap[s] || 'b-slate'}">${labelMap[s] || s}</span>`;
 
     const daysLeft = _daysUntil(plan.next_due_date);
     let dueLabel = plan.next_due_date
-      ? (daysLeft < 0
+      ? (daysLeft <= 0
           ? `⚠️ Was due ${plan.next_due_date}`
-          : daysLeft === 0
-            ? `⏰ Due today (${plan.next_due_date})`
-            : daysLeft <= 30
-              ? `⚠️ Due in ${daysLeft} days (${plan.next_due_date})`
-              : `🗓 Due: ${plan.next_due_date}`)
+          : daysLeft <= 30
+            ? `⚠️ Due in ${daysLeft} days (${plan.next_due_date})`
+            : `🗓 Due: ${plan.next_due_date}`)
       : '⏳ Not yet performed';
 
     const intervalLabel = plan.interval_value
@@ -681,13 +677,11 @@ function confirmDeleteVehicle() {
 // Called by: dpVehicle() action row "📊 Update Odometer" button
 //            + index.html #m-update-odo modal "Save" button
 let _odoVehicleId = null;
-let _odoCurrentKm = 0; // ✅ NEW — tracks the floor for client-side validation
 
 function openUpdateOdo(id, currentKm, plate) {
   _odoVehicleId = id;
-  _odoCurrentKm = currentKm || 0; // ✅ NEW
   const label = document.getElementById('uo-km');
-  if (label) { label.value = currentKm || 0; label.min = currentKm || 0; }
+  if (label) label.value = currentKm || 0;
   const title = document.querySelector('#m-update-odo .modal-title');
   if (title) title.textContent = `📊 Update Odometer — ${plate}`;
   openM('m-update-odo');
@@ -701,21 +695,12 @@ function saveOdoUpdate() {
     return;
   }
 
-  // ✅ NEW — mirrors the server-side floor check for immediate feedback.
-  // The server still enforces this independently; this is UX only.
-  if (odometer < _odoCurrentKm) {
-    showToast(`Odometer cannot be lower than current reading (${_odoCurrentKm.toLocaleString()} km)`, 't-error');
-    return;
-  }
-
   fetch(`${API_URL}/api/vehicle/update-odo/${_odoVehicleId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ odometer }),
   })
-  .then(res => {
-    if (!res.ok) return res.text().then(msg => { throw new Error(msg || 'Update failed'); });
-  })
+  .then(res => { if (!res.ok) throw new Error('Update failed'); })
   .then(() => {
     showToast('Odometer updated', 't-success');
     addLog('UPDATE', 'VEHICLE', `Updated odometer to ${odometer.toLocaleString()} km`, _odoVehicleId);
@@ -723,7 +708,7 @@ function saveOdoUpdate() {
     renderVehicles();
     if (dpOpen && dpCurrentType === 'vehicle' && dpCurrentId === _odoVehicleId) dpVehicle(_odoVehicleId);
   })
-  .catch(err => showToast(err.message || 'Error updating odometer', 't-error'));
+  .catch(() => showToast('Error updating odometer', 't-error'));
 }
 
 /* ── COMPLETE MAINTENANCE ────────────────────────────────── */

@@ -1,14 +1,3 @@
-// backend/routes/vehicle.js
-//
-// FIX LOG (this revision):
-//   • PUT /update-odo/:id now rejects odometer values lower than the
-//     currently stored reading, and rejects non-numeric/negative input.
-//   • POST /maintenance (legacy full-record endpoint) now advances the
-//     vehicle odometer with GREATEST() instead of a raw overwrite, so
-//     a retroactive/lower reading can never move it backward.
-//   • PUT /complete-maint/:id validates the odometer input and uses
-//     GREATEST() for the same reason.
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // adjust if different
@@ -122,7 +111,6 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ✅ ADD MAINTENANCE RECORD (legacy full-record endpoint)
 router.post("/maintenance", async (req, res) => {
   const {
     vehicle_id,
@@ -133,23 +121,16 @@ router.post("/maintenance", async (req, res) => {
     remarks
   } = req.body;
 
-  const enteredOdo = parseInt(odometer);
-  if (isNaN(enteredOdo) || enteredOdo < 0) {
-    return res.status(400).send("Invalid odometer value");
-  }
-
   await pool.query(
     `INSERT INTO vehicle_maintenance
     (vehicle_id, service_type, maintenance_date, maintenance_cost, odometer, remarks)
     VALUES ($1,$2,$3,$4,$5,$6)`,
-    [vehicle_id, service_type, maintenance_date, maintenance_cost, enteredOdo, remarks]
+    [vehicle_id, service_type, maintenance_date, maintenance_cost, odometer, remarks]
   );
 
-  // ✅ FIX: never let a maintenance record move the vehicle's live
-  // odometer backward — only advance if the entered value is higher.
   await pool.query(
-    `UPDATE vehicle SET odometer = GREATEST(odometer, $1) WHERE vehicle_id = $2`,
-    [enteredOdo, vehicle_id]
+    `UPDATE vehicle SET odometer = $1 WHERE vehicle_id = $2`,
+    [odometer, vehicle_id]
   );
 
   res.sendStatus(200);
@@ -181,23 +162,16 @@ router.put("/start-maint/:id", async (req, res) => {
   }
 });
 
-// ✅ COMPLETE MAINTENANCE
 router.put("/complete-maint/:id", async (req, res) => {
   try {
-    const enteredOdo = parseInt(req.body.odometer);
-    if (isNaN(enteredOdo) || enteredOdo < 0) {
-      return res.status(400).send("Invalid odometer value");
-    }
+    const { odometer } = req.body;
 
-    // ✅ FIX: GREATEST() so completing maintenance can never regress
-    // the vehicle's live odometer, even if a lower value is entered.
     await pool.query(
       `UPDATE vehicle 
        SET status = 'ACTIVE',
-           odometer = GREATEST(odometer, $1),
-           last_maintenance_km = GREATEST(last_maintenance_km, $1)
+           last_maintenance_km = $1
        WHERE vehicle_id = $2`,
-      [enteredOdo, req.params.id]
+      [odometer, req.params.id]
     );
 
     res.sendStatus(200);
@@ -207,38 +181,15 @@ router.put("/complete-maint/:id", async (req, res) => {
   }
 });
 
-// ✅ UPDATE ODOMETER (direct reading update — cannot go backward)
 router.put("/update-odo/:id", async (req, res) => {
-  try {
-    const newOdo = parseInt(req.body.odometer);
-    if (isNaN(newOdo) || newOdo < 0) {
-      return res.status(400).send("Invalid odometer value");
-    }
+  const { odometer } = req.body;
 
-    const current = await pool.query(
-      "SELECT odometer FROM vehicle WHERE vehicle_id = $1",
-      [req.params.id]
-    );
-    if (!current.rows.length) {
-      return res.status(404).send("Vehicle not found");
-    }
+  await pool.query(
+    "UPDATE vehicle SET odometer = $1 WHERE vehicle_id = $2",
+    [odometer, req.params.id]
+  );
 
-    const currentOdo = current.rows[0].odometer || 0;
-    // ✅ FIX: reject any value lower than the current stored reading
-    if (newOdo < currentOdo) {
-      return res.status(400).send(`Odometer cannot be lower than current reading (${currentOdo} km)`);
-    }
-
-    await pool.query(
-      "UPDATE vehicle SET odometer = $1 WHERE vehicle_id = $2",
-      [newOdo, req.params.id]
-    );
-
-    res.sendStatus(200);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error updating odometer");
-  }
+  res.sendStatus(200);
 });
 
 router.delete("/:id", async (req, res) => {

@@ -1,21 +1,5 @@
 // backend/routes/vehicleMaintPlans.js
 // Maintenance plan management per vehicle (odometer + time based)
-//
-// FIX LOG (this revision):
-//   • Time-based next-due calculation no longer overflows months
-//     (Jan 31 + 1 month now correctly lands on Feb 28/29, not Mar 2/3).
-//     Uses new Date(year, month+1, 0) to find the true last day of the
-//     target month, then clamps the day-of-month to it. This also
-//     naturally handles leap years with no special-casing needed.
-//   • daysLeft is now computed against two midnight-normalized dates,
-//     so "Due Today" is detected reliably instead of drifting based
-//     on time-of-day.
-//   • Added a "due_today" status so the frontend can show a distinct
-//     "Due Today" badge instead of lumping it into "due_soon".
-//   • Odometer-based maintenance now writes the vehicle's baseline
-//     using GREATEST() so a retroactive/lower maintenance odometer
-//     entry can never pull the vehicle's live odometer backward.
-//     The plan's own baseline still stores the exact entered value.
 
 const express = require("express");
 const router  = express.Router();
@@ -151,27 +135,16 @@ router.post("/perform/:maint_type_id", async (req, res) => {
       VALUES ($1,$2,$3,$4,$5,$6,$7)
     `, [vehicle_id, plan.name, today, maintenance_cost || null, odometer || null, remarks || null, performed_by || null]);
 
-    // Advance odometer plan: baseline = the ACTUAL odometer reported at
-    // time of maintenance (may legitimately be lower than the vehicle's
-    // current live odometer for retroactive entries).
+    // Advance odometer plan: new baseline = actual performed km
     if (plan.basis === "odometer" && odometer) {
-      const enteredOdo = parseInt(odometer);
-
       await pool.query(
         "UPDATE vehicle_maintenance_types SET last_maintenance_km=$1, last_performed_date=$2 WHERE maint_type_id=$3",
-        [enteredOdo, today, id]
+        [parseInt(odometer), today, id]
       );
-
-      // ✅ FIX: vehicle's live odometer must never move backward.
-      // GREATEST() means the vehicle only advances if the entered
-      // value is higher than what's already stored; a lower,
-      // retroactive maintenance entry updates the PLAN baseline only.
+      // Also update vehicle odometer
       await pool.query(
-        `UPDATE vehicle
-         SET odometer = GREATEST(odometer, $1),
-             last_maintenance_km = GREATEST(last_maintenance_km, $1)
-         WHERE vehicle_id = $2`,
-        [enteredOdo, vehicle_id]
+        "UPDATE vehicle SET odometer=$1, last_maintenance_km=$1 WHERE vehicle_id=$2",
+        [parseInt(odometer), vehicle_id]
       );
     }
 
@@ -190,41 +163,6 @@ router.post("/perform/:maint_type_id", async (req, res) => {
   }
 });
 
-/* ── Helper: add a calendar interval, clamped to the target
-   month's actual last day. Handles month-length differences
-   and leap years automatically because new Date(y, m+1, 0)
-   always resolves to the last real day of month m. ────────── */
-function addIntervalClamped(dateStr, unit, value) {
-  const d   = new Date(dateStr + "T00:00:00");
-  const day = d.getDate();
-
-  if (unit === "week") {
-    const target = new Date(d);
-    target.setDate(target.getDate() + value * 7);
-    return target;
-  }
-
-  let target;
-  if (unit === "year") {
-    target = new Date(d.getFullYear() + value, d.getMonth(), 1);
-  } else {
-    // default: month
-    target = new Date(d.getFullYear(), d.getMonth() + value, 1);
-  }
-
-  const lastDayOfTargetMonth = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
-  target.setDate(Math.min(day, lastDayOfTargetMonth));
-  return target;
-}
-
-/* ── Helper: whole-day difference between two dates, both
-   normalized to midnight so "today" comparisons are exact. ── */
-function daysBetween(dateA, dateB) {
-  const a = new Date(dateA); a.setHours(0, 0, 0, 0);
-  const b = new Date(dateB); b.setHours(0, 0, 0, 0);
-  return Math.round((a - b) / (1000 * 60 * 60 * 24));
-}
-
 /* ── Helper: compute next_due and status for a plan ──────── */
 function computeNextDue(plan) {
   const p = { ...plan };
@@ -240,20 +178,20 @@ function computeNextDue(plan) {
       p.next_due_date = null;
       p.status_computed = "pending";
     } else {
-      const next = addIntervalClamped(
-        p.last_performed_date,
-        p.interval_unit,
-        parseInt(p.interval_value || 1)
-      );
+      const last = new Date(p.last_performed_date);
+      const next = new Date(last);
+      if (p.interval_unit === "month") {
+        next.setMonth(next.getMonth() + parseInt(p.interval_value || 1));
+      } else if (p.interval_unit === "week") {
+        next.setDate(next.getDate() + (parseInt(p.interval_value || 1) * 7));
+      } else if (p.interval_unit === "year") {
+        next.setFullYear(next.getFullYear() + parseInt(p.interval_value || 1));
+      }
       p.next_due_date = next.toISOString().slice(0, 10);
-
-      const daysLeft = daysBetween(next, new Date());
-      p.days_left = daysLeft;
-
-      if (daysLeft < 0)        p.status_computed = "overdue";
-      else if (daysLeft === 0) p.status_computed = "due_today";
-      else if (daysLeft <= 7)  p.status_computed = "due_soon";
-      else                     p.status_computed = "ok";
+      const daysLeft = Math.ceil((next - new Date()) / (1000 * 60 * 60 * 24));
+      if (daysLeft < 0) p.status_computed = "overdue";
+      else if (daysLeft <= 7) p.status_computed = "due_soon";
+      else p.status_computed = "ok";
     }
   }
 
