@@ -1408,7 +1408,6 @@ async function renderContracts() {
         <td>${c.description}</td>
         <td>${validity}</td>
         <td>${expiryBadge}</td>
-        <td>${_contractStatusLabel(c)}</td>
       `;
       tr.onclick = () => openDP("contracts", c.contract_id, tr);
       tbody.appendChild(tr);
