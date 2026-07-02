@@ -1350,6 +1350,21 @@ function getMaintenanceAlert() {
 
 let deleteContractId = null;
 
+// ✅ NEW: single source of truth for the contract status badge.
+// Shows the actual current holder ("With <Name>") instead of the raw
+// WITH_EMPLOYEE status string. Used by both the table and the detail panel
+// so they can never drift out of sync again.
+function _contractStatusLabel(c) {
+  if (c.status === 'IN_STORAGE') {
+    return `<span class="badge b-green">In Storage</span>`;
+  }
+  if (c.status === 'WITH_EMPLOYEE') {
+    const holder = c.current_holder_name ? `With ${_esc(c.current_holder_name)}` : 'With Employee';
+    return `<span class="badge b-blue">${holder}</span>`;
+  }
+  return `<span class="badge b-slate">${c.status || '—'}</span>`;
+}
+
 async function renderContracts() {
   try {
     const res  = await fetch(`${API_URL}/api/contracts`);
@@ -1393,6 +1408,7 @@ async function renderContracts() {
         <td>${c.description}</td>
         <td>${validity}</td>
         <td>${expiryBadge}</td>
+        <td>${_contractStatusLabel(c)}</td>
       `;
       tr.onclick = () => openDP("contracts", c.contract_id, tr);
       tbody.appendChild(tr);
@@ -1441,10 +1457,7 @@ async function dpContract(id) {
     }
   }
 
-  const statusBadge = `
-    <span class="badge ${c.status === "IN_STORAGE" ? "b-green" : "b-blue"}">
-      ${c.status}
-    </span>`;
+  const statusBadge = _contractStatusLabel(c);
 
   const html = `
     <div class="dp-section">
@@ -1515,6 +1528,10 @@ async function renderContractActions(c) {
     currentUser.role === "admin" ||
     currentUser.role === "super_admin";
 
+  // ✅ NEW (Change 3): only super_admin may approve/deny. isAdmin still
+  // covers view/return/edit/delete — see below.
+  const isSuperAdmin = currentUser.role === "super_admin";
+
   let buttons = "";
   let info = "";
 
@@ -1532,7 +1549,7 @@ async function renderContractActions(c) {
       r.contract_id == c.contract_id &&
       (r.status === "PENDING" || r.status === "APPROVED")
     );
-    
+
     if (latestReq) {
 
       let statusColor = "good";
@@ -1564,7 +1581,7 @@ async function renderContractActions(c) {
         </ul>
       `;
     }
-    
+
     // ✅ EMPLOYEE
 
     if (!isAdmin) {
@@ -1580,7 +1597,7 @@ async function renderContractActions(c) {
       }
 
       // ✅ ANOTHER USER REQUESTED → BLOCK
-      if (currentReq && currentReq.requested_by !== currentUser.user_id) {
+      else if (currentReq.requested_by !== currentUser.user_id) {
         buttons = `
           <button class="btn btn-outline btn-sm" disabled>
             🔒 Requested by ${currentReq.requested_name}
@@ -1588,32 +1605,52 @@ async function renderContractActions(c) {
         `;
       }
 
-      // ✅ MY OWN REQUEST → allow cancel
-      if (currentReq && currentReq.requested_by === currentUser.user_id) {
+      // ✅ FIX (Change 4): only offer Cancel while still PENDING. An
+      // APPROVED request belonging to this user can no longer be
+      // cancelled (the backend already refused it silently — now the
+      // button doesn't even appear).
+      else if (currentReq.status === "PENDING") {
         buttons = `
           <button class="btn btn-red btn-sm"
             onclick="cancelRequest(${currentReq.request_id})">
             ❌ Cancel Request
           </button>
         `;
+      } else if (currentReq.status === "APPROVED") {
+        buttons = `
+          <span class="td-muted" style="font-size:12px">
+            ✅ You currently hold this contract
+          </span>
+        `;
       }
     }
 
-    // ADMIN
+    // ADMIN / SUPER ADMIN
     if (isAdmin) {
 
+      // ✅ FIX (Change 3): Approve/Deny gated to super_admin only.
+      // Regular admins see an explanatory note instead of dead buttons —
+      // the real enforcement lives server-side in contracts.js.
       if (currentReq && currentReq.status === "PENDING") {
-        buttons = `
-          <button class="btn btn-green btn-sm"
-            onclick="approveRequest(${currentReq.request_id})">
-            Approve
-          </button>
+        if (isSuperAdmin) {
+          buttons = `
+            <button class="btn btn-green btn-sm"
+              onclick="approveRequest(${currentReq.request_id})">
+              Approve
+            </button>
 
-          <button class="btn btn-red btn-sm"
-            onclick="denyRequest(${currentReq.request_id})">
-            Deny
-          </button>
-        `;
+            <button class="btn btn-red btn-sm"
+              onclick="denyRequest(${currentReq.request_id})">
+              Deny
+            </button>
+          `;
+        } else {
+          buttons = `
+            <span class="td-muted" style="font-size:12px">
+              ⏳ Pending — only a Super Admin can approve/deny
+            </span>
+          `;
+        }
       }
 
       if (c.status === "WITH_EMPLOYEE" && currentReq) {
@@ -1712,7 +1749,6 @@ function confirmDeleteContract() {
       renderContracts();
     });
 }
-
 function requestContract(id) {
   fetch(`${API_URL}/api/contracts/request`, {
     method: "POST",
@@ -1722,10 +1758,9 @@ function requestContract(id) {
   .then(res => {
     if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
     showToast("Contract request sent", "t-success");
-    // ✅ FIX: use _currentContract instead of undefined `c`
     addLog("REQUEST", "CONTRACT",
       `Requested contract | ${_currentContract?.other_party || id}`, id);
-    dpContract(id);
+    refreshContractUI(id); // ✅ FIX: unified refresh (table + open DP)
   })
   .catch(err => showToast(err.message || "Request failed", "t-error"));
 }
@@ -1736,49 +1771,62 @@ function approveRequest(id) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ admin_id: currentUser.user_id })
   })
-  .then(() => {
+  .then(res => {
+    // ✅ FIX: was ignoring failed responses entirely — a 403 (non-super-admin)
+    // or 400 (already processed) previously still showed "Contract approved".
+    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
     showToast("Contract approved", "t-success");
     addLog("UPDATE", "CONTRACT",
       `Approved request | ${_currentContract?.other_party || id}`, id);
-    renderContracts();
-    dpContract(dpCurrentId);
+    refreshContractUI(dpCurrentId); // ✅ FIX: unified refresh
   })
-  .catch(err => showToast("Approve failed", "t-error"));
+  .catch(err => showToast(err.message || "Approve failed", "t-error"));
 }
 
 function returnContract(id) {
   fetch(`${API_URL}/api/contracts/request/${id}/return`, { method: "PUT" })
-    .then(() => {
+    .then(res => {
+      // ✅ FIX (Change 5): check res.ok before claiming success, and use
+      // the shared refreshContractUI() helper instead of a bespoke
+      // renderContracts()+dpContract() pair, so this action refreshes the
+      // same way every other contract action does.
+      if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
       showToast("Contract returned", "t-success");
       addLog("UPDATE", "CONTRACT",
         `Returned contract | ${_currentContract?.other_party || id}`, id);
-      renderContracts();
-      dpContract(dpCurrentId);
+      refreshContractUI(dpCurrentId);
     })
-    .catch(() => showToast("Return failed", "t-error"));
+    .catch(err => showToast(err.message || "Return failed", "t-error"));
 }
 
 function cancelRequest(id) {
   fetch(`${API_URL}/api/contracts/request/${id}`, { method: "DELETE" })
-    .then(() => {
+    .then(res => {
+      if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
       showToast("Request cancelled", "t-warning");
       addLog("DELETE", "CONTRACT",
         `Cancelled request | ${_currentContract?.other_party || id}`, id);
-      dpContract(dpCurrentId);
+      refreshContractUI(dpCurrentId); // ✅ FIX: also refresh the table, not just the DP
     })
-    .catch(() => showToast("Cancel failed", "t-error"));
+    .catch(err => showToast(err.message || "Cancel failed", "t-error"));
 }
 
 function denyRequest(id) {
-  fetch(`${API_URL}/api/contracts/request/${id}/deny`, { method: "PUT" })
-    .then(() => {
+  fetch(`${API_URL}/api/contracts/request/${id}/deny`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    // ✅ FIX (Change 3): previously sent NO body — the backend now requires
+    // admin_id to verify super_admin role server-side.
+    body: JSON.stringify({ admin_id: currentUser.user_id })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
       showToast("Request denied", "t-warning");
       addLog("UPDATE", "CONTRACT",
         `Denied request | ${_currentContract?.other_party || id}`, id);
-      renderContracts();
-      dpContract(dpCurrentId);
+      refreshContractUI(dpCurrentId); // ✅ FIX: unified refresh
     })
-    .catch(() => showToast("Deny failed", "t-error"));
+    .catch(err => showToast(err.message || "Deny failed", "t-error"));
 }
 
 function toggleValidity() {
@@ -2525,7 +2573,7 @@ async function refreshDashboard() {
     });
 
   /* ── Fetch all data concurrently (safe) ────────────────── */
-  const [inventory, orders, laptops, vehicles, contracts, logs, globe, m365] =
+  const [inventory, orders, laptops, vehicles, contracts, logs, globe, m365, contractRequests] =
     await Promise.all([
       safeFetch(`${API_URL}/api/inventory`),
       safeFetch(`${API_URL}/api/po`),
@@ -2535,6 +2583,7 @@ async function refreshDashboard() {
       safeFetch(`${API_URL}/api/logs`),
       safeFetch(`${API_URL}/api/globe`),
       safeFetch(`${API_URL}/api/m365`),
+      safeFetch(`${API_URL}/api/contracts/requests`), // ✅ NEW (Change 2)
     ]);
 
   const today = new Date();
@@ -2800,11 +2849,15 @@ async function refreshDashboard() {
 
     if (!expiryDate) return;
 
-    const daysLeft = daysFromNow(expiryDate);
+  const daysLeft = daysFromNow(expiryDate);
     if (daysLeft < 0)      contractAlerts.push({ c, reason: 'Expired', cls: 'red', daysLeft });
     else if (daysLeft <= 30) contractAlerts.push({ c, reason: `Expires in ${daysLeft}d`, cls: 'amber', daysLeft });
-    if (isAdminUser() && c.status === 'PENDING') contractAlerts.push({ c, reason: 'Approval needed', cls: 'blue', daysLeft: null });
-  });
+    // ✅ FIX (Finding 2 / Change 2): removed dead `c.status === 'PENDING'`
+    // check — a contract's own status is only ever IN_STORAGE or
+    // WITH_EMPLOYEE, never PENDING (that's a request status), so this
+    // branch could never fire. Pending-request visibility is now handled
+    // properly below via the dedicated "Pending Contract Requests" panel.
+  }); 
 
   _setText('dash-con-ct', `${contractAlerts.length} alerts`);
 
@@ -2823,6 +2876,34 @@ async function refreshDashboard() {
     _setHTML('dash-con-list', rows);
   }
 
+
+/* ══════════════════════════════════════════════════════════
+     PANEL — ADMIN ONLY: PENDING CONTRACT REQUESTS (NEW — Change 2)
+  ══════════════════════════════════════════════════════════ */
+
+  const pendReqPanel = document.getElementById('dash-pendreq-wrap');
+  if (pendReqPanel) pendReqPanel.style.display = isAdminUser() ? '' : 'none';
+
+  if (isAdminUser()) {
+    const pendingContractRequests = contractRequests.filter(r => r.status === 'PENDING');
+
+    _setText('dash-pendreq-ct', `${pendingContractRequests.length} pending`);
+
+    if (pendingContractRequests.length === 0) {
+      _setHTML('dash-pendreq-list', _emptyMsg('✅ No pending contract requests'));
+    } else {
+      const rows = pendingContractRequests.slice(0, 6).map(r => `
+        <div class="panel-row">
+          <div class="pr-dot amber"></div>
+          <div style="flex:1">
+            <div class="pr-name">${_esc(r.requested_name)}</div>
+            <div class="pr-meta">${_esc(r.other_party)} · ${_esc(r.description)}</div>
+          </div>
+          ${badge('Pending', 'b-amber')}
+        </div>`).join('');
+      _setHTML('dash-pendreq-list', rows);
+    }
+  }
 
   /* ══════════════════════════════════════════════════════════
      PANEL 6 — ADMIN ONLY: GLOBE + M365

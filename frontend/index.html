@@ -43,8 +43,11 @@
       </span>
     </div>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div id="login-error"
+      style="color:#f87171;font-size:12px;margin-top:10px;text-align:center;min-height:16px;">
+    </div>
   </div>
-</div>
+</div>  
 
 
 
@@ -221,6 +224,15 @@
               <span class="panel-count" id="dash-con-ct">—</span>
             </div>
             <div id="dash-con-list"></div>
+          </div>
+
+          <!-- ⑥ ADMIN — PENDING CONTRACT REQUESTS (NEW) -->
+          <div class="panel" id="dash-pendreq-wrap">
+            <div class="panel-hd">
+              <div class="panel-title">📩 Pending Contract Requests</div>
+              <span class="panel-count" id="dash-pendreq-ct">—</span>
+            </div>
+            <div id="dash-pendreq-list"></div>
           </div>
 
           <!-- ⑦ ADMIN — SUBSCRIPTIONS (NEW, hidden for non-admins) -->
@@ -614,8 +626,8 @@
               <thead><tr>
                 <th>Date</th>
                 <th>Other Party</th>
+                <th>Description</th>
                 <th>Validity</th>
-                <th>Expiry Status</th>
                 <th>Status</th>
               </tr></thead>
               <tbody id="con-tbody"></tbody>
