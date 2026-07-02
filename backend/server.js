@@ -61,8 +61,7 @@ app.get("/api/health", (req, res) => res.send("Server is running"));
    index.html, so deep links / refreshes on pages/dashboard.html
    style navigation still resolve. Registered LAST so it never
    shadows a real API route or a 404 from one. ✅ NEW ────────── */
-app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api")) return next();
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
