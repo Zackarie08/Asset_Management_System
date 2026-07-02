@@ -61,7 +61,7 @@ router.post("/withdraw", async (req, res) => {
 
     await logAction({
       user_id,
-      action_type: "UPDATE",
+      action_type: "WITHDRAW",
       module: "INVENTORY",
       description: `Withdraw ${qty}`,
       quantity: qty,
