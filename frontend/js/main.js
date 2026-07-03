@@ -272,7 +272,6 @@ function _renderFurTable() {
         <td class="td-strong">${f.furniture_name}</td>
         <td>${f.quantity}</td>
         <td class="td-mono">${f.date_of_purchase ? new Date(f.date_of_purchase).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : '—'}</td>
-        <td>${f.supplier || '—'}</td>
         <td>${f.price ? '₱' + Number(f.price).toLocaleString() : '—'}</td>
         <td>${f.location_name || '—'}</td>
         <td>${f.condition ? `<span class="badge ${condCls}">${f.condition}</span>` : '—'}</td>
@@ -603,7 +602,6 @@ function _renderITTable() {
         <td class="td-mono">${it.serial_number || '—'}</td>
         <td>${it.quantity}</td>
         <td>${_warrantyBadge(it.warranty_end_date)}</td>
-        <td>${it.supplier || '—'}</td>
         <td>${it.location_name || '—'}</td>
         <td>${it.status ? `<span class="badge ${statusCls}">${it.status}</span>` : '—'}</td>
       `;
@@ -668,17 +666,16 @@ async function dpITSupplies(id) {
         ${dpFieldFull('Asset Name', `<strong>${it.asset_name}</strong>`)}
         ${dpField('Serial / Model', it.serial_number || '—', 'mono')}
         ${dpField('Quantity', it.quantity)}
-        ${dpField('Reorder Level', it.reorder_level ?? '—')}
         ${dpField('Date Purchased', it.date_of_purchase ? new Date(it.date_of_purchase).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—')}
         ${dpField('Price', it.price ? '₱' + Number(it.price).toLocaleString() : '—')}
         ${dpField('Location', it.location_name || '—')}
         ${dpField('Status', it.status ? `<span class="badge ${statusCls}">${it.status}</span>` : '—')}
         ${dpField('Warranty', _warrantyBadge(it.warranty_end_date))}
         ${dpField('Warranty Expiry', it.warranty_end_date ? new Date(it.warranty_end_date).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—', 'mono')}
-        ${dpField('Supplier', it.supplier || '—')}
-        ${dpFieldFull('Remarks', it.remarks || '—')}
       </div>
     </div>
+
+    ${it.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', it.remarks)}</div></div>` : ''}
 
     ${isAdminUser() ? `
     <div class="dp-section">
@@ -1775,7 +1772,7 @@ function approveRequest(id) {
     // or 400 (already processed) previously still showed "Contract approved".
     if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
     showToast("Contract approved", "t-success");
-    addLog("UPDATE", "CONTRACT",
+    addLog("REQUEST", "CONTRACT",
       `Approved request | ${_currentContract?.other_party || id}`, id);
     refreshContractUI(dpCurrentId); // ✅ FIX: unified refresh
   })
@@ -1791,7 +1788,7 @@ function returnContract(id) {
       // same way every other contract action does.
       if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
       showToast("Contract returned", "t-success");
-      addLog("UPDATE", "CONTRACT",
+      addLog("REQUEST", "CONTRACT",
         `Returned contract | ${_currentContract?.other_party || id}`, id);
       refreshContractUI(dpCurrentId);
     })
@@ -1803,7 +1800,7 @@ function cancelRequest(id) {
     .then(res => {
       if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
       showToast("Request cancelled", "t-warning");
-      addLog("DELETE", "CONTRACT",
+      addLog("REQUEST", "CONTRACT",
         `Cancelled request | ${_currentContract?.other_party || id}`, id);
       refreshContractUI(dpCurrentId); // ✅ FIX: also refresh the table, not just the DP
     })
@@ -1821,7 +1818,7 @@ function denyRequest(id) {
     .then(res => {
       if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
       showToast("Request denied", "t-warning");
-      addLog("UPDATE", "CONTRACT",
+      addLog("REQUEST", "CONTRACT",
         `Denied request | ${_currentContract?.other_party || id}`, id);
       refreshContractUI(dpCurrentId); // ✅ FIX: unified refresh
     })
@@ -1847,14 +1844,20 @@ function toggleValidity() {
 }
 
 
-function refreshContractUI(id = null) {
-  renderContracts();
-
-  if (dpCurrentType === "contracts" && (id || dpCurrentId)) {
-    dpContract(id || dpCurrentId);
+let _contractRefreshInFlight = false;
+ 
+async function refreshContractUI(id = null) {
+  _contractRefreshInFlight = true;
+  try {
+    await renderContracts();
+    if (dpCurrentType === "contracts" && (id || dpCurrentId)) {
+      await dpContract(id || dpCurrentId);
+    }
+  } finally {
+    _contractRefreshInFlight = false;
   }
 }
-
+ 
 
 
 
@@ -1915,9 +1918,6 @@ async function renderFinance() {
       <td>${f.category}</td>
       <td>${range}</td>
       <td>${f.location}</td>
-      <td>
-        <button onclick="event.stopPropagation(); deleteFinance(${f.finance_id})">🗑️</button>
-      </td>
     `;
 
     tr.addEventListener("click", () => {
@@ -2630,7 +2630,7 @@ async function refreshDashboard() {
   _setText('dash-low-ct', `${lowStock.length} items`);
 
   if (lowStock.length === 0) {
-    _setHTML('dash-low-list', _emptyMsg('✅ All inventory levels are OK'));
+    _setHTML('dash-low-list', _emptyMsg('All inventory levels are OK'));
   } else {
     const rows = lowStock.slice(0, 6).map(i => {
       const critical = i.current_quantity === 0;
@@ -2736,7 +2736,7 @@ async function refreshDashboard() {
   _setText('dash-maint-ct', laptopHeader);
 
   if (laptopAlerts.length === 0 && !isMaintenanceMonth) {
-    _setHTML('dash-maint-list', _emptyMsg('✅ No laptop alerts'));
+    _setHTML('dash-maint-list', _emptyMsg('No laptop alerts'));
   } else {
     let html = '';
 
@@ -2753,7 +2753,7 @@ async function refreshDashboard() {
     }
 
     if (laptopAlerts.length === 0) {
-      html += _emptyMsg('✅ No other laptop alerts');
+      html += _emptyMsg('No other laptop alerts');
     } else {
       html += laptopAlerts.slice(0, 5).map(({ lp, reason, cls }) => `
         <div class="panel-row">
@@ -2796,7 +2796,7 @@ async function refreshDashboard() {
   _setText('dash-veh-ct', `${vehicleAlerts.length} alerts`);
 
   if (vehicleAlerts.length === 0 && !isFirstWorkingDay) {
-    _setHTML('dash-veh-list', _emptyMsg('✅ All vehicles on schedule'));
+    _setHTML('dash-veh-list', _emptyMsg('All vehicles on schedule'));
   } else {
     let html = '';
 
@@ -2813,7 +2813,7 @@ async function refreshDashboard() {
     }
 
     if (vehicleAlerts.length === 0) {
-      html += _emptyMsg('✅ No vehicle maintenance alerts');
+      html += _emptyMsg('No vehicle maintenance alerts');
     } else {
       html += vehicleAlerts.slice(0, 5).map(({ v, reason, cls }) => `
         <div class="panel-row">
@@ -2829,41 +2829,58 @@ async function refreshDashboard() {
     _setHTML('dash-veh-list', html);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     PANEL 5 — CONTRACTS
-  ══════════════════════════════════════════════════════════ */
-
-  const contractAlerts = [];
-
-  contracts.forEach(c => {
-    // ✅ Skip NA contracts — they never expire
-    if (c.validity_type === 'NA') return;
-
-    let expiryDate = null;
-    if (c.validity_type === 'YEAR' && c.valid_year) {
-      expiryDate = new Date(`${c.valid_year}-12-31`);
-    } else if (c.valid_to) {
-      expiryDate = new Date(c.valid_to);
-    }
-
-    if (!expiryDate) return;
-
+  
+/* ══════════════════════════════════════════════════════════
+   PANEL 5 — CONTRACTS (expiry alerts + pending requests merged)
+══════════════════════════════════════════════════════════ */
+ 
+const contractAlerts = [];
+ 
+contracts.forEach(c => {
+  // NA contracts never expire
+  if (c.validity_type === 'NA') return;
+ 
+  let expiryDate = null;
+  if (c.validity_type === 'YEAR' && c.valid_year) {
+    expiryDate = new Date(`${c.valid_year}-12-31`);
+  } else if (c.valid_to) {
+    expiryDate = new Date(c.valid_to);
+  }
+  if (!expiryDate) return;
+ 
   const daysLeft = daysFromNow(expiryDate);
-    if (daysLeft < 0)      contractAlerts.push({ c, reason: 'Expired', cls: 'red', daysLeft });
-    else if (daysLeft <= 30) contractAlerts.push({ c, reason: `Expires in ${daysLeft}d`, cls: 'amber', daysLeft });
-    // ✅ FIX (Finding 2 / Change 2): removed dead `c.status === 'PENDING'`
-    // check — a contract's own status is only ever IN_STORAGE or
-    // WITH_EMPLOYEE, never PENDING (that's a request status), so this
-    // branch could never fire. Pending-request visibility is now handled
-    // properly below via the dedicated "Pending Contract Requests" panel.
-  }); 
+  if (daysLeft < 0)        contractAlerts.push({ c, reason: 'Expired', cls: 'red', daysLeft });
+  else if (daysLeft <= 30) contractAlerts.push({ c, reason: `Expires in ${daysLeft}d`, cls: 'amber', daysLeft });
+});
+ 
+// Pending requests are only meaningful/visible to admins & super_admins
+const pendingContractRequests = isAdminUser()
+  ? contractRequests.filter(r => r.status === 'PENDING')
+  : [];
+ 
+const totalConItems = contractAlerts.length + pendingContractRequests.length;
+_setText('dash-con-ct', `${totalConItems} item${totalConItems === 1 ? '' : 's'}`);
+ 
+if (totalConItems === 0) {
+  _setHTML('dash-con-list', _emptyMsg('All contracts current — no pending requests'));
+} else {
+  let html = '';
 
-  _setText('dash-con-ct', `${contractAlerts.length} alerts`);
 
-  if (contractAlerts.length === 0) {
-    _setHTML('dash-con-list', _emptyMsg('✅ All contracts are current'));
-  } else {
-    const rows = contractAlerts.slice(0, 5).map(({ c, reason, cls }) => `
+  if (pendingContractRequests.length) {
+    html += pendingContractRequests.slice(0, 5).map(r => `
+      <div class="panel-row">
+        <div class="pr-dot amber"></div>
+        <div style="flex:1">
+          <div class="pr-name">${_esc(r.requested_name)}</div>
+          <div class="pr-meta">${_esc(r.other_party)} · ${_esc(r.description)} · Pending request</div>
+        </div>
+        ${badge('Pending', 'b-amber')}
+      </div>`).join('');
+  }
+ 
+  if (contractAlerts.length) {
+    html += contractAlerts.slice(0, 5).map(({ c, reason, cls }) => `
       <div class="panel-row">
         <div class="pr-dot ${cls}"></div>
         <div style="flex:1">
@@ -2872,37 +2889,9 @@ async function refreshDashboard() {
         </div>
         ${badge(reason, `b-${cls}`)}
       </div>`).join('');
-    _setHTML('dash-con-list', rows);
   }
-
-
-/* ══════════════════════════════════════════════════════════
-     PANEL — ADMIN ONLY: PENDING CONTRACT REQUESTS (NEW — Change 2)
-  ══════════════════════════════════════════════════════════ */
-
-  const pendReqPanel = document.getElementById('dash-pendreq-wrap');
-  if (pendReqPanel) pendReqPanel.style.display = isAdminUser() ? '' : 'none';
-
-  if (isAdminUser()) {
-    const pendingContractRequests = contractRequests.filter(r => r.status === 'PENDING');
-
-    _setText('dash-pendreq-ct', `${pendingContractRequests.length} pending`);
-
-    if (pendingContractRequests.length === 0) {
-      _setHTML('dash-pendreq-list', _emptyMsg('✅ No pending contract requests'));
-    } else {
-      const rows = pendingContractRequests.slice(0, 6).map(r => `
-        <div class="panel-row">
-          <div class="pr-dot amber"></div>
-          <div style="flex:1">
-            <div class="pr-name">${_esc(r.requested_name)}</div>
-            <div class="pr-meta">${_esc(r.other_party)} · ${_esc(r.description)}</div>
-          </div>
-          ${badge('Pending', 'b-amber')}
-        </div>`).join('');
-      _setHTML('dash-pendreq-list', rows);
-    }
-  }
+  _setHTML('dash-con-list', html);
+}
 
   /* ══════════════════════════════════════════════════════════
      PANEL 6 — ADMIN ONLY: GLOBE + M365
@@ -3142,33 +3131,29 @@ function initAllModules() {
 }
 
 let lastRequestCheck = 0;
-
+ 
 setInterval(async () => {
-
   if (document.hidden) return;
-
+  if (_contractRefreshInFlight) return; // ✅ FIX: don't race a live action refresh
+ 
   try {
     const res = await fetch(`${API_URL}/api/contracts/requests`);
     const data = await res.json();
-
+ 
     const latestTime = new Date(data[0]?.request_date || 0).getTime();
-
-    // ✅ only refresh if may new update
+ 
     if (latestTime !== lastRequestCheck) {
-
       lastRequestCheck = latestTime;
-
-      renderContracts();
-
+ 
+      await renderContracts();
+ 
       if (dpOpen && dpCurrentType === "contracts") {
-        dpContract(dpCurrentId);
+        await dpContract(dpCurrentId);
       }
     }
-
   } catch (e) {
     console.error("Polling error", e);
   }
-
 }, 3000);
 
 

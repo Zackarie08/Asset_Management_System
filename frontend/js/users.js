@@ -105,7 +105,6 @@ function _renderUserTable() {
       const tr = document.createElement('tr');
       tr.className = 'tr-clickable';
       tr.innerHTML = `
-        <td class="td-mono">${u.user_id}</td>
         <td class="td-strong">${u.name}</td>
         <td class="td-muted">${u.email}</td>
         <td>${u.department || '—'}</td>

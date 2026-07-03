@@ -217,22 +217,13 @@
             <div id="dash-veh-list"></div>
           </div>
 
-          <!-- ⑤ CONTRACT ALERTS (NEW) -->
+          <!-- ⑤ CONTRACTS (expiry alerts + pending requests, merged) -->
           <div class="panel">
             <div class="panel-hd">
-              <div class="panel-title">📄 Contract Alerts</div>
+              <div class="panel-title">📄 Contracts</div>
               <span class="panel-count" id="dash-con-ct">—</span>
             </div>
             <div id="dash-con-list"></div>
-          </div>
-
-          <!-- ⑥ ADMIN — PENDING CONTRACT REQUESTS (NEW) -->
-          <div class="panel" id="dash-pendreq-wrap">
-            <div class="panel-hd">
-              <div class="panel-title">📩 Pending Contract Requests</div>
-              <span class="panel-count" id="dash-pendreq-ct">—</span>
-            </div>
-            <div id="dash-pendreq-list"></div>
           </div>
 
           <!-- ⑦ ADMIN — SUBSCRIPTIONS (NEW, hidden for non-admins) -->
@@ -310,7 +301,7 @@
             <table>
               <thead><tr>
                 <th>Item Name</th><th>Category</th><th>Quantity</th>
-                <th>Unit</th><th>Location</th><th>Status</th><th>Actions</th>
+                <th>Unit</th><th>Location</th><th>Status</th>
               </tr></thead>
               <tbody id="inv-tbody"></tbody>
             </table>
@@ -394,7 +385,6 @@
                 <th>Asset Name</th>
                 <th>Qty</th>
                 <th>Date Purchased</th>
-                <th>Supplier</th>
                 <th>Price (₱)</th>
                 <th>Location</th>
                 <th>Condition</th>
@@ -473,7 +463,6 @@
                 <th>Serial / Model</th>
                 <th>Quantity</th>
                 <th>Warranty</th>
-                <th>Supplier</th>
                 <th>Location</th>
                 <th>Status</th>
               </tr></thead>
@@ -840,7 +829,6 @@
                   <th>Category</th>
                   <th>Range</th>
                   <th>Location</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="fin-tbody"></tbody>
@@ -1014,7 +1002,6 @@
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Department</th>
@@ -1179,14 +1166,6 @@
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-inv')">Cancel</button>
         <button class="btn btn-green" onclick="saveInvItem()">✅ Save Item</button>
-      </div>
-
-      <div class="form-grp">
-        <label>Attachments</label>
-        <input type="file" id="att-input"/>
-        <button class="btn btn-outline btn-sm" onclick="uploadAttachment()">Upload</button>
-
-        <div id="att-list"></div>
       </div>
 
     </div>

@@ -356,22 +356,6 @@ async function dpVehicle(id) {
       </div>
     </div>
 
-    <!-- General KM Progress (legacy bar) -->
-    <div class="dp-section">
-      <div class="dp-section-hd">📊 General KM Usage</div>
-      <div class="prog-bar-wrap">
-        <div class="prog-bar-labels">
-          <span>Since last service</span>
-          <span>${kmUsed.toLocaleString()} / ${threshold.toLocaleString()} km</span>
-        </div>
-        <div class="prog-bar-track">
-          <div class="prog-bar-fill" style="width:${pct}%;background:${
-            pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#22c55e'
-          }"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- Maintenance Plans -->
     <div class="dp-section" id="veh-plans-container-${id}">
       ${plansHTML}
@@ -392,9 +376,6 @@ async function dpVehicle(id) {
         <div class="dp-section-hd">⚡ Actions</div>
         <div class="dp-action-row">
         ${v.status !== 'UNDER_MAINTENANCE' ? `
-          <button class="btn btn-primary btn-sm" onclick="openMaintenanceChecklist(${v.vehicle_id})">
-            🔧 Put Under Maintenance
-          </button>
           <button class="btn btn-outline btn-sm" onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
             📊 Update Odometer
           </button>
@@ -411,10 +392,6 @@ async function dpVehicle(id) {
           <button class="btn btn-red btn-sm"
             onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')">
             🗑️ Delete
-          </button>
-          <button class="btn btn-outline btn-sm"
-            onclick="openAddPlan(${v.vehicle_id})">
-            ➕ Add Plan
           </button>
         </div>
       </div>
