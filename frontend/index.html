@@ -65,52 +65,68 @@
 ══════════════════════════════════════════════════════════ -->
 <div id="app">
 
-  <!-- SIDEBAR -->
+  <!-- SIDEBAR — icon-only at rest, expands on hover as a floating
+       overlay (see Sidebar_Redesign_Report.md). User info removed;
+       it now lives entirely in the topbar user menu below. -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-logo">
       <div class="sb-logo-icon">🏢</div>
-      <div>
+      <div class="sb-logo-text">
         <div class="sb-logo-name">GPCCI</div>
         <div class="sb-logo-sub">Asset Management System</div>
       </div>
     </div>
-
-    <div class="sb-role-badge">
-      <div class="sb-role-avatar" id="sb-avatar">SP</div>
-      <div>
-        <div class="sb-role-name" id="sb-uname">Sean Peralta</div>
-      </div>
-      <span class="sb-role-tag" id="sb-role-tag">Admin</span>
-    </div>
-
+ 
+    <!-- ✅ REMOVED: .sb-role-badge (avatar / name / role tag).
+         User identity now lives only in the topbar dropdown. -->
+ 
     <div class="sb-section-label">Navigation</div>
     <nav class="sb-nav" id="sb-nav">
-      <!-- Dynamically rendered based on role -->
+      <!-- Dynamically rendered based on role — see nav.js buildSidebar() -->
     </nav>
-
+ 
     <div class="sb-footer">
       <div class="logout-item" onclick="doLogout()">
-        <span class="nav-icon">🚪</span> Sign Out
+        <span class="nav-icon">🚪</span><span class="nav-label">Sign Out</span>
       </div>
     </div>
   </aside>
-
-  <!-- TOPBAR -->
-  <header class="topbar" id="topbar" style="left:var(--sb-width)">
+ 
+  <!-- TOPBAR — left side (breadcrumb) unchanged. Search box removed.
+       Right side is now a single user menu with a dropdown that
+       carries identity + role + logout. -->
+  <header class="topbar" id="topbar">
     <div class="topbar-breadcrumb">
-      <span class="tb-crumb-parent" id="tb-parent">GPCCI</span>
+      <span class="tb-crumb-parent" id="tb-parent">Asset Management System</span>
       <span class="tb-crumb-sep">›</span>
       <span class="tb-crumb-current" id="tb-current">Dashboard</span>
     </div>
     <div class="topbar-spacer"></div>
-    <div class="tb-search">🔍&nbsp; Quick search...</div>
-    <div class="tb-user">
-      <div class="tb-avatar" id="tb-avatar">MA</div>
-      <div>
-        <div class="tb-user-name" id="tb-uname">Maria Alonzo</div>
-        <div class="tb-user-role" id="tb-urole">Administrator</div>
+ 
+    <!-- ✅ REMOVED: .tb-search ("🔍 Quick search...") — unused, took
+         up space. See Topbar_UI_Improvement_Report.md -->
+ 
+    <!-- ✅ NEW: single user menu, replaces the old static .tb-user block -->
+    <div class="tb-user-menu" id="tb-user-menu">
+      <div class="tb-user" onclick="toggleUserMenu(event)">
+        <div class="tb-avatar" id="tb-avatar">MA</div>
+        <div>
+          <div class="tb-user-name" id="tb-uname">Maria Alonzo</div>
+          <div class="tb-user-role" id="tb-urole">Administrator</div>
+        </div>
+        <span class="tb-chevron">▼</span>
       </div>
-      <span class="tb-role-pill admin" id="tb-role-pill">Admin</span>
+ 
+      <div class="tb-dropdown">
+        <div class="tb-dropdown-hd">
+          <div class="tb-dropdown-name" id="tb-dropdown-name">Maria Alonzo</div>
+          <div class="tb-dropdown-email" id="tb-dropdown-email">maria@gpcci.org</div>
+          <span class="tb-dropdown-rolepill admin" id="tb-dropdown-rolepill">Admin</span>
+        </div>
+        <div class="tb-dropdown-item" onclick="closeUserMenu(); doLogout()">
+          <span>🚪</span> Sign Out
+        </div>
+      </div>
     </div>
   </header>
 

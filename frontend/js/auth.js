@@ -56,6 +56,7 @@ function doLogin() {
       user_id: data.user.user_id,
       name: data.user.name,
       role: data.user.role,
+      email: data.user.email,
       initials: data.user.name.substring(0,2).toUpperCase()
     };
     addLog("LOGIN", "USER", `User ${currentUser.name} logged in`, currentUser.user_id); // Part 5
@@ -84,22 +85,62 @@ function doLogout() {
   location.reload();
 }
 
+/* ────────────────────────────────────────────────────────────
+   TOPBAR USER MENU
+   ✅ NEW (Sidebar/Topbar Redesign): user identity + account
+   actions now live entirely in the topbar dropdown instead of
+   the sidebar. See Topbar_UI_Improvement_Report.md.
+──────────────────────────────────────────────────────────── */
+function toggleUserMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('tb-user-menu');
+  if (!menu) return;
+  menu.classList.toggle('open');
+}
+
+function closeUserMenu() {
+  const menu = document.getElementById('tb-user-menu');
+  if (menu) menu.classList.remove('open');
+}
+
+// Close the dropdown on any outside click, and on Escape.
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('tb-user-menu');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (!menu.contains(e.target)) closeUserMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeUserMenu();
+});
+
 function updateUserUI() {
   if (!currentUser) return;
 
-  // Sidebar
-  document.getElementById("sb-avatar").textContent = currentUser.initials;
-  document.getElementById("sb-uname").textContent = currentUser.name;
-  document.getElementById("sb-role-tag").textContent = currentUser.role;
+  const roleLabelMap = {
+    super_admin: 'Super Admin',
+    admin: 'Admin',
+    employee: 'Employee',
+    intern: 'Intern',
+  };
+  const roleLabel = roleLabelMap[currentUser.role] || currentUser.role;
 
-  // Topbar
-  document.getElementById("tb-avatar").textContent = currentUser.initials;
-  document.getElementById("tb-uname").textContent = currentUser.name;
-  document.getElementById("tb-urole").textContent = currentUser.role;
+  // Topbar trigger (avatar + name + role, collapsed summary)
+  _setTxtSafe("tb-avatar", currentUser.initials);
+  _setTxtSafe("tb-uname", currentUser.name);
+  _setTxtSafe("tb-urole", roleLabel);
 
-  const rolePill = document.getElementById("tb-role-pill");
-  rolePill.textContent = currentUser.role;
+  // Topbar dropdown panel (expanded identity + actions)
+  _setTxtSafe("tb-dropdown-name", currentUser.name);
+  _setTxtSafe("tb-dropdown-email", currentUser.email || '—');
 
-  // Reset classes to avoid "admin stuck"
-  rolePill.className = "tb-role-pill " + currentUser.role;
+  const pill = document.getElementById("tb-dropdown-rolepill");
+  if (pill) {
+    pill.textContent = roleLabel;
+    pill.className = "tb-dropdown-rolepill " + currentUser.role;
+  }
+}
+
+function _setTxtSafe(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
 }

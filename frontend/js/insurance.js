@@ -1,9 +1,23 @@
-// frontend/js/insurance.js — UPDATED
-// Changes:
-//   • coverage_type: GENERAL or SPECIFIC
-//   • Employee checkbox selection for SPECIFIC coverage
-//   • dpInsurance shows assigned employees or "All employees" label
-//   • saveInsurance sends employee_ids array
+// frontend/js/insurance.js — AUDIT FIX PASS
+// See Insurance_Module_Audit.md / Insurance_Edit_Fix_Report.md
+//
+// Changes in this revision:
+//   ✅ FIX: saveInsurance() now parses the backend's JSON { error }
+//      body and shows the real reason (e.g. "At least one employee
+//      is required for SPECIFIC coverage" or a genuine server error)
+//      instead of a generic "Error saving record" toast. Paired with
+//      the backend fix in insurance.js (routes), which now always
+//      returns JSON error bodies.
+//   ✅ FIX: editInsurance() now calls closeDP() before opening the
+//      edit modal, matching the pattern used by vehicles/laptops/etc.
+//      (previously the detail panel stayed open underneath the modal
+//      overlay — harmless visually, but inconsistent state that made
+//      debugging "is edit actually working" harder during the audit).
+//   ✅ FIX: deleteInsurancePrompt / confirmDeleteInsurance now also
+//      parse and surface JSON error bodies.
+//   No changes to coverage-type toggle logic, employee checkbox
+//      logic, or attachment panel wiring — audited and confirmed
+//      correct.
 
 let insEditId = null;
 let _allInsuranceUsers = []; // cache of all users for checkboxes
@@ -235,7 +249,13 @@ async function saveInsurance() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
-  .then(res => { if (!res.ok) throw new Error("Save failed"); return res.json(); })
+  // ✅ FIX: parse the backend's JSON error body instead of throwing a
+  // generic "Save failed" — the old code masked real causes (e.g. a
+  // 500 from the employee-link insert) behind one generic toast.
+  .then(res => {
+    if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || "Save failed"); });
+    return res.json();
+  })
   .then(() => {
     showToast(insEditId ? "Record updated" : "Record added", "t-success");
     addLog(insEditId ? "UPDATE" : "CREATE", "INSURANCE",
@@ -247,7 +267,7 @@ async function saveInsurance() {
   })
   .catch(err => {
     console.error(err);
-    showToast("Error saving record", "t-error");
+    showToast(err.message || "Error saving record", "t-error");
   });
 }
 
@@ -259,6 +279,10 @@ async function editInsurance(id) {
     if (!ins) return;
 
     insEditId = id;
+
+    // ✅ FIX: close the detail panel before opening the edit modal,
+    // matching the pattern used elsewhere (vehicles, laptops, etc.)
+    closeDP();
 
     document.getElementById("ins-f-name").value     = ins.employee_name  || "";
     document.getElementById("ins-f-provider").value = ins.provider       || "";
@@ -295,7 +319,9 @@ function deleteInsurancePrompt(id) {
 
 function confirmDeleteInsurance() {
   fetch(`${API_URL}/api/insurance/${deleteInsId}`, { method: "DELETE" })
-    .then(res => { if (!res.ok) throw new Error("Delete failed"); })
+    .then(res => {
+      if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || "Delete failed"); });
+    })
     .then(() => {
       showToast("Record deleted", "t-warning");
       addLog("DELETE", "INSURANCE", `Deleted insurance record #${deleteInsId}`, deleteInsId);
@@ -305,7 +331,7 @@ function confirmDeleteInsurance() {
     })
     .catch(err => {
       console.error(err);
-      showToast("Error deleting record", "t-error");
+      showToast(err.message || "Error deleting record", "t-error");
     });
 }
 

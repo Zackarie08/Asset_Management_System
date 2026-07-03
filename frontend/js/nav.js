@@ -1,11 +1,14 @@
 // ============================================================
 // nav.js — Sidebar navigation + page routing
-// CHANGES:
-//  - Removed globe, m365, master-subscriptions from ADMIN_NAV
-//    (merged into unified "subscriptions" module)
-//  - openDP renderers still include globe/m365/subscriptions
-//    since unified table still routes to individual DPs
-//  - insurance dpType added to openDP renderer map
+// CHANGES (this pass — Sidebar Redesign):
+//  - buildSidebar(): nav item label text is now wrapped in a
+//    <span class="nav-label"> so style.css can fade/slide it in
+//    only while the sidebar is hovered/expanded (icon-only at rest).
+//    Previously the label was a bare text node sibling of the icon,
+//    which meant it couldn't be independently hidden without also
+//    hiding the icon.
+//  - No functional changes to navigate()/_loadPageData()/
+//    refreshPageActions() — those were already correct.
 // ============================================================
 
 function buildSidebar() {
@@ -25,13 +28,15 @@ function buildSidebar() {
     const div = document.createElement("div");
     div.className = "nav-item" + (item.id === "dashboard" ? " active" : "");
     div.id        = "nav-" + item.id;
+    div.title     = item.label; // native tooltip while collapsed
     div.onclick   = () => navigate(item.id, div);
 
     let extras = "";
     if (item.badge) extras  = `<span class="nav-badge" id="nb-${item.badge}" style="display:none">0</span>`;
     if (item.admin) extras += `<span class="nav-admin-tag">Admin</span>`;
 
-    div.innerHTML = `<span class="nav-icon">${item.icon}</span> ${item.label} ${extras}`;
+    // ✅ FIX: label now wrapped so it can be hidden independently of the icon
+    div.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${extras}`;
     nav.appendChild(div);
   });
 }

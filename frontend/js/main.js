@@ -338,14 +338,14 @@ async function dpFurniture(id) {
         ${dpFieldFull('Asset Name', `<strong>${f.furniture_name}</strong>`)}
         ${dpField('Quantity', f.quantity)}
         ${dpField('Date Purchased', f.date_of_purchase ? new Date(f.date_of_purchase).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—')}
-        ${dpField('Supplier', f.supplier || '—')}
         ${dpField('Price / Unit', f.price ? '₱' + Number(f.price).toLocaleString() : '—')}
         ${dpField('Total Value', f.price && f.quantity ? '₱' + (Number(f.price) * f.quantity).toLocaleString() : '—')}
         ${dpField('Location', f.location_name || '—')}
         ${dpField('Condition', f.condition ? `<span class="badge ${condCls}">${f.condition}</span>` : '—')}
-        ${dpFieldFull('Remarks', f.remarks || '—')}
       </div>
     </div>
+
+    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
 
     ${isAdminUser() ? `
     <div class="dp-section">
@@ -2501,7 +2501,6 @@ function dpUser(id) {
     <div class="dp-section">
       <div class="dp-section-hd">👤 User Details</div>
       <div class="dp-grid">
-        ${dpField('ID',         `#${u.user_id}`, 'mono')}
         ${dpField('Name',       u.name)}
         ${dpField('Email',      u.email)}
         ${dpField('Department', u.department || '—')}

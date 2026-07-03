@@ -1,12 +1,50 @@
-// backend/routes/insurance.js — UPDATED
-// Changes:
-//   • coverage_type field: 'GENERAL' or 'SPECIFIC'
-//   • insurance_employees linking table support
-//   • GET /api/insurance/:id now includes assigned employees
+// backend/routes/insurance.js — AUDIT FIX PASS
+// See Insurance_Module_Audit.md for the full investigation.
+//
+// Changes in this revision:
+//   ✅ FIX #1 (root-cause candidate for "Edit doesn't work"):
+//      insertEmployeeLink() previously used
+//        INSERT ... ON CONFLICT DO NOTHING
+//      "ON CONFLICT DO NOTHING" with no explicit conflict target
+//      requires Postgres to find a matching UNIQUE or EXCLUSION
+//      constraint on (insurance_id, user_id). If that constraint
+//      was never added to insurance_employees (schema DDL wasn't
+//      provided for this audit, so this couldn't be verified
+//      directly), every save of a SPECIFIC-coverage record with
+//      1+ employees throws:
+//        "there is no unique or exclusion constraint matching the
+//         ON CONFLICT specification"
+//      which is caught by the route's try/catch and returned as a
+//      generic 500. Because the OLD frontend only showed a generic
+//      "Error saving record" toast, this would look exactly like
+//      "Edit doesn't work" to a user, while GENERAL-coverage saves
+//      (no employee insert) would work fine — matching the reported
+//      symptom pattern. Replaced with an explicit existence check
+//      that has no dependency on a unique constraint existing.
+//   ✅ FIX #2: All routes now return JSON error bodies ({ error })
+//      instead of plain-text .send(), consistent with contracts.js /
+//      subscriptions.js / globe.js, so the frontend can display the
+//      real failure reason instead of a generic message.
+//   ✅ FIX #3: PUT /:id and DELETE /:id now 404 when the record
+//      doesn't exist instead of silently succeeding.
 
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../db');
+
+/* ── helper: link an employee to an insurance record without
+   depending on a DB-level unique constraint existing ───────── */
+async function linkEmployeeIfMissing(insuranceId, userId) {
+  const existing = await pool.query(
+    'SELECT 1 FROM insurance_employees WHERE insurance_id=$1 AND user_id=$2',
+    [insuranceId, userId]
+  );
+  if (existing.rows.length) return;
+  await pool.query(
+    'INSERT INTO insurance_employees (insurance_id, user_id) VALUES ($1,$2)',
+    [insuranceId, userId]
+  );
+}
 
 // GET ALL
 router.get('/', async (req, res) => {
@@ -16,8 +54,8 @@ router.get('/', async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error fetching insurance records');
+    console.error('Insurance GET /', err);
+    res.status(500).json({ error: 'Error fetching insurance records' });
   }
 });
 
@@ -48,8 +86,8 @@ router.get('/:id', async (req, res) => {
 
     res.json(ins);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error fetching insurance record');
+    console.error('Insurance GET /:id', err);
+    res.status(500).json({ error: 'Error fetching insurance record' });
   }
 });
 
@@ -62,7 +100,15 @@ router.post('/', async (req, res) => {
       coverage_type, employee_ids
     } = req.body;
 
+    if (!employee_name || !provider) {
+      return res.status(400).json({ error: 'employee_name and provider are required' });
+    }
+
     const coverage = coverage_type || 'GENERAL';
+
+    if (coverage === 'SPECIFIC' && (!Array.isArray(employee_ids) || employee_ids.length === 0)) {
+      return res.status(400).json({ error: 'At least one employee is required for SPECIFIC coverage' });
+    }
 
     const result = await pool.query(
       `INSERT INTO insurance
@@ -78,20 +124,17 @@ router.post('/', async (req, res) => {
 
     const ins = result.rows[0];
 
-    // If SPECIFIC coverage, insert employee assignments
+    // ✅ FIX #1: existence-check insert instead of ON CONFLICT DO NOTHING
     if (coverage === 'SPECIFIC' && Array.isArray(employee_ids) && employee_ids.length > 0) {
       for (const uid of employee_ids) {
-        await pool.query(
-          'INSERT INTO insurance_employees (insurance_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-          [ins.insurance_id, uid]
-        );
+        await linkEmployeeIfMissing(ins.insurance_id, uid);
       }
     }
 
     res.json(ins);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error creating insurance record');
+    console.error('Insurance POST /', err);
+    res.status(500).json({ error: 'Error creating insurance record' });
   }
 });
 
@@ -104,7 +147,24 @@ router.put('/:id', async (req, res) => {
       coverage_type, employee_ids
     } = req.body;
 
+    if (!employee_name || !provider) {
+      return res.status(400).json({ error: 'employee_name and provider are required' });
+    }
+
     const coverage = coverage_type || 'GENERAL';
+
+    if (coverage === 'SPECIFIC' && (!Array.isArray(employee_ids) || employee_ids.length === 0)) {
+      return res.status(400).json({ error: 'At least one employee is required for SPECIFIC coverage' });
+    }
+
+    // ✅ FIX #3: 404 instead of silently "succeeding" on a missing id
+    const existing = await pool.query(
+      'SELECT insurance_id FROM insurance WHERE insurance_id=$1',
+      [req.params.id]
+    );
+    if (!existing.rows.length) {
+      return res.status(404).json({ error: 'Insurance record not found' });
+    }
 
     await pool.query(
       `UPDATE insurance SET
@@ -125,19 +185,17 @@ router.put('/:id', async (req, res) => {
       [req.params.id]
     );
 
+    // ✅ FIX #1: existence-check insert instead of ON CONFLICT DO NOTHING
     if (coverage === 'SPECIFIC' && Array.isArray(employee_ids) && employee_ids.length > 0) {
       for (const uid of employee_ids) {
-        await pool.query(
-          'INSERT INTO insurance_employees (insurance_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-          [req.params.id, uid]
-        );
+        await linkEmployeeIfMissing(req.params.id, uid);
       }
     }
 
-    res.sendStatus(200);
+    res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error updating insurance');
+    console.error('Insurance PUT /:id', err);
+    res.status(500).json({ error: 'Error updating insurance record' });
   }
 });
 
@@ -149,14 +207,20 @@ router.delete('/:id', async (req, res) => {
       'DELETE FROM insurance_employees WHERE insurance_id=$1',
       [req.params.id]
     );
-    await pool.query(
-      'DELETE FROM insurance WHERE insurance_id=$1',
+    const result = await pool.query(
+      'DELETE FROM insurance WHERE insurance_id=$1 RETURNING insurance_id',
       [req.params.id]
     );
-    res.sendStatus(200);
+
+    // ✅ FIX #3
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'Insurance record not found' });
+    }
+
+    res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error deleting insurance');
+    console.error('Insurance DELETE /:id', err);
+    res.status(500).json({ error: 'Error deleting insurance record' });
   }
 });
 
@@ -172,8 +236,8 @@ router.get('/:id/employees', async (req, res) => {
     `, [req.params.id]);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error fetching assigned employees');
+    console.error('Insurance GET /:id/employees', err);
+    res.status(500).json({ error: 'Error fetching assigned employees' });
   }
 });
 
