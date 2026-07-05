@@ -821,21 +821,156 @@ let cachedLp = null;
 let cachedHistory = [];
 let cachedMaintenance = [];
 
+// ── Filter/pagination state ──
+let lpSearchQuery    = '';
+let lpFilterStatus   = 'all';
+let lpFilterLocation = 'all';
+let lpFilterWarranty = 'all';
+let currentLpPage    = 1;
+const lpPerPage      = 20;
+let _allLaptops      = [];
+let _lpRenderToken   = 0; 
 
-async function renderLaptops() {
-  const res = await fetch(`${API_URL}/api/laptops`);
-  const data = await res.json();
+
+function _lpWarrantyCategory(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const w = new Date(dateStr);
+  const daysLeft = Math.ceil((w - today) / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0)   return 'expired';
+  if (daysLeft <= 30) return 'expiring';
+  return 'active';
+}
+
+function _lpMaintenanceStatus(maintRecords) {
+  const now   = new Date();
+  const month = now.getMonth() + 1;
+  const isMaintMonth = (month === 6 || month === 12);
+  if (!isMaintMonth) return null;
+
+  const hasCheck = maintRecords.some(m => {
+    const d = new Date(m.check_date);
+    return d.getMonth() + 1 === month && d.getFullYear() === now.getFullYear();
+  });
+  return hasCheck ? 'checked' : 'due';
+}
+
+function _lpMaintenanceBadge(status) {
+  if (status === 'due')     return `<span class="badge b-amber">⚠️ Check Due</span>`;
+  if (status === 'checked') return `<span class="badge b-green">✅ Checked</span>`;
+  return '—';
+}
+
+function applyLpFilters() {
+  lpFilterStatus   = document.getElementById('lp-filter-status').value;
+  lpFilterLocation = document.getElementById('lp-filter-location').value;
+  lpFilterWarranty = document.getElementById('lp-filter-warranty').value;
+  currentLpPage    = 1;
+  _renderLpTable();
+}
+
+function _filterLaptops(data) {
+  return data.filter(lp => {
+
+    // Search — asset no., description, serial
+    if (lpSearchQuery) {
+      const haystack = `${lp.asset_number} ${lp.item_description} ${lp.serial_number || ''}`.toLowerCase();
+      if (!haystack.includes(lpSearchQuery)) return false;
+    }
+
+    // Status filter
+    if (lpFilterStatus !== 'all' && lp.status !== lpFilterStatus) return false;
+
+    // Location filter (by location_id)
+    if (lpFilterLocation !== 'all' && String(lp.current_location) !== String(lpFilterLocation)) return false;
+
+    // Warranty filter
+    if (lpFilterWarranty !== 'all') {
+      if (!lp.warranty_end_date) return false;
+      if (_lpWarrantyCategory(lp.warranty_end_date) !== lpFilterWarranty) return false;
+    }
+
+    return true;
+  });
+}
+
+function _renderLpPagination(total) {
+  const container = document.getElementById('lp-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / lpPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentLpPage === 1;
+  prev.onclick = () => { currentLpPage--; _renderLpTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentLpPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentLpPage = i; _renderLpTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentLpPage === totalPages;
+  next.onclick = () => { currentLpPage++; _renderLpTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
+async function _renderLpTable() {
+  const myToken = ++_lpRenderToken;   // ✅ mark this call as the latest
+
+  const filtered  = _filterLaptops(_allLaptops);
+  const total     = filtered.length;
+  const start     = (currentLpPage - 1) * lpPerPage;
+  const paginated = filtered.slice(start, start + lpPerPage);
+
+  if (paginated.length === 0) {
+    if (myToken !== _lpRenderToken) return; // a newer render started — abort this one
+    const tbody = document.getElementById('lp-tbody');
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--slate-400)">No laptops found.</td></tr>`;
+    document.getElementById('lp-ct').textContent = `${total} units`;
+    _renderLpPagination(total);
+    return;
+  }
+
+  // Fetch maintenance records only for the rows actually being shown (page size, not full list)
+  const maintResults = await Promise.all(
+    paginated.map(lp =>
+      fetch(`${API_URL}/api/laptop-maintenance/${lp.laptop_id}`)
+        .then(r => r.json())
+        .catch(() => [])
+    )
+  );
+
+  // ✅ If another _renderLpTable() call started while we were waiting on the
+  // maintenance fetches above, this call is stale — drop it instead of
+  // appending on top of whatever the newer call already wrote.
+  if (myToken !== _lpRenderToken) return;
 
   const tbody = document.getElementById('lp-tbody');
-  tbody.innerHTML = '';
+  tbody.innerHTML = '';   // ✅ clear right before writing, not before the await
 
-  data.forEach(lp => {
-
+  paginated.forEach((lp, i) => {
     const sCls = {
       Active: 'b-green',
       'For Repair': 'b-red',
       Disposed: 'b-slate'
     }[lp.status] || 'b-slate';
+
+    const maintStatus = _lpMaintenanceStatus(maintResults[i]);
 
     const tr = document.createElement('tr');
     tr.className = 'tr-clickable';
@@ -845,15 +980,49 @@ async function renderLaptops() {
       <td>${lp.item_description}</td>
       <td>${lp.current_user_id || '—'}</td>
       <td>${badge(lp.status, sCls)}</td>
-      <td>${lp.warranty_end_date || '-'}</td>
+      <td>${_warrantyBadge(lp.warranty_end_date)}</td>
+      <td>${_lpMaintenanceBadge(maintStatus)}</td>
     `;
 
-    tr.addEventListener("click", () => {
-      openDP("laptop", lp.laptop_id, tr);
-    });
-
+    tr.addEventListener('click', () => openDP('laptop', lp.laptop_id, tr));
     tbody.appendChild(tr);
   });
+
+  document.getElementById('lp-ct').textContent = `${total} units`;
+  _renderLpPagination(total);
+}
+
+async function _loadLpLocationsFilter() {
+  try {
+    const res    = await fetch(`${API_URL}/api/location`);
+    const data   = await res.json();
+    const select = document.getElementById('lp-filter-location');
+    if (!select) return;
+    const prev = select.value;
+    select.innerHTML = '<option value="all">Location: All</option>';
+    data.forEach(loc => {
+      const opt = document.createElement('option');
+      opt.value = loc.location_id;
+      opt.textContent = loc.location_name;
+      select.appendChild(opt);
+    });
+    if ([...select.options].some(o => o.value === prev)) select.value = prev;
+  } catch (err) {
+    console.error('Failed to load laptop location filter', err);
+  }
+}
+
+async function renderLaptops() {
+  try {
+    const res    = await fetch(`${API_URL}/api/laptops`);
+    _allLaptops  = await res.json();
+    await _loadLpLocationsFilter();
+    currentLpPage = 1;
+    await _renderLpTable();
+  } catch (err) {
+    console.error('renderLaptops error:', err);
+    showToast('Failed to load laptops', 't-error');
+  }
 }
 
 async function dpLaptop(id, useCache = false) {
@@ -1347,6 +1516,34 @@ function getMaintenanceAlert() {
 
 let deleteContractId = null;
 
+// ── Filter/pagination state ──
+let conSearchQuery    = '';
+let conFilterValidity = 'all';
+let conFilterExpiry   = 'all';
+let conFilterStatus   = 'all';
+let conFilterDate     = 'all';
+let conDateFrom       = '';
+let conDateTo         = '';
+let currentConPage    = 1;
+const conPerPage      = 20;
+let _allContracts     = [];
+
+// ── Shared expiry computation (used by table + filters) ──
+function _computeContractExpiry(c) {
+  if (c.validity_type === 'NA') {
+    return { badge: `<span class="badge b-slate">N/A</span>`, status: 'na' };
+  }
+  const expiryDate = c.validity_type === "YEAR"
+    ? new Date(`${c.valid_year}-12-31`)
+    : c.valid_to ? new Date(c.valid_to) : null;
+
+  if (!expiryDate) return { badge: '—', status: 'na' };
+
+  const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+  if (days < 0)   return { badge: `<span class="badge b-red">Expired</span>`, status: 'expired' };
+  if (days <= 30) return { badge: `<span class="badge b-amber">Expires in ${days}d</span>`, status: 'expiring' };
+  return { badge: `<span class="badge b-green">Valid</span>`, status: 'valid' };
+}
 // ✅ NEW: single source of truth for the contract status badge.
 // Shows the actual current holder ("With <Name>") instead of the raw
 // WITH_EMPLOYEE status string. Used by both the table and the detail panel
@@ -1364,13 +1561,94 @@ function _contractStatusLabel(c) {
 
 async function renderContracts() {
   try {
-    const res  = await fetch(`${API_URL}/api/contracts`);
-    const data = await res.json();
+    const res     = await fetch(`${API_URL}/api/contracts`);
+    _allContracts = await res.json();
+    currentConPage = 1;
+    _renderConTable();
+  } catch (err) {
+    console.error("renderContracts error:", err);
+    showToast("Failed to load contracts", "t-error");
+  }
+}
 
-    const tbody = document.getElementById("con-tbody");
-    tbody.innerHTML = "";
+function applyConFilters() {
+  conFilterValidity = document.getElementById('con-filter-validity').value;
+  conFilterExpiry   = document.getElementById('con-filter-expiry').value;
+  conFilterStatus   = document.getElementById('con-filter-status').value;
+  conFilterDate     = document.getElementById('con-filter-date').value;
+  conDateFrom       = document.getElementById('con-date-from')?.value || '';
+  conDateTo         = document.getElementById('con-date-to')?.value   || '';
+  currentConPage    = 1;
 
-    data.forEach(c => {
+  const customRange = document.getElementById('con-custom-range');
+  if (customRange) {
+    customRange.style.display = conFilterDate === 'custom' ? 'flex' : 'none';
+  }
+
+  _renderConTable();
+}
+
+function _filterContracts(data) {
+  const now      = new Date();
+  const thisYear = now.getFullYear();
+
+  return data.filter(c => {
+
+    // Search — other party or description
+    if (conSearchQuery) {
+      const haystack = `${c.other_party} ${c.description}`.toLowerCase();
+      if (!haystack.includes(conSearchQuery)) return false;
+    }
+
+    // Validity type filter
+    if (conFilterValidity !== 'all' && c.validity_type !== conFilterValidity) return false;
+
+    // Expiry status filter
+    if (conFilterExpiry !== 'all') {
+      const { status } = _computeContractExpiry(c);
+      if (status !== conFilterExpiry) return false;
+    }
+
+    // Status filter
+    if (conFilterStatus !== 'all' && c.status !== conFilterStatus) return false;
+
+    // Date filter (on contract_date)
+    if (conFilterDate !== 'all' && c.contract_date) {
+      const d = new Date(c.contract_date);
+
+      if (conFilterDate === 'this_year') {
+        if (d.getFullYear() !== thisYear) return false;
+
+      } else if (conFilterDate === 'last_year') {
+        if (d.getFullYear() !== thisYear - 1) return false;
+
+      } else if (conFilterDate === 'custom') {
+        if (conDateFrom && d < new Date(conDateFrom)) return false;
+        if (conDateTo) {
+          const to = new Date(conDateTo);
+          to.setHours(23, 59, 59, 999);
+          if (d > to) return false;
+        }
+      }
+    }
+
+    return true;
+  });
+}
+
+function _renderConTable() {
+  const filtered  = _filterContracts(_allContracts);
+  const total     = filtered.length;
+  const start     = (currentConPage - 1) * conPerPage;
+  const paginated = filtered.slice(start, start + conPerPage);
+
+  const tbody = document.getElementById("con-tbody");
+  tbody.innerHTML = "";
+
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--slate-400)">No contracts found.</td></tr>`;
+  } else {
+    paginated.forEach(c => {
       let validity = '—';
       if (c.validity_type === 'NA') {
         validity = '<span class="badge b-slate">No Expiration</span>';
@@ -1380,22 +1658,7 @@ async function renderContracts() {
         validity = `${c.valid_from || '—'} — ${c.valid_to || '—'}`;
       }
 
-      // ✅ NA: never expired, never expiring
-      let expiryBadge = "";
-      if (c.validity_type === 'NA') {
-        expiryBadge = `<span class="badge b-slate">N/A</span>`;
-      } else {
-        const expiryDate = c.validity_type === "YEAR"
-          ? new Date(`${c.valid_year}-12-31`)
-          : c.valid_to ? new Date(c.valid_to) : null;
-
-        if (expiryDate) {
-          const days = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-          if (days < 0)        expiryBadge = `<span class="badge b-red">Expired</span>`;
-          else if (days <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${days}d</span>`;
-          else                 expiryBadge = `<span class="badge b-green">Valid</span>`;
-        }
-      }
+      const { badge: expiryBadge } = _computeContractExpiry(c);
 
       const tr = document.createElement("tr");
       tr.className = "tr-clickable";
@@ -1409,12 +1672,46 @@ async function renderContracts() {
       tr.onclick = () => openDP("contracts", c.contract_id, tr);
       tbody.appendChild(tr);
     });
-
-    document.getElementById("con-ct").textContent = data.length + " records";
-  } catch (err) {
-    console.error("renderContracts error:", err);
-    showToast("Failed to load contracts", "t-error");
   }
+
+  document.getElementById("con-ct").textContent = total + " records";
+  _renderConPagination(total);
+}
+
+function _renderConPagination(total) {
+  const container = document.getElementById('con-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / conPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentConPage === 1;
+  prev.onclick = () => { currentConPage--; _renderConTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentConPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentConPage = i; _renderConTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentConPage === totalPages;
+  next.onclick = () => { currentConPage++; _renderConTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
 }
 
 
@@ -1896,38 +2193,123 @@ const FIN_CATEGORY_MAP = {
   // ✅ add more later here
 };
 
-async function renderFinance() {
-  const res = await fetch(`${API_URL}/api/finance-documents`);
-  const data = await res.json();
+// ── Filter/pagination state ──
+let finSearchQuery    = '';
+let finFilterCategory = 'all';
+let finFilterLocation = 'all';
+let currentFinPage    = 1;
+const finPerPage      = 20;
+let _allFinance       = [];
+
+function _finRangeStr(f) {
+  const start = String(f.range_start).padStart(4,'0');
+  const end   = String(f.range_end).padStart(4,'0');
+  return `${f.category_code}${f.year}${start} - ${f.category_code}${f.year}${end}`;
+}
+
+function applyFinFilters() {
+  finFilterCategory = document.getElementById('fin-filter-category').value;
+  finFilterLocation = document.getElementById('fin-filter-location').value;
+  currentFinPage    = 1;
+  _renderFinTable();
+}
+
+function _filterFinance(data) {
+  return data.filter(f => {
+
+    // Search — year, category, folder #, range
+    if (finSearchQuery) {
+      const haystack = `${f.year} ${f.category} ${f.folder_number} ${_finRangeStr(f)}`.toLowerCase();
+      if (!haystack.includes(finSearchQuery)) return false;
+    }
+
+    // Category filter
+    if (finFilterCategory !== 'all' && f.category !== finFilterCategory) return false;
+
+    // Location filter
+    if (finFilterLocation !== 'all' && f.location !== finFilterLocation) return false;
+
+    return true;
+  });
+}
+
+function _renderFinPagination(total) {
+  const container = document.getElementById('fin-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / finPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentFinPage === 1;
+  prev.onclick = () => { currentFinPage--; _renderFinTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentFinPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentFinPage = i; _renderFinTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentFinPage === totalPages;
+  next.onclick = () => { currentFinPage++; _renderFinTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
+function _renderFinTable() {
+  const filtered  = _filterFinance(_allFinance);
+  const total     = filtered.length;
+  const start     = (currentFinPage - 1) * finPerPage;
+  const paginated = filtered.slice(start, start + finPerPage);
 
   const tbody = document.getElementById('fin-tbody');
   tbody.innerHTML = "";
 
-  data.forEach(f => {
-    const start = String(f.range_start).padStart(4,'0');
-    const end   = String(f.range_end).padStart(4,'0');
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--slate-400)">No folders found.</td></tr>`;
+  } else {
+    paginated.forEach(f => {
+      const tr = document.createElement("tr");
+      tr.className = "tr-clickable";
 
-    const range = `${f.category_code}${f.year}${start} - ${f.category_code}${f.year}${end}`;
+      tr.innerHTML = `
+        <td>${f.year}</td>
+        <td>${f.folder_number}</td>
+        <td>${f.category}</td>
+        <td>${_finRangeStr(f)}</td>
+        <td>${f.location}</td>
+      `;
 
-    const tr = document.createElement("tr");
-    tr.className = "tr-clickable";
+      tr.addEventListener("click", () => {
+        openDP("finance", f.finance_id, tr);
+      });
 
-    tr.innerHTML = `
-      <td>${f.year}</td>
-      <td>${f.folder_number}</td>
-      <td>${f.category}</td>
-      <td>${range}</td>
-      <td>${f.location}</td>
-    `;
-
-    tr.addEventListener("click", () => {
-      openDP("finance", f.finance_id, tr);
+      tbody.appendChild(tr);
     });
+  }
 
-    tbody.appendChild(tr);
-  });
+  document.getElementById("fin-ct").innerText = total + " folders";
+  _renderFinPagination(total);
+}
 
-  document.getElementById("fin-ct").innerText = data.length + " folders";
+async function renderFinance() {
+  const res  = await fetch(`${API_URL}/api/finance-documents`);
+  _allFinance = await res.json();
+  currentFinPage = 1;
+  _renderFinTable();
 }
 
 async function saveFinance() {
@@ -2515,11 +2897,13 @@ function dpUser(id) {
         ${canModify ? `
           <button class="btn btn-primary btn-sm"
             onclick="editUser(${u.user_id})">✏️ Edit</button>
-          <button class="btn btn-outline btn-sm"
-            onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')">🔑 Reset Password</button>
+        ` : ''}
+        <button class="btn btn-outline btn-sm"
+          onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')">🔑 Reset Password</button>
+        ${canModify ? `
           <button class="btn btn-red btn-sm"
             onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')">🗑️ Delete</button>
-        ` : `<span class="td-muted">Super Admin — protected</span>`}
+        ` : `<span class="td-muted" style="margin-left:6px">Edit/Delete disabled for Super Admin</span>`}
       </div>
     </div>` : ''}
   `;
@@ -3125,6 +3509,36 @@ function initAllModules() {
       itSearchQuery = itSearch.value.trim().toLowerCase();
       currentITPage = 1;
       _renderITTable();
+    });
+  }
+
+  // ── Contracts search listener ──
+  const conSearch = document.getElementById('con-search');
+  if (conSearch) {
+    conSearch.addEventListener('input', () => {
+      conSearchQuery = conSearch.value.trim().toLowerCase();
+      currentConPage = 1;
+      _renderConTable();
+    });
+  }
+
+  // ── Finance search listener ──
+  const finSearch = document.getElementById('fin-search');
+  if (finSearch) {
+    finSearch.addEventListener('input', () => {
+      finSearchQuery = finSearch.value.trim().toLowerCase();
+      currentFinPage = 1;
+      _renderFinTable();
+    });
+  }
+
+  // ── Laptop search listener ──
+  const lpSearch = document.getElementById('lp-search');
+  if (lpSearch) {
+    lpSearch.addEventListener('input', () => {
+      lpSearchQuery = lpSearch.value.trim().toLowerCase();
+      currentLpPage = 1;
+      _renderLpTable();
     });
   }
 }

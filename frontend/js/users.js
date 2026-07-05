@@ -83,7 +83,7 @@ function _renderUserPagination(total) {
 
 /* ── RENDER TABLE (client-side filter + paginate) ───────── */
 function _renderUserTable() {
-  const filtered  = _filterUsers(_allUsers);
+  const filtered  = _filterUsers(_allUsers).sort((a, b) => a.name.localeCompare(b.name));
   const total     = filtered.length;
   const start     = (currentUserPage - 1) * usersPerPage;
   const paginated = filtered.slice(start, start + usersPerPage);

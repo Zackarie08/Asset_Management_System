@@ -278,9 +278,6 @@
               placeholder="🔍 Search items..."
               style="font-size:12px;padding:5px 10px;width:180px;"
             />
-            <select class="form-ctrl" id="inv-sort" onchange="applyInvFilters()" style="font-size:12px;padding:5px 10px;width:auto;">
-              <option value="az">Sort: A–Z</option>
-            </select>
             <select class="form-ctrl" id="inv-filter-unit" onchange="applyInvFilters()" style="font-size:12px;padding:5px 10px;width:auto;">
               <option value="all">Unit: All</option>
               <option value="Piece">Piece</option>
@@ -495,13 +492,53 @@
 
       <!-- ════════════════ LAPTOPS ════════════════ -->
       <section class="page" id="page-laptops">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Laptop Management</div>
-            <div class="pg-sub">Lifecycle, assignment, maintenance · Click row for full details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="lp-search"
+              class="form-ctrl"
+              placeholder="🔍 Search asset no., description, serial..."
+              style="font-size:12px; padding:5px 10px; width:220px;"
+            />
+
+            <!-- Status filter -->
+            <select class="form-ctrl" id="lp-filter-status" onchange="applyLpFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Status: All</option>
+              <option value="Active">Active</option>
+              <option value="For Repair">For Repair</option>
+              <option value="Disposed">Disposed</option>
+            </select>
+
+            <!-- Location filter -->
+            <select class="form-ctrl" id="lp-filter-location" onchange="applyLpFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Location: All</option>
+            </select>
+
+            <!-- Warranty filter -->
+            <select class="form-ctrl" id="lp-filter-warranty" onchange="applyLpFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Warranty: All</option>
+              <option value="active">Active</option>
+              <option value="expiring">Expiring Soon</option>
+              <option value="expired">Expired</option>
+            </select>
+
           </div>
-          <div class="pg-actions" id="lp-actions"></div>
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
+            <div id="lp-actions"></div>
+          </div>
         </div>
+
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">💻 Laptop Inventory</div>
@@ -511,11 +548,13 @@
             <table>
               <thead><tr>
                 <th>Asset No.</th><th>Description</th><th>Assigned To</th>
-                <th>Status</th><th>Warranty</th><th>Maintenance</th><th>Actions</th>
+                <th>Status</th><th>Warranty</th><th>Maintenance</th>
               </tr></thead>
               <tbody id="lp-tbody"></tbody>
             </table>
           </div>
+          <div id="lp-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
       </section>
 
@@ -648,40 +687,65 @@
 
       <!-- ════════════════ VEHICLE MANAGEMENT ════════════════ -->
       <section class="page" id="page-vehicles">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Vehicle Management</div>
-            <div class="pg-sub">Fleet management & maintenance scheduling · Click row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="veh-search"
+              class="form-ctrl"
+              placeholder="🔍 Search name, plate, type..."
+              style="font-size:12px; padding:5px 10px; width:200px;"
+            />
+
+            <!-- Status filter -->
+            <select class="form-ctrl" id="veh-filter-status" onchange="applyVehFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Status: All</option>
+              <option value="ACTIVE">Active</option>
+              <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+            </select>
+
+            <!-- Type filter -->
+            <select class="form-ctrl" id="veh-filter-type" onchange="applyVehFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Type: All</option>
+              <option value="Car">Car</option>
+              <option value="Motorcycle">Motorcycle</option>
+              <option value="Van">Van</option>
+              <option value="Truck">Truck</option>
+            </select>
+
+            <!-- Due status filter -->
+            <select class="form-ctrl" id="veh-filter-due" onchange="applyVehFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Maintenance: All</option>
+              <option value="ok">On Track</option>
+              <option value="due">Due Soon</option>
+              <option value="overdue">Overdue</option>
+            </select>
+
           </div>
-          <div class="pg-actions" id="veh-actions"></div>
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
+            <div id="veh-actions"></div>
+          </div>
         </div>
-        <div class="stats-grid" style="margin-bottom:16px" id="veh-stats-row">
-          <div class="stat-card blue">
-            <div class="stat-icon si-blue">🚗</div>
-            <div>
-              <div class="stat-num" id="veh-stat-total">—</div>
-              <div class="stat-label">Total Vehicles</div>
-            </div>
-          </div>
-          <div class="stat-card amber">
-            <div class="stat-icon si-amber">🛠</div>
-            <div>
-              <div class="stat-num" id="veh-stat-maint">—</div>
-              <div class="stat-label">Under Maintenance</div>
-            </div>
-          </div>
-          <div class="stat-card red">
-            <div class="stat-icon si-red">⚠️</div>
-            <div>
-              <div class="stat-num" id="veh-stat-due">—</div>
-              <div class="stat-label">Due / Overdue</div>
-            </div>
-          </div>
-        </div>
+
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">🚗 Fleet Register</div>
-            <span class="badge b-slate" id="veh-ct">0 vehicles</span>
+            <div class="card-actions">
+              <span class="badge b-slate">🚗 <span id="veh-stat-total">—</span> vehicles</span>
+              <span class="badge b-amber">🛠 <span id="veh-stat-maint">—</span> under maint.</span>
+              <span class="badge b-red">⚠️ <span id="veh-stat-due">—</span> due/overdue</span>
+              <span class="badge b-slate" id="veh-ct">0 vehicles</span>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -698,6 +762,8 @@
               <tbody id="veh-tbody"></tbody>
             </table>
           </div>
+          <div id="veh-pagination"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
       </section>
 
@@ -820,16 +886,49 @@
 
 
 
-      <!-- ════════════════ FINACIAL DOCUMENTS ════════════════ -->
+<!-- ════════════════ FINACIAL DOCUMENTS ════════════════ -->
       <section class="page" id="page-finance">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Finance Documents</div>
-            <div class="pg-sub">Folder records · Click any row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="fin-search"
+              class="form-ctrl"
+              placeholder="🔍 Search year, category, range..."
+              style="font-size:12px; padding:5px 10px; width:220px;"
+            />
+
+            <!-- Category filter -->
+            <select class="form-ctrl" id="fin-filter-category" onchange="applyFinFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Category: All</option>
+              <option value="Check Voucher">Check Voucher</option>
+              <option value="Official Receipt">Official Receipt</option>
+              <option value="Sales Invoice">Sales Invoice</option>
+              <option value="Purchase Order">Purchase Order</option>
+            </select>
+
+            <!-- Location filter -->
+            <select class="form-ctrl" id="fin-filter-location" onchange="applyFinFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Location: All</option>
+              <option value="STORAGE">Storage</option>
+              <option value="OFFICE">Office</option>
+            </select>
+
           </div>
-          <div class="pg-actions" id="fin-actions"></div>
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
+            <div id="fin-actions"></div>
+          </div>
         </div>
 
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">📁 Finance Folders</div>
@@ -850,7 +949,10 @@
               <tbody id="fin-tbody"></tbody>
             </table>
           </div>
+          <div id="fin-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
+
       </section>
 
 
