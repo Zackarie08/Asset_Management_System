@@ -977,7 +977,7 @@ async function _renderLpTable() {
 
     tr.innerHTML = `
       <td>${lp.asset_number}</td>
-      <td>${lp.item_description}</td>
+      <td>${lp.serial_number}</td>
       <td>${lp.current_user_id || '—'}</td>
       <td>${badge(lp.status, sCls)}</td>
       <td>${_warrantyBadge(lp.warranty_end_date)}</td>
@@ -1068,7 +1068,7 @@ async function dpLaptop(id, useCache = false) {
   const isIntern = lp.user_role === "intern";
   const needsReplace = ageYears >= 3 && !isIntern;
 
-  setDPHeader('💻', '#f0fdf4', lp.item_description, lp.asset_number);
+  setDPHeader('💻', '#f0fdf4', lp.asset_number, lp.serial_number);
 
   //--------------------------------
   // MAINT ALERT
@@ -1165,12 +1165,15 @@ async function dpLaptop(id, useCache = false) {
       <div class="dp-section-hd">💻 Device Info</div>
       <div class="dp-grid">
         ${dpField("Asset Number", lp.asset_number)}
-        ${dpField("Description", lp.item_description)}
         ${dpField("Serial Number", lp.serial_number || '-')}
+
         ${dpField("Brand", lp.category)}
         ${dpField("Price", lp.price ? '₱' + lp.price : '-')}
         ${dpField("Status", lp.status)}
       </div>
+    </div>
+    <div class="dp-section">
+      ${dpField("Description", lp.item_description)}
     </div>
 
     <div class="dp-section">
@@ -1251,7 +1254,7 @@ function saveLaptop() {
     item_description: desc,
     serial_number: serial,
     category: brand,
-    price: parseFloat(price) || 0,
+    price: parseFloat(price) || null,
     current_user_id: null,
     current_location: parseInt(location),
     status,
@@ -1316,6 +1319,7 @@ async function editLaptop(id) {
     document.getElementById('lp-f-bought').value = formatDateForInput(lp.date_of_purchase);
     document.getElementById('lp-f-price').value = lp.price || "";
   }, 100); // ✅ small delay
+  renderLaptops();
 }
 
 function formatDateForInput(dateStr) {

@@ -24,12 +24,14 @@
 ══════════════════════════════════════════════════════════ -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon">🏢</div>
-      <div>
-        <div class="login-logo-text">GPCCI</div>
-        <div class="login-logo-sub">Asset Management System</div>
-      </div>
+    <!-- ✅ Single unified banner/image area — replaces the old
+         icon + title + subtitle trio. Placeholder graphic for now;
+         drop in the final GPCCI banner asset at
+         frontend/assets/login-banner.png (or update the CSS
+         background-image / <img src=""> below) when available.
+         See Login_Header_Redesign.md -->
+    <div class="login-banner" role="img" aria-label="GPCCI Asset Management System">
+      <img src="asset/Rectangle Logo.jpg">
     </div>
     <div class="login-title">Welcome back</div>
     <div class="login-sub">Sign in to access your workspace</div>
@@ -47,6 +49,15 @@
       style="color:#f87171;font-size:12px;margin-top:10px;text-align:center;min-height:16px;">
     </div>
   </div>
+
+  <!-- ✅ Subtle footer attribution — see Footer_Attribution_Implementation.md -->
+  <footer class="login-footer">
+    German-Philippines Chamber of Commerce and Industry<br/>
+    Developed by
+    <a href="https://peralta-gamma.vercel.app/" target="_blank" rel="noopener">Sean Peralta</a>
+    and
+    <a href="https://your-portfolio-link" target="_blank" rel="noopener">Mark Montesines</a>
+  </footer>
 </div>  
 
 
@@ -69,11 +80,19 @@
        overlay (see Sidebar_Redesign_Report.md). User info removed;
        it now lives entirely in the topbar user menu below. -->
   <aside class="sidebar" id="sidebar">
+    <!-- ✅ Adaptive branding: a compact square icon shows at rest
+         (collapsed rail); a wider banner image cross-fades in once
+         the sidebar expands on hover. Both are placeholders until a
+         final logo asset is supplied — see Sidebar_Branding_Update.md -->
     <div class="sb-logo">
-      <div class="sb-logo-icon">🏢</div>
-      <div class="sb-logo-text">
-        <div class="sb-logo-name">GPCCI</div>
-        <div class="sb-logo-sub">Asset Management System</div>
+      <div class="sb-logo-compact" aria-label="GPCCI">
+        <span>🏢</span>
+      </div>
+      <div class="sb-logo-full">
+        <div class="sb-logo-banner-placeholder">
+          <span class="sb-logo-name">GPCCI</span>
+          <span class="sb-logo-sub">Asset Management System</span>
+        </div>
       </div>
     </div>
  
@@ -383,6 +402,7 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="fur-actions"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportFurniture()">📥 Export</button>
           </div>
         </div>
 
@@ -458,6 +478,7 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="it-actions"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportITSupplies()">📥 Export</button>
           </div>
         </div>
 
@@ -535,6 +556,7 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="lp-actions"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportLaptops()">📥 Export</button>
           </div>
         </div>
 
@@ -547,7 +569,7 @@
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Asset No.</th><th>Description</th><th>Assigned To</th>
+                <th>Asset No.</th><th>Serial No.</th><th>Assigned To</th>
                 <th>Status</th><th>Warranty</th><th>Maintenance</th>
               </tr></thead>
               <tbody id="lp-tbody"></tbody>
@@ -567,7 +589,9 @@
             <div class="pg-title">Purchase Orders</div>
             <div class="pg-sub">Stock ordering & delivery tracking · Click row for details</div>
           </div>
-          <div class="pg-actions" id="po-actions"></div>
+          <div class="pg-actions" id="po-actions">
+            <button class="btn btn-ghost btn-sm" onclick="exportOrders()">📥 Export</button>
+          </div>
         </div>
         <div class="card">
           <div class="card-hd">
@@ -656,6 +680,7 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="con-actions"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportContracts()">📥 Export</button>
           </div>
         </div>
 
@@ -733,6 +758,7 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="veh-actions"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportVehicles()">📥 Export</button>
           </div>
         </div>
 
@@ -858,7 +884,10 @@
             <div class="pg-title">Insurance</div>
             <div class="pg-sub">Employee insurance tracking · Click row for details</div>
           </div>
-          <div id="ins-actions"></div>
+          <div class="flex-gap">
+            <div id="ins-actions"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportInsurance()">📥 Export</button>
+          </div>
         </div>
         <div class="card">
           <div class="card-hd">
@@ -925,6 +954,7 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="fin-actions"></div>
+            <button class="btn btn-ghost btn-sm" onclick="exportFinance()">📥 Export</button>
           </div>
         </div>
 
@@ -1104,6 +1134,7 @@
 
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
+            <button class="btn btn-ghost btn-sm" onclick="exportUsers()">📥 Export</button>
             <button class="btn btn-green btn-sm" onclick="openM('m-add-user')">
               ➕ Add User
             </button>
@@ -1136,6 +1167,14 @@
       </section>
 
     </div><!-- end main-content -->
+
+    <!-- ════════════════ SUBTLE FOOTER ATTRIBUTION ════════════════ -->
+    <footer class="app-footer">
+      German-Philippines Chamber of Commerce and Industry &nbsp;·&nbsp; Developed by
+      <a href="https://peralta-gamma.vercel.app/" target="_blank" rel="noopener">Sean Peralta</a>
+      &amp;
+      <a href="https://your-portfolio-link" target="_blank" rel="noopener">Mark Montesines</a>
+    </footer>
   </div><!-- end app-body -->
 
 
@@ -1657,10 +1696,15 @@
         </div>
 
         <div class="form-grp">
-          <label>Description *</label>
-          <input class="form-ctrl" id="lp-f-desc" placeholder="e.g. Dell Latitude 5510" maxlength="50"/>
+          <label>Price (₱)</label>
+          <input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/>
         </div>
       </div>
+
+        <div class="form-grp">
+          <label>Description *</label>
+          <input class="form-ctrl " id="lp-f-desc" placeholder="e.g. Dell Latitude 5510" maxlength="255"/>
+        </div>  
 
       <div class="form-row">
         <div class="form-grp">
@@ -1701,20 +1745,13 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Warranty Expiry</label>
-          <input class="form-ctrl" id="lp-f-warranty" type="date"/>
-        </div>
-
-        <div class="form-grp">
           <label>Date Purchased</label>
           <input class="form-ctrl" id="lp-f-bought" type="date"/>
         </div>
-      </div>
 
-      <div class="form-row">
         <div class="form-grp">
-          <label>Price (₱)</label>
-          <input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/>
+          <label>Warranty Expiry</label>
+          <input class="form-ctrl" id="lp-f-warranty" type="date"/>
         </div>
       </div>
 
@@ -2998,7 +3035,6 @@
         <button class="btn btn-outline" onclick="closeM('m-edit-user')">Cancel</button>
         <button class="btn btn-green" onclick="updateUser()">Save Changes</button>
       </div>
-
     </div>
   </div>
 </div>
