@@ -1,10 +1,21 @@
 // ============================================================
 // laptops.js — Laptop management
-// BUG FIX: Two router.put("/:id") handlers existed.
-//           Express only executes the FIRST match, so the
-//           "edit laptop" handler was silently ignored.
-// FIX:  Separate assign into PUT /assign/:id
-//       Full edit remains PUT /:id
+// AUDIT PASS (this revision):
+//   ✅ NEW: `remarks` and `supplier` columns supported end-to-end
+//      (create, edit, list, detail). See
+//      backend/migrations/002_laptop_add_remarks_supplier.sql
+//   ✅ FIX: PUT /assign/:id now explicitly normalizes an empty
+//      string / undefined current_user_id to NULL so "Remove
+//      Current User" (unassign) reliably clears the assignment
+//      instead of accidentally writing "" into an integer FK
+//      column (which some drivers/queries would reject or coerce
+//      unpredictably). Assignment HISTORY is still always written,
+//      including the unassign event (new_user_id = NULL), so the
+//      audit trail is never lost.
+//   (Older fix retained) Two router.put("/:id") handlers existed.
+//      Express only executes the FIRST match, so the "edit laptop"
+//      handler was silently ignored. Fixed by splitting into
+//      PUT /assign/:id (assignment only) and PUT /:id (full edit).
 // ============================================================
 const express = require("express");
 const router  = express.Router();
@@ -34,19 +45,21 @@ router.post("/", async (req, res) => {
     const {
       asset_number, item_description, serial_number,
       category, price, current_user_id, current_location,
-      status, warranty_end_date, date_of_purchase
+      status, warranty_end_date, date_of_purchase,
+      remarks, supplier                       // ✅ NEW FIELDS
     } = req.body;
 
     await pool.query(`
       INSERT INTO laptop (
         asset_number, item_description, serial_number, category,
         price, current_user_id, current_location, status,
-        warranty_end_date, date_of_purchase
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        warranty_end_date, date_of_purchase, remarks, supplier
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     `, [
       asset_number, item_description, serial_number, category,
-      price, current_user_id, current_location, status,
-      warranty_end_date, date_of_purchase
+      price, current_user_id || null, current_location, status,
+      warranty_end_date || null, date_of_purchase,
+      remarks || null, supplier || null
     ]);
     res.sendStatus(200);
   } catch (err) {
@@ -66,11 +79,15 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-/* ── ASSIGN USER — PUT /assign/:id ─────────────────────── */
-// ✅ FIX: was PUT /:id (conflicted with edit route below)
+/* ── ASSIGN / UNASSIGN USER — PUT /assign/:id ───────────── */
+// Body: { current_user_id: <id> }  → assign
+// Body: { current_user_id: null }  → unassign / return to pool
+// ✅ FIX: normalize "" / undefined to NULL so unassign works cleanly
+// and the assignment_history row correctly records new_user_id = NULL.
 router.put("/assign/:id", async (req, res) => {
   try {
-    const { current_user_id } = req.body;
+    const rawId = req.body.current_user_id;
+    const current_user_id = (rawId === "" || rawId === undefined) ? null : rawId;
 
     // Save previous user for history
     const old = await pool.query(
@@ -84,7 +101,8 @@ router.put("/assign/:id", async (req, res) => {
       [current_user_id, req.params.id]
     );
 
-    // Log assignment history
+    // Log assignment history (unassign events are recorded too,
+    // with new_user_id = NULL, so the trail is never lost)
     await pool.query(`
       INSERT INTO laptop_history (laptop_id, previous_user_id, new_user_id, date_changed)
       VALUES ($1,$2,$3,NOW())
@@ -98,13 +116,13 @@ router.put("/assign/:id", async (req, res) => {
 });
 
 /* ── FULL EDIT — PUT /:id ───────────────────────────────── */
-// ✅ FIX: this was the second (silently ignored) PUT /:id handler
 router.put("/:id", async (req, res) => {
   try {
     const {
       asset_number, item_description, serial_number,
       category, price, current_location, status,
-      warranty_end_date, date_of_purchase
+      warranty_end_date, date_of_purchase,
+      remarks, supplier                       // ✅ NEW FIELDS
     } = req.body;
 
     await pool.query(`
@@ -117,12 +135,16 @@ router.put("/:id", async (req, res) => {
         current_location  = $6,
         status            = $7,
         warranty_end_date = $8,
-        date_of_purchase  = $9
-      WHERE laptop_id = $10
+        date_of_purchase  = $9,
+        remarks           = $10,
+        supplier          = $11
+      WHERE laptop_id = $12
     `, [
       asset_number, item_description, serial_number,
       category, price, current_location, status,
-      warranty_end_date, date_of_purchase, req.params.id
+      warranty_end_date || null, date_of_purchase,
+      remarks || null, supplier || null,
+      req.params.id
     ]);
     res.sendStatus(200);
   } catch (err) {

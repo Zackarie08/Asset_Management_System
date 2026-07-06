@@ -34,7 +34,7 @@
       <img src="asset/Rectangle Logo.jpg">
     </div>
     <div class="login-title">Welcome back</div>
-    <div class="login-sub">Sign in to access your workspace</div>
+    <div class="login-sub">Sign in to your account</div>
     <label class="login-label">Select Account</label>
     <input id="email" class="login-input" placeholder="Email" maxlength="50">
     <div style="position:relative;">
@@ -86,12 +86,11 @@
          final logo asset is supplied — see Sidebar_Branding_Update.md -->
     <div class="sb-logo">
       <div class="sb-logo-compact" aria-label="GPCCI">
-        <span>🏢</span>
+        <img src="asset/Rectangle Logo.jpg" alt="GPCCI" class="sb-logo-img"/>
       </div>
       <div class="sb-logo-full">
-        <div class="sb-logo-banner-placeholder">
-          <span class="sb-logo-name">GPCCI</span>
-          <span class="sb-logo-sub">Asset Management System</span>
+        <div class="sb-logo-banner">
+          <img src="asset/Rectangle Logo.jpg" alt="GPCCI Asset Management System" class="sb-logo-banner-img"/>
         </div>
       </div>
     </div>
@@ -1696,8 +1695,8 @@
         </div>
 
         <div class="form-grp">
-          <label>Price (₱)</label>
-          <input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/>
+          <label>Serial Number</label>
+          <input class="form-ctrl" id="lp-f-serial" placeholder="XYZ1234" maxlength="50"/>
         </div>
       </div>
 
@@ -1708,8 +1707,8 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Serial Number</label>
-          <input class="form-ctrl" id="lp-f-serial" placeholder="XYZ1234" maxlength="50"/>
+          <label>Price (₱)</label>
+          <input class="form-ctrl" id="lp-f-price" type="number" placeholder="0.00"/>
         </div>
 
         <div class="form-grp">
@@ -1753,6 +1752,16 @@
           <label>Warranty Expiry</label>
           <input class="form-ctrl" id="lp-f-warranty" type="date"/>
         </div>
+      </div>
+
+      <div class="form-grp">
+        <label>Supplier</label>
+        <input class="form-ctrl" id="lp-f-supplier" placeholder="e.g. PC Express, Dell Direct" maxlength="150"/>
+      </div>
+
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="lp-f-remarks" rows="2" maxlength="255" placeholder="Optional notes..."></textarea>
       </div>
 
       <div class="form-footer">
@@ -1807,6 +1816,7 @@
     <div class="modal-body">
       <div style="background:var(--green-50);border:1.5px solid var(--green-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#166534">Laptop: <span id="assign-lp-name">—</span></div>
+        <div style="font-size:12px;color:#3b5bdb;margin-top:4px" id="assign-current-line">—</div>
       </div>
       <div class="form-grp"><label>Assign To *</label>
       <div class="search-select">
@@ -1816,6 +1826,8 @@
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-assign')">Cancel</button>
+        <button class="btn btn-amber" id="assign-remove-btn" style="display:none"
+          onclick="removeAssignedUser(currentLpId)">↩️ Remove Current User</button>
         <button class="btn btn-green" onclick="doAssign()">Assign</button>
       </div>
     </div>
@@ -3079,9 +3091,11 @@
 <script src="js/orders.js"></script>
 <script src="js/subscriptions_unified.js"></script>
 <script src="js/vehicles_enhanced.js"></script>
-<script src="js/insurance.js"></script>         
-<script src="js/main.js"></script>              
+<script src="js/insurance.js"></script>
+<script src="js/main.js"></script>
 <script src="js/users.js"></script>
+<script src="js/exports.js"></script>
+<script src="js/laptop_dashboard_patches.js"></script>
 
 </body>
 </html>
