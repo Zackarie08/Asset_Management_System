@@ -3545,6 +3545,26 @@ function initAllModules() {
       _renderLpTable();
     });
   }
+
+  // ── Purchase Orders search listener ──
+  const poSearch = document.getElementById('po-search');
+  if (poSearch) {
+    poSearch.addEventListener('input', () => {
+      poSearchQuery = poSearch.value.trim().toLowerCase();
+      currentPOPage = 1;
+      _renderPOTable();
+    });
+  }
+
+  // ── Insurance search listener ──
+  const insSearch = document.getElementById('ins-search');
+  if (insSearch) {
+    insSearch.addEventListener('input', () => {
+      insSearchQuery = insSearch.value.trim().toLowerCase();
+      currentInsPage = 1;
+      _renderInsTable();
+    });
+  }
 }
 
 let lastRequestCheck = 0;

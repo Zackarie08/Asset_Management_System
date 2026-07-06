@@ -22,6 +22,25 @@
 let insEditId = null;
 let _allInsuranceUsers = []; // cache of all users for checkboxes
 
+// ── Filter/pagination state ──
+let insSearchQuery   = '';
+let insFilterCoverage = 'all';
+let insFilterStatus  = 'all';
+let currentInsPage   = 1;
+const insPerPage     = 20;
+let _allInsurance    = [];
+
+function _computeInsuranceStatus(ins) {
+  const today  = new Date();
+  const expiry = ins.expiry_date ? new Date(ins.expiry_date) : null;
+  const daysLeft = expiry ? Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)) : null;
+
+  if (daysLeft === null)    return { badge: `<span class="badge b-slate">No expiry</span>`, status: 'none' };
+  if (daysLeft < 0)        return { badge: `<span class="badge b-red">Expired</span>`, status: 'expired' };
+  if (daysLeft <= 30)      return { badge: `<span class="badge b-amber">Expires in ${daysLeft}d</span>`, status: 'expiring' };
+  return { badge: `<span class="badge b-green">Active</span>`, status: 'active' };
+}
+
 /* ── LOAD USERS FOR EMPLOYEE SELECTION ─────────────────── */
 async function loadInsuranceUsers() {
   try {
@@ -68,27 +87,88 @@ function getSelectedEmployeeIds() {
   return Array.from(checkboxes).map(cb => parseInt(cb.value));
 }
 
+/* ── FILTER / PAGINATION ─────────────────────────────────── */
+function applyInsFilters() {
+  insFilterCoverage = document.getElementById('ins-filter-coverage').value;
+  insFilterStatus   = document.getElementById('ins-filter-status').value;
+  currentInsPage     = 1;
+  _renderInsTable();
+}
+
+function _filterInsurance(data) {
+  return data.filter(ins => {
+
+    // Search — policy/plan name, provider
+    if (insSearchQuery) {
+      const haystack = `${ins.employee_name} ${ins.provider || ''}`.toLowerCase();
+      if (!haystack.includes(insSearchQuery)) return false;
+    }
+
+    // Coverage filter
+    if (insFilterCoverage !== 'all' && ins.coverage_type !== insFilterCoverage) return false;
+
+    // Status filter
+    if (insFilterStatus !== 'all') {
+      const { status } = _computeInsuranceStatus(ins);
+      if (status !== insFilterStatus) return false;
+    }
+
+    return true;
+  });
+}
+
+function _renderInsPagination(total) {
+  const container = document.getElementById('ins-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / insPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentInsPage === 1;
+  prev.onclick = () => { currentInsPage--; _renderInsTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentInsPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentInsPage = i; _renderInsTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentInsPage === totalPages;
+  next.onclick = () => { currentInsPage++; _renderInsTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
 /* ── RENDER TABLE ───────────────────────────────────────── */
-async function renderInsurance() {
-  try {
-    const res  = await fetch(`${API_URL}/api/insurance`);
-    const data = await res.json();
+function _renderInsTable() {
+  const filtered  = _filterInsurance(_allInsurance);
+  const total     = filtered.length;
+  const start     = (currentInsPage - 1) * insPerPage;
+  const paginated = filtered.slice(start, start + insPerPage);
 
-    const tbody = document.getElementById("ins-tbody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
+  const tbody = document.getElementById("ins-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
-    const today = new Date();
-
-    data.forEach(ins => {
-      const expiry   = ins.expiry_date ? new Date(ins.expiry_date) : null;
-      const daysLeft = expiry ? Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)) : null;
-
-      let expiryBadge = "";
-      if (daysLeft === null)    expiryBadge = `<span class="badge b-slate">No expiry</span>`;
-      else if (daysLeft < 0)   expiryBadge = `<span class="badge b-red">Expired</span>`;
-      else if (daysLeft <= 30) expiryBadge = `<span class="badge b-amber">Expires in ${daysLeft}d</span>`;
-      else                     expiryBadge = `<span class="badge b-green">Active</span>`;
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--slate-400)">No insurance records found.</td></tr>`;
+  } else {
+    paginated.forEach(ins => {
+      const { badge: expiryBadge } = _computeInsuranceStatus(ins);
 
       const coverageBadge = ins.coverage_type === 'SPECIFIC'
         ? `<span class="badge b-blue">Specific</span>`
@@ -107,9 +187,19 @@ async function renderInsurance() {
       tr.addEventListener("click", () => openDP("insurance", ins.insurance_id, tr));
       tbody.appendChild(tr);
     });
+  }
 
-    const ctEl = document.getElementById("ins-ct");
-    if (ctEl) ctEl.textContent = data.length + " records";
+  const ctEl = document.getElementById("ins-ct");
+  if (ctEl) ctEl.textContent = total + " records";
+  _renderInsPagination(total);
+}
+
+async function renderInsurance() {
+  try {
+    const res     = await fetch(`${API_URL}/api/insurance`);
+    _allInsurance = await res.json();
+    currentInsPage = 1;
+    _renderInsTable();
   } catch (err) {
     console.error("renderInsurance error:", err);
     showToast("Failed to load insurance records", "t-error");

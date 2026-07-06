@@ -581,17 +581,41 @@
 
 
       
-      <!-- ════════════════ PURCHASE ORDERS ════════════════ -->
+<!-- ════════════════ PURCHASE ORDERS ════════════════ -->
       <section class="page" id="page-orders">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Purchase Orders</div>
-            <div class="pg-sub">Stock ordering & delivery tracking · Click row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="po-search"
+              class="form-ctrl"
+              placeholder="🔍 Search item name..."
+              style="font-size:12px; padding:5px 10px; width:200px;"
+            />
+
+            <!-- Status filter -->
+            <select class="form-ctrl" id="po-filter-status" onchange="applyPOFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Status: All</option>
+              <option value="ORDERED">Ordered</option>
+              <option value="DELIVERED">Delivered</option>
+              <option value="CANCELLED">Cancelled</option>
+              <option value="DELAYED">Delayed</option>
+            </select>
+
           </div>
-          <div class="pg-actions" id="po-actions">
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
             <button class="btn btn-ghost btn-sm" onclick="exportOrders()">📥 Export</button>
           </div>
         </div>
+
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">🛒 Orders</div>
@@ -603,12 +627,14 @@
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>PO #</th><th>Item Name</th><th>Category</th><th>Qty</th>
-                <th>Order Date</th><th>Expected Delivery</th><th>Status</th><th>Actions</th>
+                <th>PO #</th><th>Item Name</th><th>Qty Ordered</th>
+                <th>Order Date</th><th>Expected Delivery</th><th>Status</th>
               </tr></thead>
               <tbody id="po-tbody"></tbody>
             </table>
           </div>
+          <div id="po-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
       </section>
 
@@ -795,58 +821,80 @@
 
 
 
-      <!-- ════════════════ UNIFIED SUBSCRIPTIONS PAGE ════════════════ -->
+<!-- ════════════════ UNIFIED SUBSCRIPTIONS PAGE ════════════════ -->
       <section class="page" id="page-subscriptions">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Subscriptions</div>
-            <div class="pg-sub">M365 · Globe · Other — unified view · Click row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="uni-search"
+              class="form-ctrl"
+              placeholder="🔍 Search name, assigned to, supplier..."
+              style="font-size:12px; padding:5px 10px; width:220px;"
+            />
+
+            <!-- Source filter -->
+            <select class="form-ctrl" id="uni-filter-source" onchange="renderSubscriptionsUnified()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Source: All</option>
+              <option value="M365">M365</option>
+              <option value="Globe">Globe</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <!-- Status filter -->
+            <select class="form-ctrl" id="uni-filter-status" onchange="renderSubscriptionsUnified()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Status: All</option>
+              <option value="Active">Active</option>
+              <option value="Expiring Soon">Expiring Soon</option>
+              <option value="For Renewal">For Renewal</option>
+              <option value="Expired">Expired</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+
+            <!-- Category filter -->
+            <select class="form-ctrl" id="uni-filter-category" onchange="renderSubscriptionsUnified()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Category: All</option>
+              <option value="Telecom">Telecom</option>
+              <option value="Business">Business</option>
+              <option value="Enterprise">Enterprise</option>
+              <option value="Education">Education</option>
+              <option value="Perpetual">Perpetual</option>
+              <option value="Trial">Trial</option>
+              <option value="Software">Software</option>
+              <option value="Security">Security</option>
+              <option value="Communications">Communications</option>
+              <option value="Cloud Storage">Cloud Storage</option>
+              <option value="Productivity">Productivity</option>
+              <option value="Design">Design</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Other">Other</option>
+            </select>
+
           </div>
-          <div class="pg-actions" id="sub-actions">
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
             <button class="btn btn-ghost btn-sm" onclick="exportUnifiedSubscriptions()">📥 Export</button>
-            <button class="btn btn-green btn-sm" onclick="openAddSubscription()">➕ Add Subscription</button>
           </div>
         </div>
 
-        <div class="stats-grid" style="margin-bottom:20px">
-          <div class="stat-card blue">
-            <div class="stat-icon si-blue">📊</div>
-            <div><div class="stat-num" id="uni-stat-total">—</div><div class="stat-label">Total</div></div>
-          </div>
-          <div class="stat-card green">
-            <div class="stat-icon si-green">✅</div>
-            <div><div class="stat-num" id="uni-stat-active">—</div><div class="stat-label">Active</div></div>
-          </div>
-          <div class="stat-card amber">
-            <div class="stat-icon si-amber">⚠️</div>
-            <div><div class="stat-num" id="uni-stat-expiring">—</div><div class="stat-label">Expiring / Renewal</div></div>
-          </div>
-          <div class="stat-card red">
-            <div class="stat-icon si-red">❌</div>
-            <div><div class="stat-num" id="uni-stat-expired">—</div><div class="stat-label">Expired</div></div>
-          </div>
-        </div>
-
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">🔗 All Subscriptions</div>
             <div class="card-actions">
-              <select class="form-ctrl" id="uni-filter-source" onchange="renderSubscriptionsUnified()"
-                style="font-size:12px;padding:5px 10px;width:auto">
-                <option value="all">Source: All</option>
-                <option value="M365">M365</option>
-                <option value="Globe">Globe</option>
-                <option value="Other">Other</option>
-              </select>
-              <select class="form-ctrl" id="uni-filter-status" onchange="renderSubscriptionsUnified()"
-                style="font-size:12px;padding:5px 10px;width:auto">
-                <option value="all">Status: All</option>
-                <option value="Active">Active</option>
-                <option value="Expiring Soon">Expiring Soon</option>
-                <option value="For Renewal">For Renewal</option>
-                <option value="Expired">Expired</option>
-                <option value="Inactive">Inactive</option>
-              </select>
+              <span class="badge b-slate">📊 <span id="uni-stat-total">—</span> total</span>
+              <span class="badge b-green">✅ <span id="uni-stat-active">—</span> active</span>
+              <span class="badge b-amber">⚠️ <span id="uni-stat-expiring">—</span> expiring</span>
+              <span class="badge b-red">❌ <span id="uni-stat-expired">—</span> expired</span>
+              <button class="btn btn-green btn-sm" onclick="openAddSubscription()">➕ Add Subscription</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -865,6 +913,8 @@
               <tbody id="uni-tbody"></tbody>
             </table>
           </div>
+          <div id="uni-pagination"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
           <div style="padding:12px 20px;border-top:1.5px solid var(--slate-100)">
             <span id="uni-total-cost" style="font-size:13px;font-weight:700;color:var(--slate-700)">
               Total active monthly: —
@@ -878,20 +928,54 @@
 
       <!-- ════════════════ INSURANCE ════════════════ -->
       <section class="page" id="page-insurance">
-        <div class="pg-header">
-          <div>
-            <div class="pg-title">Insurance</div>
-            <div class="pg-sub">Employee insurance tracking · Click row for details</div>
+
+        <!-- FILTER ROW -->
+        <div class="inv-filter-row" style="margin-bottom:16px;">
+          <div class="flex-gap" style="flex-wrap:wrap; align-items:center;">
+
+            <!-- Search -->
+            <input
+              type="text"
+              id="ins-search"
+              class="form-ctrl"
+              placeholder="🔍 Search policy name, provider..."
+              style="font-size:12px; padding:5px 10px; width:220px;"
+            />
+
+            <!-- Coverage filter -->
+            <select class="form-ctrl" id="ins-filter-coverage" onchange="applyInsFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Coverage: All</option>
+              <option value="GENERAL">General</option>
+              <option value="SPECIFIC">Specific</option>
+            </select>
+
+            <!-- Status filter -->
+            <select class="form-ctrl" id="ins-filter-status" onchange="applyInsFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Status: All</option>
+              <option value="active">Active</option>
+              <option value="expiring">Expiring Soon</option>
+              <option value="expired">Expired</option>
+              <option value="none">No Expiry</option>
+            </select>
+
           </div>
-          <div class="flex-gap">
-            <div id="ins-actions"></div>
+
+          <!-- Right side -->
+          <div class="flex-gap" style="flex-shrink:0;">
             <button class="btn btn-ghost btn-sm" onclick="exportInsurance()">📥 Export</button>
           </div>
         </div>
+
+        <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
             <div class="card-title">🛡️ Insurance Records</div>
-            <span class="badge b-slate" id="ins-ct">0 records</span>
+            <div class="card-actions">
+              <span class="badge b-slate" id="ins-ct">0 records</span>
+              <div id="ins-actions"></div>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -908,13 +992,15 @@
               <tbody id="ins-tbody"></tbody>
             </table>
           </div>
+          <div id="ins-pagination-container"
+            style="padding:12px 20px; border-top:1.5px solid var(--slate-100);"></div>
         </div>
       </section>
 
 
 
 
-<!-- ════════════════ FINACIAL DOCUMENTS ════════════════ -->
+      <!-- ════════════════ FINACIAL DOCUMENTS ════════════════ -->
       <section class="page" id="page-finance">
 
         <!-- FILTER ROW -->

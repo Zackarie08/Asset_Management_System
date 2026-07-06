@@ -4,6 +4,13 @@
 //   • Actions (Receive, Cancel) hidden when CANCELLED or DELIVERED
 //   • dpOrder shows correct status badge per state
 
+// ── Filter/pagination state ──
+let poSearchQuery  = '';
+let poFilterStatus = 'all';
+let currentPOPage  = 1;
+const poPerPage    = 20;
+let _allOrders     = [];
+
 /* ── STATUS HELPERS ─────────────────────────────────────── */
 
 /**
@@ -43,48 +50,118 @@ function poStatusBadgeClass(status) {
   return map[status] || 'b-slate';
 }
 
+/* ── FILTER / PAGINATION ─────────────────────────────────── */
+function applyPOFilters() {
+  poFilterStatus = document.getElementById('po-filter-status').value;
+  currentPOPage  = 1;
+  _renderPOTable();
+}
+
+function _filterOrders(data) {
+  return data.filter(o => {
+
+    // Search — item name
+    if (poSearchQuery) {
+      const haystack = `${o.item_name || ''}`.toLowerCase();
+      if (!haystack.includes(poSearchQuery)) return false;
+    }
+
+    // Status filter (computed status, so DELAYED works correctly)
+    if (poFilterStatus !== 'all') {
+      const status = computePOStatus(o);
+      if (status !== poFilterStatus) return false;
+    }
+
+    return true;
+  });
+}
+
+function _renderPOPagination(total) {
+  const container = document.getElementById('po-pagination-container');
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / poPerPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentPOPage === 1;
+  prev.onclick = () => { currentPOPage--; _renderPOTable(); };
+  wrap.appendChild(prev);
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentPOPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => { currentPOPage = i; _renderPOTable(); };
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentPOPage === totalPages;
+  next.onclick = () => { currentPOPage++; _renderPOTable(); };
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}
+
 /* ── RENDER TABLE ───────────────────────────────────────── */
-async function renderOrders() {
-  const res  = await fetch(`${API_URL}/api/po`);
-  const data = await res.json();
+function _renderPOTable() {
+  const filtered  = _filterOrders(_allOrders);
+  const total     = filtered.length;
+  const start     = (currentPOPage - 1) * poPerPage;
+  const paginated = filtered.slice(start, start + poPerPage);
 
   const tbody = document.getElementById('po-tbody');
   tbody.innerHTML = '';
 
   let delayedCount = 0;
+  _allOrders.forEach(o => { if (computePOStatus(o) === 'DELAYED') delayedCount++; });
 
-  data.forEach(o => {
-    const status     = computePOStatus(o);
-    const received   = o.received_quantity || 0;
-    const remaining  = o.quantity_ordered - received;
-    const badgeCls   = poStatusBadgeClass(status);
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--slate-400)">No orders found.</td></tr>`;
+  } else {
+    paginated.forEach(o => {
+      const status   = computePOStatus(o);
+      const badgeCls = poStatusBadgeClass(status);
 
-    if (status === 'DELAYED') delayedCount++;
+      const tr = document.createElement('tr');
+      tr.className = `tr-clickable${status === 'CANCELLED' ? '' : status === 'DELAYED' ? ' tr-warn' : ''}`;
 
-    const tr = document.createElement('tr');
-    tr.className = `tr-clickable${status === 'CANCELLED' ? '' : status === 'DELAYED' ? ' tr-warn' : ''}`;
+      tr.innerHTML = `
+        <td>${o.purchase_order_id}</td>
+        <td>${o.item_name || '—'}</td>
+        <td>${o.quantity_ordered}</td>
+        <td>${o.order_date || '—'}</td>
+        <td>${o.expected_delivery_date || '—'}</td>
+        <td><span class="badge ${badgeCls}">${status}</span></td>
+      `;
 
-    tr.innerHTML = `
-      <td>${o.purchase_order_id}</td>
-      <td>${o.item_name || '—'}</td>
-      <td>${o.quantity_ordered}</td>
-      <td>${received}</td>
-      <td>${remaining > 0 ? remaining : 0}</td>
-      <td>${o.supplier_name || '—'}</td>
-      <td>${o.order_date || '—'}</td>
-      <td>${o.expected_delivery_date || '—'}</td>
-      <td><span class="badge ${badgeCls}">${status}</span></td>
-    `;
+      tr.addEventListener('click', () => openDP('order', o.purchase_order_id, tr));
+      tbody.appendChild(tr);
+    });
+  }
 
-    tr.addEventListener('click', () => openDP('order', o.purchase_order_id, tr));
-    tbody.appendChild(tr);
-  });
-
-  // Update counts
   const totalEl   = document.getElementById('po-total-ct');
   const delayedEl = document.getElementById('po-delay-ct');
-  if (totalEl)   totalEl.textContent   = `${data.length} orders`;
+  if (totalEl)   totalEl.textContent   = `${total} orders`;
   if (delayedEl) delayedEl.textContent = `${delayedCount} delayed`;
+
+  _renderPOPagination(total);
+}
+
+async function renderOrders() {
+  const res   = await fetch(`${API_URL}/api/po`);
+  _allOrders  = await res.json();
+  currentPOPage = 1;
+  _renderPOTable();
 }
 
 /* ── DETAIL PANEL ───────────────────────────────────────── */
