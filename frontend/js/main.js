@@ -2939,6 +2939,9 @@ function dpUser(id) {
 
 
 
+
+
+
 /* ──────────────────────────────────────────────────────────────
    DASHBOARD REFRESH
 ────────────────────────────────────────────────────────────── */
@@ -3161,8 +3164,8 @@ async function refreshDashboard() {
         <div class="panel-row">
           <div class="pr-dot ${cls}"></div>
           <div style="flex:1">
-            <div class="pr-name">${_esc(lp.item_description)}</div>
-            <div class="pr-meta">${_esc(lp.asset_number)} · ${_esc(lp.user_name || 'No user')}</div>
+            <div class="pr-name">${_esc(lp.serial_number)} · ${_esc(lp.asset_number)}</div>
+            <div class="pr-meta">${_esc(lp.user_name || 'No user')} · ${_esc(lp.item_description)} </div>
           </div>
           ${badge(reason, `b-${cls}`)}
         </div>`).join('');
