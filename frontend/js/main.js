@@ -259,12 +259,11 @@ function _renderFurTable() {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--slate-400)">No furniture found.</td></tr>`;
   } else {
     paginated.forEach(f => {
-      const condCls = {
-        New:        'b-blue',
-        Good:       'b-green',
-        Fair:       'b-amber',
-        'For Repair': 'b-red'
-      }[f.condition] || 'b-slate';
+    const condCls = {
+      Good:     'b-green',
+      Damaged:  'b-red',
+      Disposed: 'b-slate'
+    }[f.condition] || 'b-slate';
 
       const tr = document.createElement('tr');
       tr.className = 'tr-clickable';
@@ -361,12 +360,13 @@ async function dpFurniture(id) {
 }
 
 function saveFurniture() {
-  const name    = document.getElementById('fur-f-name').value.trim();
-  const qty     = document.getElementById('fur-f-qty').value;
-  const date    = document.getElementById('fur-f-date').value;
-  const price   = document.getElementById('fur-f-price').value;
-  const loc     = document.getElementById('fur-f-loc').value;
-  const remarks = document.getElementById('fur-f-remarks').value;
+  const name      = document.getElementById('fur-f-name').value.trim();
+  const qty       = document.getElementById('fur-f-qty').value;
+  const date      = document.getElementById('fur-f-date').value;
+  const price     = document.getElementById('fur-f-price').value;
+  const loc       = document.getElementById('fur-f-loc').value;
+  const remarks   = document.getElementById('fur-f-remarks').value;
+  const condition = document.getElementById('fur-f-condition').value; // ✅ NEW
 
   if (!name || !qty || !loc) {
     showToast('Fill required fields', 't-error');
@@ -385,7 +385,8 @@ function saveFurniture() {
       date_of_purchase: date,
       price,
       remarks,
-      current_location: loc
+      current_location: loc,
+      condition                 // ✅ NEW
     })
   })
   .then(res => { if (!res.ok) throw new Error('Failed'); })
@@ -409,12 +410,13 @@ async function editFur(id) {
   openM('m-add-fur');
   await loadFurLocations();
 
-  document.getElementById('fur-f-name').value    = f.furniture_name;
-  document.getElementById('fur-f-qty').value     = f.quantity;
-  document.getElementById('fur-f-date').value    = f.date_of_purchase ? new Date(f.date_of_purchase).toISOString().slice(0,10) : '';
-  document.getElementById('fur-f-price').value   = f.price || '';
-  document.getElementById('fur-f-loc').value     = f.current_location;
-  document.getElementById('fur-f-remarks').value = f.remarks || '';
+  document.getElementById('fur-f-name').value      = f.furniture_name;
+  document.getElementById('fur-f-qty').value       = f.quantity;
+  document.getElementById('fur-f-date').value      = f.date_of_purchase ? new Date(f.date_of_purchase).toISOString().slice(0,10) : '';
+  document.getElementById('fur-f-price').value     = f.price || '';
+  document.getElementById('fur-f-loc').value       = f.current_location;
+  document.getElementById('fur-f-remarks').value   = f.remarks || '';
+  document.getElementById('fur-f-condition').value = f.condition || 'Good'; // ✅ NEW
 }
 
 let deleteFurId   = null;
@@ -456,8 +458,9 @@ function openAddFurniture() {
   furEditId = null;
   openM('m-add-fur');
   loadFurLocations();
+  const condEl = document.getElementById('fur-f-condition');
+  if (condEl) condEl.value = 'Good'; // ✅ NEW
 }
-
 
 
 

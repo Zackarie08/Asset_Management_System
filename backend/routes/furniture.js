@@ -22,20 +22,22 @@ router.post("/", async (req, res) => {
     date_of_purchase,
     price,
     remarks,
-    current_location
+    current_location,
+    condition          // ✅ NEW
   } = req.body;
 
   await pool.query(`
     INSERT INTO office_furniture
-    (furniture_name, quantity, date_of_purchase, price, remarks, current_location)
-    VALUES ($1,$2,$3,$4,$5,$6)
+    (furniture_name, quantity, date_of_purchase, price, remarks, current_location, condition)
+    VALUES ($1,$2,$3,$4,$5,$6,$7)
   `, [
     furniture_name,
     quantity,
     date_of_purchase,
     price,
     remarks,
-    current_location
+    current_location,
+    condition || 'Good'   // ✅ NEW
   ]);
 
   res.sendStatus(200);
@@ -59,7 +61,8 @@ router.put("/:id", async (req, res) => {
     date_of_purchase,
     price,
     remarks,
-    current_location
+    current_location,
+    condition          // ✅ NEW
   } = req.body;
 
   await pool.query(`
@@ -69,8 +72,9 @@ router.put("/:id", async (req, res) => {
       date_of_purchase=$3,
       price=$4,
       remarks=$5,
-      current_location=$6
-    WHERE office_furniture_id=$7
+      current_location=$6,
+      condition=$7
+    WHERE office_furniture_id=$8
   `, [
     furniture_name,
     quantity,
@@ -78,6 +82,7 @@ router.put("/:id", async (req, res) => {
     price,
     remarks,
     current_location,
+    condition || 'Good',   // ✅ NEW
     req.params.id
   ]);
 

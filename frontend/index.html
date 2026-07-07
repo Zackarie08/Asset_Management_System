@@ -370,10 +370,9 @@
             <select class="form-ctrl" id="fur-filter-condition" onchange="applyFurFilters()"
               style="font-size:12px; padding:5px 10px; width:auto;">
               <option value="all">Condition: All</option>
-              <option value="New">New</option>
               <option value="Good">Good</option>
-              <option value="Fair">Fair</option>
-              <option value="For Repair">For Repair</option>
+              <option value="Damaged">Damaged</option>
+              <option value="Disposed">Disposed</option>
             </select>
 
             <!-- Date filter -->
@@ -1598,6 +1597,14 @@
           <label>Location *</label>
           <!-- ✅ CHANGED TO SELECT -->
           <select class="form-ctrl" id="fur-f-loc"></select>
+        </div>
+        <div class="form-grp">
+          <label>Condition</label>
+          <select class="form-ctrl" id="fur-f-condition">
+            <option value="Good">Good</option>
+            <option value="Damaged">Damaged</option>
+            <option value="Disposed">Disposed</option>
+          </select>
         </div>
       </div>
 
