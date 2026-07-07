@@ -82,9 +82,21 @@ let _tabCloseLogged = false;
 
 function doLogout() {
   if (currentUser) {
-    addLog("LOGOUT", "USER", `User ${currentUser.name} logged out`, currentUser.user_id);
+    const payload = JSON.stringify({
+      user_id: currentUser.user_id,
+      action_type: "LOGOUT",
+      module: "USER",
+      description: `User ${currentUser.name} logged out`,
+      reference_type: currentUser.user_id
+    });
+
+    navigator.sendBeacon(
+      `${API_URL}/api/logs`,
+      new Blob([payload], { type: "application/json" })
+    );
   }
-  _loggingOut = true; // prevents the beforeunload handler from double-logging
+  _loggingOut = true;     // prevents the beforeunload/pagehide handler from double-logging
+  _tabCloseLogged = true; // extra guard against a duplicate LOGOUT entry
   sessionStorage.removeItem("user");
   location.reload();
 }

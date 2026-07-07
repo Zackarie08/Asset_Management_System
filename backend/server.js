@@ -3,10 +3,14 @@
 // BUG FIX: subscriptionsMaster was mounted at /api/insurance
 //           (same path as the real insurance router), causing
 //           a route conflict. Fixed path to /api/subscriptions-master
+// NEW: automatic system_log retention cleanup (30 days) — see
+//      backend/utils/logCleanup.js and Log_Retention_Implementation.md
 // ============================================================
 const express = require("express");
 const cors    = require("cors");
 require("dotenv").config();
+
+const cleanupOldLogs = require("./utils/logCleanup"); // ✅ NEW
 
 const app = express();
 app.use(cors());
@@ -38,3 +42,9 @@ app.get("/", (req, res) => res.send("Server is running"));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+/* ── LOG RETENTION (✅ NEW) ─────────────────────────────────
+   Removes system_log rows older than 30 days. Runs once on
+   startup, then every 24 hours. See backend/utils/logCleanup.js. */
+cleanupOldLogs();
+setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000);

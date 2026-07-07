@@ -168,9 +168,6 @@
             <div class="pg-title">Dashboard</div>
             <div class="pg-sub">System overview — <span id="dash-date"></span></div>
           </div>
-          <div class="pg-actions">
-            <button class="btn btn-outline btn-sm" onclick="refreshDashboard()">🔄 Refresh</button>
-          </div>
         </div>
 
         <div class="stats-grid">
@@ -784,12 +781,10 @@
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">🚗 Fleet Register</div>
+            <div class="card-title">Fleet Register</div>
             <div class="card-actions">
-              <span class="badge b-slate">🚗 <span id="veh-stat-total">—</span> vehicles</span>
-              <span class="badge b-amber">🛠 <span id="veh-stat-maint">—</span> under maint.</span>
-              <span class="badge b-red">⚠️ <span id="veh-stat-due">—</span> due/overdue</span>
-              <span class="badge b-slate" id="veh-ct">0 vehicles</span>
+              <span class="badge b-slate"><span id="veh-stat-total">—</span> vehicles</span>
+              <span class="badge b-red"><span id="veh-stat-due">—</span> due/overdue</span>
             </div>
           </div>
           <div class="table-wrap">
@@ -875,6 +870,7 @@
 
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
+            <button class="btn btn-green btn-sm" onclick="openAddSubscription()">➕ Add Subscription</button>
             <button class="btn btn-ghost btn-sm" onclick="exportUnifiedSubscriptions()">📥 Export</button>
           </div>
         </div>
@@ -884,11 +880,10 @@
           <div class="card-hd">
             <div class="card-title">🔗 All Subscriptions</div>
             <div class="card-actions">
-              <span class="badge b-slate">📊 <span id="uni-stat-total">—</span> total</span>
-              <span class="badge b-green">✅ <span id="uni-stat-active">—</span> active</span>
-              <span class="badge b-amber">⚠️ <span id="uni-stat-expiring">—</span> expiring</span>
-              <span class="badge b-red">❌ <span id="uni-stat-expired">—</span> expired</span>
-              <button class="btn btn-green btn-sm" onclick="openAddSubscription()">➕ Add Subscription</button>
+              <span class="badge b-slate"><span id="uni-stat-total">—</span> total</span>
+              <span class="badge b-green"><span id="uni-stat-active">—</span> active</span>
+              <span class="badge b-amber"><span id="uni-stat-expiring">—</span> expiring</span>
+              <span class="badge b-red"><span id="uni-stat-expired">—</span> expired</span>
             </div>
           </div>
           <div class="table-wrap">
@@ -958,6 +953,7 @@
 
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
+            <div id="ins-actions"></div>
             <button class="btn btn-ghost btn-sm" onclick="exportInsurance()">📥 Export</button>
           </div>
         </div>
@@ -968,7 +964,6 @@
             <div class="card-title">🛡️ Insurance Records</div>
             <div class="card-actions">
               <span class="badge b-slate" id="ins-ct">0 records</span>
-              <div id="ins-actions"></div>
             </div>
           </div>
           <div class="table-wrap">
@@ -1138,7 +1133,6 @@
 
           <!-- Right side actions -->
           <div class="flex-gap" style="flex-shrink:0;">
-            <button class="btn btn-outline btn-sm" onclick="clearLogs()">🗑️ Clear Logs</button>
             <button class="btn btn-outline btn-sm" onclick="exportLogs()">📥 Export</button>
           </div>
         </div>
@@ -1213,8 +1207,8 @@
 
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
-            <button class="btn btn-ghost btn-sm" onclick="exportUsers()">📥 Export</button>
             <button class="btn btn-green btn-sm" onclick="openAddUser()">➕ Add User</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportUsers()">📥 Export</button>
           </div>
         </div>
 

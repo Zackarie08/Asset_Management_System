@@ -2013,15 +2013,15 @@ async function editContract(id) {
   if (title) title.textContent = "📄 Edit Contract";
 
   // ✅ FIX: no fetch dependency here — set values directly, no timeout needed
-  document.getElementById("con-f-date").value  = c.contract_date   || "";
+  document.getElementById("con-f-date").value  = formatDateForInput(c.contract_date);
   document.getElementById("con-f-party").value = c.other_party     || "";
   document.getElementById("con-f-desc").value  = c.description     || "";
   document.getElementById("con-f-type").value  = c.validity_type   || "YEAR";
   toggleValidity();
 
   document.getElementById("con-f-year").value  = c.valid_year || "";
-  document.getElementById("con-f-from").value  = c.valid_from || "";
-  document.getElementById("con-f-to").value    = c.valid_to   || "";
+  document.getElementById("con-f-from").value  = formatDateForInput(c.valid_from);
+  document.getElementById("con-f-to").value    = formatDateForInput(c.valid_to);
   document.getElementById("con-f-remarks").value = c.remarks  || "";
 
   window.editContractId = id;
