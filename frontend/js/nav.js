@@ -123,10 +123,10 @@ function refreshPageActions(page) {
       if (el) el.innerHTML = isAdmin
         ? `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')">➕ Add Vehicle</button>` : "";
     },
-    contracts:  () => {
+    contracts: () => {
       const el = document.getElementById("con-actions");
       if (el && isAdmin) el.innerHTML =
-        `<button class="btn btn-green btn-sm" onclick="openM('m-add-con')">➕ Add Contract</button>`;
+        `<button class="btn btn-green btn-sm" onclick="openAddContract()">➕ Add Contract</button>`;
     },
     insurance:  () => {
       const el = document.getElementById("ins-actions");

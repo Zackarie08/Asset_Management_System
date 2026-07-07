@@ -624,24 +624,28 @@ async function editLaptop(id) {
   if (!lp) return;
 
   editLaptopId = id;
-  openAddLaptop();
+  openM("m-add-lp");
+  const title = document.querySelector('#m-add-lp .modal-title');
+  if (title) title.textContent = "💻 Edit Laptop";
 
-  setTimeout(() => {
-    document.getElementById('lp-f-asset').value = lp.asset_number;
-    document.getElementById('lp-f-desc').value = lp.item_description;
-    document.getElementById('lp-f-serial').value = lp.serial_number;
-    document.getElementById('lp-f-brand').value = lp.category;
-    document.getElementById('lp-f-location').value = lp.current_location;
-    document.getElementById('lp-f-status').value = lp.status;
-    document.getElementById('lp-f-warranty').value = formatDateForInput(lp.warranty_end_date);
-    document.getElementById('lp-f-bought').value = formatDateForInput(lp.date_of_purchase);
-    document.getElementById('lp-f-price').value = lp.price || "";
-    // ✅ NEW fields
-    const remarksEl = document.getElementById('lp-f-remarks');
-    if (remarksEl) remarksEl.value = lp.remarks || '';
-    const supplierEl = document.getElementById('lp-f-supplier');
-    if (supplierEl) supplierEl.value = lp.supplier || '';
-  }, 100);
+  // ✅ FIX: await the dropdown fetch instead of racing it with setTimeout —
+  // the old code sometimes left "Location" blank on slower connections.
+  await loadLocationsDropdown();
+
+  document.getElementById('lp-f-asset').value = lp.asset_number;
+  document.getElementById('lp-f-desc').value = lp.item_description;
+  document.getElementById('lp-f-serial').value = lp.serial_number;
+  document.getElementById('lp-f-brand').value = lp.category;
+  document.getElementById('lp-f-location').value = lp.current_location;
+  document.getElementById('lp-f-status').value = lp.status;
+  document.getElementById('lp-f-warranty').value = formatDateForInput(lp.warranty_end_date);
+  document.getElementById('lp-f-bought').value = formatDateForInput(lp.date_of_purchase);
+  document.getElementById('lp-f-price').value = lp.price || "";
+  const remarksEl = document.getElementById('lp-f-remarks');
+  if (remarksEl) remarksEl.value = lp.remarks || '';
+  const supplierEl = document.getElementById('lp-f-supplier');
+  if (supplierEl) supplierEl.value = lp.supplier || '';
+
   renderLaptops();
 }
 

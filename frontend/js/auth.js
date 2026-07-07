@@ -77,13 +77,42 @@ function doLogin() {
   });
 }
 
+let _loggingOut = false;
+let _tabCloseLogged = false;
+
 function doLogout() {
   if (currentUser) {
-    addLog("LOGOUT", "USER", `User ${currentUser.name} logged out`, currentUser.user_id); // Part 5
+    addLog("LOGOUT", "USER", `User ${currentUser.name} logged out`, currentUser.user_id);
   }
-  sessionStorage.removeItem("user");   // was localStorage
+  _loggingOut = true; // prevents the beforeunload handler from double-logging
+  sessionStorage.removeItem("user");
   location.reload();
 }
+
+// ✅ NEW: logs LOGOUT when the tab is closed or the session ends
+// without the user clicking "Sign Out" (e.g. closing the X, refreshing
+// away, or browser/device shutdown). Uses sendBeacon because regular
+// fetch() calls are frequently cancelled mid-flight during unload.
+function _logTabClose() {
+  if (!currentUser || _loggingOut || _tabCloseLogged) return;
+  _tabCloseLogged = true;
+
+  const payload = JSON.stringify({
+    user_id: currentUser.user_id,
+    action_type: "LOGOUT",
+    module: "USER",
+    description: `User ${currentUser.name} closed the tab / session ended`,
+    reference_type: currentUser.user_id
+  });
+
+  navigator.sendBeacon(
+    `${API_URL}/api/logs`,
+    new Blob([payload], { type: "application/json" })
+  );
+}
+
+window.addEventListener("beforeunload", _logTabClose);
+window.addEventListener("pagehide", _logTabClose); // fallback for mobile Safari
 
 /* ────────────────────────────────────────────────────────────
    TOPBAR USER MENU

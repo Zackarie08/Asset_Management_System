@@ -47,6 +47,7 @@ let planEditId    = null;
 let planVehicleId = null;
 let _recordMaintTypeId = null;
 let _recordVehicleId   = null;
+let vehShowMaintHistory = false; // collapsed by default
 
 /* ─────────────────────────────────────────────────────────
    HELPERS
@@ -363,8 +364,10 @@ async function dpVehicle(id) {
 
     <!-- Maintenance History -->
     <div class="dp-section">
-      <div class="dp-section-hd">🔧 Maintenance History</div>
-      ${maintHTML}
+      <div class="dp-section-hd" onclick="toggleVehMaintHistory(${id})">
+        🔧 Maintenance History ${vehShowMaintHistory ? "▲" : "▼"}
+      </div>
+      ${vehShowMaintHistory ? maintHTML : ""}
     </div>
 
     <!-- Attachments -->
@@ -403,6 +406,11 @@ async function dpVehicle(id) {
 
   // Load attachments panel
   attachmentPanel('vehicles', id, `veh-att-${id}`);
+}
+
+function toggleVehMaintHistory(id) {
+  vehShowMaintHistory = !vehShowMaintHistory;
+  dpVehicle(id);
 }
 
 /* ─────────────────────────────────────────────────────────

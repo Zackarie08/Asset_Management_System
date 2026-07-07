@@ -183,12 +183,33 @@ function editUser(id) {
       document.getElementById('u-email').value    = u.email;
       document.getElementById('u-dept').value     = u.department || '';
       document.getElementById('u-role').value     = u.role;
-      document.getElementById('u-password').value = '';
+
+      // ✅ FIX: password is no longer editable here — use "Reset Password"
+      const pw = document.getElementById('u-password');
+      pw.value = '';
+      pw.disabled = true;
+      pw.placeholder = 'Use "Reset Password" to change';
+      const pwWrap = document.getElementById('u-password-wrap');
+      if (pwWrap) pwWrap.style.opacity = '0.5';
+
       const roleInput = document.getElementById('u-role');
       roleInput.setAttribute('data-original', u.role);
       roleInput.disabled = u.role === 'super_admin';
       openM('m-add-user');
     });
+}
+
+// ✅ NEW: resets password field state when opening the ADD form
+function openAddUser() {
+  userEditId = null;
+  const pw = document.getElementById('u-password');
+  pw.disabled = false;
+  pw.value = '';
+  pw.placeholder = 'Minimum 6 characters';
+  const pwWrap = document.getElementById('u-password-wrap');
+  if (pwWrap) pwWrap.style.opacity = '1';
+  document.getElementById('u-role').disabled = false;
+  openM('m-add-user');
 }
 
 /* ── DELETE USER ────────────────────────────────────────── */

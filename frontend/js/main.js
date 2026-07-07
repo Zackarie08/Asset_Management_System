@@ -1453,6 +1453,9 @@ async function loadLocationsDropdown() {
 }
 
 function openAddLaptop() {
+  editLaptopId = null;
+  const title = document.querySelector('#m-add-lp .modal-title');
+  if (title) title.textContent = "💻 Add Laptop";
   openM("m-add-lp");
   loadLocationsDropdown();
 }
@@ -1785,7 +1788,6 @@ async function saveContract() {
     other_party:   document.getElementById("con-f-party").value,
     description:   document.getElementById("con-f-desc").value,
     validity_type: type,
-    // ✅ For NA: don't send date fields
     valid_year: type === "YEAR"  ? document.getElementById("con-f-year").value : null,
     valid_from: type === "RANGE" ? document.getElementById("con-f-from").value : null,
     valid_to:   type === "RANGE" ? document.getElementById("con-f-to").value   : null,
@@ -1794,6 +1796,13 @@ async function saveContract() {
 
   const url    = window.editContractId ? `${API_URL}/api/contracts/${window.editContractId}` : `${API_URL}/api/contracts`;
   const method = window.editContractId ? "PUT" : "POST";
+
+  // ✅ FIX: backend UPDATE requires `status` — it was never sent, so
+  // every edit silently reset status to NULL. Preserve existing value.
+  if (window.editContractId) {
+    const existing = await fetch(`${API_URL}/api/contracts/${window.editContractId}`).then(r => r.json());
+    payload.status = existing?.status || "IN_STORAGE";
+  }
 
   await fetch(url, {
     method,
@@ -1991,26 +2000,36 @@ async function renderContractActions(c) {
   `;
 }
 
-function editContract(id) {
-  fetch(`${API_URL}/api/contracts/${id}`)
-    .then(res => res.json())
-    .then(c => {
-      openM("m-add-con");
-      setTimeout(() => {
-        document.getElementById("con-f-date").value  = c.contract_date   || "";
-        document.getElementById("con-f-party").value = c.other_party     || "";
-        document.getElementById("con-f-desc").value  = c.description     || "";
-        document.getElementById("con-f-type").value  = c.validity_type   || "YEAR";
-        toggleValidity();
+async function editContract(id) {
+  const res = await fetch(`${API_URL}/api/contracts/${id}`);
+  const c = await res.json();
+  if (!c) return;
 
-        document.getElementById("con-f-year").value  = c.valid_year || "";
-        document.getElementById("con-f-from").value  = c.valid_from || "";
-        document.getElementById("con-f-to").value    = c.valid_to   || "";
-        document.getElementById("con-f-remarks").value = c.remarks  || "";
+  openM("m-add-con");
+  const title = document.querySelector('#m-add-con .modal-title');
+  if (title) title.textContent = "📄 Edit Contract";
 
-        window.editContractId = id;
-      }, 100);
-    });
+  // ✅ FIX: no fetch dependency here — set values directly, no timeout needed
+  document.getElementById("con-f-date").value  = c.contract_date   || "";
+  document.getElementById("con-f-party").value = c.other_party     || "";
+  document.getElementById("con-f-desc").value  = c.description     || "";
+  document.getElementById("con-f-type").value  = c.validity_type   || "YEAR";
+  toggleValidity();
+
+  document.getElementById("con-f-year").value  = c.valid_year || "";
+  document.getElementById("con-f-from").value  = c.valid_from || "";
+  document.getElementById("con-f-to").value    = c.valid_to   || "";
+  document.getElementById("con-f-remarks").value = c.remarks  || "";
+
+  window.editContractId = id;
+}
+
+// ✅ NEW: resets title + editContractId when opening a fresh Add form
+function openAddContract() {
+  window.editContractId = null;
+  const title = document.querySelector('#m-add-con .modal-title');
+  if (title) title.textContent = "📄 Add Contract";
+  openM("m-add-con");
 }
 
 function deleteContract(id) {
