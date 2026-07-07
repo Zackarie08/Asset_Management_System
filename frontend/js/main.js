@@ -1769,10 +1769,8 @@ async function dpContract(id) {
         ${dpField("Expiry Status", expiryBadge)}
       </div>
     </div>
-    <div class="dp-section">
-      <div class="dp-section-hd">📝 Remarks</div>
-      <div class="dp-grid">${dpFieldFull("Notes", c.remarks || "No remarks")}</div>
-    </div>
+
+    ${c.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', c.remarks)}</div></div>` : ''}
     <div id="contract-actions"></div>`;
 
   document.getElementById("dp-body").innerHTML = html;
@@ -2451,12 +2449,7 @@ async function dpFinance(id) {
       </div>
     </div>
 
-    <div class="dp-section">
-      <div class="dp-section-hd">📝 Remarks</div>
-      <div class="dp-grid">
-        ${dpFieldFull("Notes", f.remarks || "No remarks")}
-      </div>
-    </div>
+    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
 
     <div class="dp-section">
       <div class="dp-section-hd">⚡ Actions</div>
