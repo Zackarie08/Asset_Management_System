@@ -1665,7 +1665,7 @@ function _renderConTable() {
       } else if (c.validity_type === 'YEAR') {
         validity = c.valid_year || '—';
       } else {
-        validity = `${c.valid_from || '—'} — ${c.valid_to || '—'}`;
+        validity = `${formatDateHuman(c.valid_from)} — ${formatDateHuman(c.valid_to)}`;
       }
 
       const { badge: expiryBadge } = _computeContractExpiry(c);
@@ -1673,7 +1673,7 @@ function _renderConTable() {
       const tr = document.createElement("tr");
       tr.className = "tr-clickable";
       tr.innerHTML = `
-        <td>${c.contract_date}</td>
+        <td>${formatDateHuman(c.contract_date)}</td>
         <td>${c.other_party}</td>
         <td>${c.description}</td>
         <td>${validity}</td>
@@ -1740,7 +1740,7 @@ async function dpContract(id) {
   } else if (c.validity_type === 'YEAR') {
     validity = c.valid_year || '—';
   } else {
-    validity = `${c.valid_from || '—'} — ${c.valid_to || '—'}`;
+    validity = `${formatDateHuman(c.valid_from)} — ${formatDateHuman(c.valid_to)}`;
   }
 
   // ✅ NA: skip expiry badge
@@ -1766,7 +1766,7 @@ async function dpContract(id) {
     <div class="dp-section">
       <div class="dp-section-hd">📋 Details</div>
       <div class="dp-grid">
-        ${dpField("Date",          c.contract_date)}
+        ${dpField("Date",          formatDateHuman(c.contract_date))}
         ${dpField("Other Party",   c.other_party)}
         ${dpField("Description",   c.description)}
         ${dpField("Validity Type", c.validity_type)}
@@ -3080,7 +3080,7 @@ async function refreshDashboard() {
   if (delayedBadge) delayedBadge.textContent = `${delayedCount} delayed`;
 
   if (activeOrders.length === 0) {
-    _setHTML('dash-order-list', _emptyMsg('📦 No pending orders'));
+    _setHTML('dash-order-list', _emptyMsg('No pending orders'));
   } else {
     const rows = activeOrders.slice(0, 6).map(o => {
       const s = o.effectiveStatus;

@@ -126,7 +126,7 @@ async function refreshDashboard() {
   if (delayedBadge) delayedBadge.textContent = `${delayedCount} delayed`;
 
   if (activeOrders.length === 0) {
-    _setHTML('dash-order-list', _emptyMsg('📦 No pending orders'));
+    _setHTML('dash-order-list', _emptyMsg('No pending orders'));
   } else {
     const rows = activeOrders.map(o => {
       const s = o.effectiveStatus;
@@ -137,7 +137,7 @@ async function refreshDashboard() {
           <div class="pr-dot ${dotCls}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(o.item_name || `Item #${o.item_id}`)}</div>
-            <div class="pr-meta">PO #${o.purchase_order_id} · ETA: ${o.expected_delivery_date || '—'}</div>
+            <div class="pr-meta">PO #${o.purchase_order_id} · ETA: ${formatDateHuman(o.expected_delivery_date)}</div>
           </div>
           ${badge(s, bdgCls)}
         </div>`;
@@ -152,12 +152,19 @@ async function refreshDashboard() {
 
   const laptopAlerts = [];
   laptops.forEach(lp => {
+    // For Repair — always an alert, regardless of assignment
     if (lp.status === 'For Repair') { laptopAlerts.push({ lp, reason: 'For Repair', cls: 'red' }); return; }
-    if (!lp.current_user_id) { laptopAlerts.push({ lp, reason: 'Unassigned', cls: 'amber' }); return; }
-    if (lp.date_of_purchase) {
+
+    // ✅ FIX (Part 2): unassigned laptops are excluded from alerts entirely — they're
+    // not actionable maintenance/age concerns, just noise.
+    if (!lp.current_user_id) return;
+
+    // ✅ FIX (Part 2): age alerts only apply to laptops assigned to employee/admin/
+    // super_admin. Intern-assigned laptops are excluded even if 3+ years old.
+    if (lp.date_of_purchase && lp.user_role !== 'intern') {
       const ageYears = (now - new Date(lp.date_of_purchase)) / (365.25 * 24 * 3600 * 1000);
-      if (ageYears >= 3 && lp.user_role === 'intern') {
-        laptopAlerts.push({ lp, reason: `${Math.floor(ageYears)}y old · Intern`, cls: 'amber' });
+      if (ageYears >= 3) {
+        laptopAlerts.push({ lp, reason: `${Math.floor(ageYears)}y old`, cls: 'amber' });
       }
     }
   });
@@ -184,15 +191,23 @@ async function refreshDashboard() {
     if (laptopAlerts.length === 0) {
       html += _emptyMsg('No other laptop alerts');
     } else {
-      html += laptopAlerts.map(({ lp, reason, cls }) => `
+      // ✅ FIX (Part 3): Line 1 = Serial • Asset Number (primary emphasis, via .pr-name).
+      // Line 2 = Assigned User • Description (lower emphasis, via .pr-meta).
+      // "Unassigned" only appears here for a For-Repair alert on an unassigned unit.
+      html += laptopAlerts.map(({ lp, reason, cls }) => {
+        const assignedLabel = lp.current_user_id
+          ? _esc(lp.user_name || 'Unknown user')
+          : 'Unassigned';
+        return `
         <div class="panel-row">
           <div class="pr-dot ${cls}"></div>
           <div style="flex:1">
-            <div class="pr-name">${_esc(lp.item_description)}</div>
-            <div class="pr-meta">${_esc(lp.asset_number)} · ${_esc(lp.user_name || 'Unassigned')}</div>
+            <div class="pr-name">${_esc(lp.serial_number)} • ${_esc(lp.asset_number)}</div>
+            <div class="pr-meta">${assignedLabel} • ${_esc(lp.item_description)}</div>
           </div>
           ${badge(reason, `b-${cls}`)}
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
     _setHTML('dash-maint-list', html);
   }
@@ -310,8 +325,8 @@ async function refreshDashboard() {
     _setText('dash-admin-subs', `${totalSubs} active subscriptions`);
 
     const allSubAlerts = [
-      ...globeAlerts.map(g => ({ name: g.employee_name, detail: `Globe · ${g.plan_name || '—'} · Renews ${g.renewal_date || '—'}`, daysLeft: daysFromNow(g.renewal_date) })),
-      ...m365Alerts.map(m => ({ name: m.assigned_email, detail: `M365 · ${m.license_type || '—'} · Expires ${m.expiry_date || '—'}`, daysLeft: daysFromNow(m.expiry_date) })),
+      ...globeAlerts.map(g => ({ name: g.employee_name, detail: `Globe · ${g.plan_name || '—'} · Renews ${formatDateHuman(g.renewal_date)}`, daysLeft: daysFromNow(g.renewal_date) })),
+      ...m365Alerts.map(m => ({ name: m.assigned_email, detail: `M365 · ${m.license_type || '—'} · Expires ${formatDateHuman(m.expiry_date)}`, daysLeft: daysFromNow(m.expiry_date) })),
     ];
 
     if (allSubAlerts.length === 0) {

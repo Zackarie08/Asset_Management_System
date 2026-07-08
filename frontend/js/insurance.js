@@ -180,7 +180,7 @@ function _renderInsTable() {
         <td class="td-strong">${ins.employee_name}</td>
         <td>${ins.provider || "—"}</td>
         <td class="td-mono">${ins.policy_number || "—"}</td>
-        <td>${ins.expiry_date ? new Date(ins.expiry_date).toLocaleDateString("en-PH", { year:"numeric", month:"short", day:"numeric" }) : "—"}</td>
+        <td>${formatDateHuman(ins.expiry_date)}</td>
         <td>${expiryBadge}</td>
         <td>${coverageBadge}</td>
       `;
@@ -277,8 +277,8 @@ async function dpInsurance(id) {
           ${dpField("Policy Name",   ins.employee_name)}
           ${dpField("Provider",      ins.provider || "—")}
           ${dpField("Policy Number", ins.policy_number || "—")}
-          ${dpField("Start Date",    ins.start_date  ? new Date(ins.start_date).toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"}) : "—")}
-          ${dpField("Expiry Date",   ins.expiry_date ? new Date(ins.expiry_date).toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"}) : "—")}
+          ${dpField("Start Date",    formatDateHuman(ins.start_date))}
+          ${dpField("Expiry Date",   formatDateHuman(ins.expiry_date))}
         </div>
       </div>
       ${coverageHTML}

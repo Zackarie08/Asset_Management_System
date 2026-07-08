@@ -1,4 +1,15 @@
 function todayStr() { return new Date().toISOString().slice(0,10); }
+
+// ✅ NEW: shared human-readable date formatter used across the Dashboard,
+// Contracts, Insurance, Subscriptions, and Vehicles modules.
+// "2026-09-06T00:00:00.000Z" → "September 6, 2026"
+function formatDateHuman(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 function clearForm(ids) { ids.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; }); }
 
 function showToast(msg, type='t-success') {

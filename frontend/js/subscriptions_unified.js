@@ -35,9 +35,16 @@ function statusBadge(status) {
   return `<span class="badge ${map[status] || 'b-slate'}">${status || '—'}</span>`;
 }
 
+function _dpEsc(str) {
+  if (!str) return '—';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function fmtDate(str) {
   if (!str) return '—';
-  return new Date(str).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function fmtCost(val) {
@@ -484,6 +491,15 @@ async function dpGlobe(id) {
           ${dpField('Renewal Date', fmtDate(g.renewal_date))}
         </div>
       </div>
+      <div class="dp-section">
+        <div class="dp-section-hd">🎁 Plan Inclusions</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+          <div>${g.unli_allnet_calls ? '✅' : '❌'} Unli All-Net Calls</div>
+          <div>${g.unli_text ? '✅' : '❌'} Unli Text</div>
+          <div>📶 ${g.data_allocation ? _dpEsc(g.data_allocation) + ' Data' : 'No data plan specified'}</div>
+          ${g.freebie ? `<div>🎁 ${_dpEsc(g.freebie)}</div>` : ''}
+        </div>
+      </div>
       ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}
       <div class="dp-section" id="dp-att-globe-${id}"></div>
       <div class="dp-section">
@@ -522,6 +538,10 @@ function saveGlobe() {
     renewal_date:   renew,
     status:         document.getElementById('globe-f-status').value,
     remarks:        document.getElementById('globe-f-remarks').value,
+    // ✅ NEW
+    unli_allnet_calls: document.getElementById('globe-f-unli-calls').value === 'true',
+    unli_text:         document.getElementById('globe-f-unli-text').value === 'true',
+    freebie:            document.getElementById('globe-f-freebie').value.trim() || null,
   };
 
   const url = globeEditId ? `${API_URL}/api/globe/${globeEditId}` : `${API_URL}/api/globe`;
@@ -554,6 +574,10 @@ async function editGlobe(id) {
     document.getElementById('globe-f-status').value  = g.status         || 'Active';
     document.getElementById('globe-f-start').value   = g.start_date   ? new Date(g.start_date).toISOString().slice(0,10)   : '';
     document.getElementById('globe-f-renew').value   = g.renewal_date ? new Date(g.renewal_date).toISOString().slice(0,10) : '';
+    // ✅ NEW
+    document.getElementById('globe-f-unli-calls').value = g.unli_allnet_calls ? 'true' : 'false';
+    document.getElementById('globe-f-unli-text').value  = g.unli_text ? 'true' : 'false';
+    document.getElementById('globe-f-freebie').value    = g.freebie || '';
     openM('m-add-globe');
   } catch { showToast('Failed to load plan for editing', 't-error'); }
 }

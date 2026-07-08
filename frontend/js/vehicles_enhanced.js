@@ -351,7 +351,7 @@ async function dpVehicle(id) {
         ${dpField('Status', v.status)}
         ${dpField('Odometer', km.toLocaleString() + ' km')}
         ${dpField('Last Maint. KM', (v.last_maintenance_km || 0).toLocaleString() + ' km')}
-        ${dpField('Purchase Date', v.purchase_date || '—')}
+        ${dpField('Purchase Date', formatDateHuman(v.purchase_date))}
         ${dpField('Price', v.price ? '₱' + Number(v.price).toLocaleString() : '—')}
         ${v.remarks ? dpFieldFull('Remarks', v.remarks) : ''}
       </div>
