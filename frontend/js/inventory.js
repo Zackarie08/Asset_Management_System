@@ -253,6 +253,7 @@ function saveInvItem() {
     }).then(() => {
       renderInventory();
       closeM('m-add-inv');
+      showToast("Item edited", "t-success");
       invEditId = null; // ✅ reset mode
     });
 
@@ -279,6 +280,7 @@ function saveInvItem() {
     }).then(() => {
       renderInventory();
       closeM('m-add-inv');
+      showToast("Item added", "t-success");
 
       if (dpOpen && dpCurrentType === 'inventory' && dpCurrentId === invEditId) {
         dpInventory(invEditId);

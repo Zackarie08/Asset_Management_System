@@ -86,6 +86,7 @@ router.post("/", async (req, res) => {
       renewal_date,
       status,
       remarks,
+      licensed,          // ✅ NEW — replaces Category in the UI
     } = req.body;
 
     if (!assigned_email || !license_type) {
@@ -98,20 +99,21 @@ router.post("/", async (req, res) => {
       INSERT INTO m365 (
         assigned_user_id, assigned_email, license_type, category,
         license_cost, monthly_cost,
-        start_date, expiry_date, renewal_date, status, remarks
-      ) VALUES ($1,$2,$3,$4,$5,$5,$6,$7,$8,$9,$10)
+        start_date, expiry_date, renewal_date, status, remarks, licensed
+      ) VALUES ($1,$2,$3,$4,$5,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *
     `, [
       assigned_user_id || null,
       assigned_email,
       license_type,
-      category || null,
+      category || null,   // kept for legacy rows only — no longer written from the UI
       cost,
       start_date || null,
       expiry_date || null,
       renewal_date || null,
       status || "Active",
       remarks || null,
+      licensed === undefined ? true : !!licensed,
     ]);
 
     res.json(result.rows[0]);
@@ -136,6 +138,7 @@ router.put("/:id", async (req, res) => {
       renewal_date,
       status,
       remarks,
+      licensed,          // ✅ NEW
     } = req.body;
 
     const cost = monthly_cost ?? license_cost ?? null;
@@ -152,8 +155,9 @@ router.put("/:id", async (req, res) => {
         expiry_date      = $7,
         renewal_date     = $8,
         status           = $9,
-        remarks          = $10
-      WHERE license_id = $11
+        remarks          = $10,
+        licensed         = $11
+      WHERE license_id = $12
       RETURNING *
     `, [
       assigned_user_id || null,
@@ -166,6 +170,7 @@ router.put("/:id", async (req, res) => {
       renewal_date || null,
       status || "Active",
       remarks || null,
+      licensed === undefined ? true : !!licensed,
       req.params.id,
     ]);
 

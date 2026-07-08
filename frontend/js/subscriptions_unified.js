@@ -92,15 +92,17 @@ async function renderSubscriptionsUnified() {
 
   let rows = [];
 
-  if (sourceFilter === 'all' || sourceFilter === 'M365') {
+if (sourceFilter === 'all' || sourceFilter === 'M365') {
     m365Data.forEach(m => {
       const status = m.computed_status || m.status || 'Active';
       rows.push({
         source: 'M365', id: m.license_id,
-        name: m.license_type || 'M365 License',
-        assignedTo: m.assigned_email || '—',
+        // ✅ CHANGED: "Name / Plan" now shows the assigned email;
+        // "Assigned To" shows the actual assigned user (or Unassigned).
+        name: m.assigned_email || 'M365 License',
+        assignedTo: m.assigned_user_name || 'Unassigned',
         supplier: 'Microsoft',
-        category: m.category || '—',
+        category: m.license_type || '—', // category filter no longer applies to M365
         cost: m.monthly_cost ?? m.license_cost,
         expiry: m.expiry_date || m.renewal_date,
         status, _raw: m,
@@ -269,6 +271,7 @@ function selectSubType(type) {
   if (type === 'M365') {
     m365EditId = null;
     openM('m-add-m365');
+    loadM365Users();   // ✅ NEW
   } else if (type === 'Globe') {
     globeEditId = null;
     openM('m-add-globe');
@@ -332,9 +335,11 @@ async function dpM365(id) {
         <div class="dp-section-hd">📧 License Info</div>
         <div class="dp-grid">
           ${dpField('Assigned Email', m.assigned_email || '—')}
-          ${dpField('Assigned User',  m.assigned_user_name || '—')}
+          ${dpField('Assigned User',  m.assigned_user_name || 'Unassigned')}
           ${dpField('License Type',   m.license_type  || '—')}
-          ${dpField('Category',       m.category      || '—')}
+          ${dpField('Licensed Status',       m.licensed
+            ? '<span class="badge b-green">Yes</span>'
+            : '<span class="badge b-red">No</span>')}
           ${dpField('Monthly Cost',   fmtCost(m.monthly_cost ?? m.license_cost))}
           ${dpField('Status',         statusBadge(status))}
         </div>
@@ -364,20 +369,26 @@ async function dpM365(id) {
 }
 
 function saveM365() {
-  const email   = document.getElementById('m365-f-email').value.trim();
-  const type    = document.getElementById('m365-f-type').value;
-  const cat     = document.getElementById('m365-f-cat').value;
-  const start   = document.getElementById('m365-f-start').value;
-  const expiry  = document.getElementById('m365-f-expiry').value;
-  const renewal = document.getElementById('m365-f-renew').value;
-  const cost    = parseFloat(document.getElementById('m365-f-cost').value) || null;
-  const remarks = document.getElementById('m365-f-remarks').value;
+  const email     = document.getElementById('m365-f-email').value.trim();
+  const type      = document.getElementById('m365-f-type').value;
+  const licensed  = document.getElementById('m365-f-licensed').value === 'true';
+  const start     = document.getElementById('m365-f-start').value;
+  const expiry    = document.getElementById('m365-f-expiry').value;
+  const renewal   = document.getElementById('m365-f-renew').value;
+  const cost      = parseFloat(document.getElementById('m365-f-cost').value) || null;
+  const remarks   = document.getElementById('m365-f-remarks').value;
 
-  if (!email || !type || !cat) { showToast('Email, license type, and category are required', 't-error'); return; }
+  // Assigned To is optional — a license can be unassigned/spare
+  const assignedName = document.getElementById('m365-f-assigned').value.trim();
+  const assigned_user_id = assignedName ? (m365UserMap[assignedName] || null) : null;
+
+  if (!email || !type) { showToast('Email and license type are required', 't-error'); return; }
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailPattern.test(email)) { showToast('Invalid email format', 't-error'); return; }
+  if (assignedName && !assigned_user_id) { showToast('Select a valid user or clear the field', 't-error'); return; }
 
-  const payload = { assigned_email: email, license_type: type, category: cat,
+  const payload = { assigned_email: email, license_type: type, licensed,
+    assigned_user_id,
     monthly_cost: cost, start_date: start || null, expiry_date: expiry || null,
     renewal_date: renewal || null, status: 'Active', remarks };
 
@@ -398,16 +409,33 @@ async function editM365(id) {
   try {
     const m = await fetchOne('m365', id);
     m365EditId = id;
-    document.getElementById('m365-f-email').value   = m.assigned_email || '';
-    document.getElementById('m365-f-type').value    = m.license_type   || '';
-    document.getElementById('m365-f-cat').value     = m.category       || '';
-    document.getElementById('m365-f-cost').value    = m.monthly_cost ?? m.license_cost ?? '';
-    document.getElementById('m365-f-remarks').value = m.remarks        || '';
-    document.getElementById('m365-f-start').value   = m.start_date   ? new Date(m.start_date).toISOString().slice(0,10)   : '';
-    document.getElementById('m365-f-expiry').value  = m.expiry_date  ? new Date(m.expiry_date).toISOString().slice(0,10)  : '';
-    document.getElementById('m365-f-renew').value   = m.renewal_date ? new Date(m.renewal_date).toISOString().slice(0,10) : '';
+    document.getElementById('m365-f-email').value     = m.assigned_email || '';
+    document.getElementById('m365-f-type').value      = m.license_type   || '';
+    document.getElementById('m365-f-licensed').value  = m.licensed === false ? 'false' : 'true';
+    document.getElementById('m365-f-cost').value      = m.monthly_cost ?? m.license_cost ?? '';
+    document.getElementById('m365-f-remarks').value   = m.remarks        || '';
+    document.getElementById('m365-f-start').value     = m.start_date   ? new Date(m.start_date).toISOString().slice(0,10)   : '';
+    document.getElementById('m365-f-expiry').value    = m.expiry_date  ? new Date(m.expiry_date).toISOString().slice(0,10)  : '';
+    document.getElementById('m365-f-renew').value     = m.renewal_date ? new Date(m.renewal_date).toISOString().slice(0,10) : '';
+
+    // ✅ NEW: populate + wire the Assigned To searchable field
+    await loadM365Users();
+    document.getElementById('m365-f-assigned').value = m.assigned_user_name || '';
+    selectState['m365-f-assigned'] = !!m.assigned_user_name;
+
     openM('m-add-m365');
   } catch { showToast('Failed to load license for editing', 't-error'); }
+}
+
+// ✅ NEW: loads the user list for the Assigned To searchable field, mirrors loadGlobeUsers()
+let m365UserMap = {};
+async function loadM365Users() {
+  const res   = await fetch(`${API_URL}/api/auth/users`);
+  const users = await res.json();
+  const names = users.map(u => u.name);
+  makeSearchable('m365-f-assigned', 'm365-f-assigned-list', names);
+  m365UserMap = {};
+  users.forEach(u => { m365UserMap[u.name] = u.user_id; });
 }
 
 let deleteM365Id = null;
@@ -493,11 +521,15 @@ async function dpGlobe(id) {
       </div>
       <div class="dp-section">
         <div class="dp-section-hd">🎁 Plan Inclusions</div>
-        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-          <div>${g.unli_allnet_calls ? '✅' : '❌'} Unli All-Net Calls</div>
-          <div>${g.unli_text ? '✅' : '❌'} Unli Text</div>
-          <div>📶 ${g.data_allocation ? _dpEsc(g.data_allocation) + ' Data' : 'No data plan specified'}</div>
-          ${g.freebie ? `<div>🎁 ${_dpEsc(g.freebie)}</div>` : ''}
+        <div class="dp-grid">
+          ${dpField('Unli All-Net Calls', g.unli_allnet_calls
+            ? '<span class="badge b-green">Included</span>'
+            : '<span class="badge b-slate">Not Included</span>')}
+          ${dpField('Unli Text', g.unli_text
+            ? '<span class="badge b-green">Included</span>'
+            : '<span class="badge b-slate">Not Included</span>')}
+          ${dpField('Data Allocation', g.data_allocation || null)}
+          ${dpFieldFull('Freebie', g.freebie || null)}
         </div>
       </div>
       ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}
@@ -607,6 +639,19 @@ async function loadGlobeUsers() {
 }
 
 function openAddGlobe() { globeEditId = null; openM('m-add-globe'); loadGlobeUsers(); }
+
+// ✅ NEW: auto-formats mobile number input as the user types, so they can just type
+// digits (09276485673) instead of manually typing dashes (0917-123-4567).
+function formatGlobeMobileInput(el) {
+  const digits = el.value.replace(/\D/g, '').slice(0, 11); // keep digits only, max 11
+  let formatted = digits;
+  if (digits.length > 7) {
+    formatted = `${digits.slice(0,4)}-${digits.slice(4,7)}-${digits.slice(7)}`;
+  } else if (digits.length > 4) {
+    formatted = `${digits.slice(0,4)}-${digits.slice(4)}`;
+  }
+  el.value = formatted;
+}
 
 /* ──────────────────────────────────────────────────────────
    OTHER SUBSCRIPTIONS

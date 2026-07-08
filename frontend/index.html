@@ -2363,6 +2363,17 @@
           <label>Assigned Email *</label>
           <input class="form-ctrl" id="m365-f-email" type="email" placeholder="user@domain.com" maxlength="100"/>
         </div>
+        <!-- ✅ NEW: Assigned To (User) — was DB/API-ready but had no form input -->
+        <div class="form-grp">
+          <label>Assigned To (User)</label>
+          <div class="search-select">
+            <input id="m365-f-assigned" class="form-ctrl" placeholder="Type user name… (optional)"/>
+            <div id="m365-f-assigned-list" class="select-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-grp">
           <label>License Type *</label>
           <select class="form-ctrl" id="m365-f-type">
@@ -2377,20 +2388,17 @@
             <option>Office 2021 (Perpetual)</option>
           </select>
         </div>
+        <!-- ✅ CHANGED: Category dropdown removed, replaced with a Yes/No License flag -->
+        <div class="form-grp">
+          <label>Licensed Status *</label>
+          <select class="form-ctrl" id="m365-f-licensed">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
       </div>
 
       <div class="form-row">
-        <div class="form-grp">
-          <label>Category *</label>
-          <select class="form-ctrl" id="m365-f-cat">
-            <option value="">Select category…</option>
-            <option>Business</option>
-            <option>Enterprise</option>
-            <option>Education</option>
-            <option>Perpetual</option>
-            <option>Trial</option>
-          </select>
-        </div>
         <div class="form-grp">
           <label>Monthly Cost (₱)</label>
           <input class="form-ctrl" id="m365-f-cost" type="number" min="0" placeholder="0.00"/>
@@ -2477,7 +2485,8 @@
         </div>
         <div class="form-grp">
           <label>Mobile Number *</label>
-          <input id="globe-f-num" class="form-ctrl" placeholder="0917-123-4567" maxlength="13"/>
+          <input id="globe-f-num" class="form-ctrl" placeholder="0917-123-4567" maxlength="13"
+            inputmode="numeric" oninput="formatGlobeMobileInput(this)"/>
         </div>
       </div>
 

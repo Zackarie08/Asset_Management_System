@@ -355,3 +355,70 @@ ALTER TABLE vehicle_maintenance
 
 
   ALL THIS IS IMPLEMENTED, NOTE THAT WE CHANGED THE SUPPLIER FROM THEN INVENTORY TO THE PURCHASE ORDER
+
+
+
+
+
+
+
+  -- FOR SERVER (WHEN THE SYSTEM IS LIVE NA):
+
+const express = require("express");
+const cors    = require("cors");
+const path    = require("path"); // ✅ NEW
+require("dotenv").config();
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: "15mb" })); // ← allow base64 attachment uploads up to ~10MB
+
+/* ── STATIC FRONTEND ────────────────────────────────────────
+   Serves everything in backend/public (index.html, css/, js/,
+   pages/) directly. Must come before the API routes only in
+   the sense that it doesn't matter — Express checks static
+   files first for any GET that matches a real file path, then
+   falls through to the routes below. ─────────────────────── */
+app.use(express.static(path.join(__dirname, "public"))); // ✅ NEW
+
+/* ── ROUTES ─────────────────────────────────────────────── */
+app.use("/api/inventory",             require("./routes/inventory"));
+app.use("/api/auth",                  require("./routes/auth"));
+app.use("/api/logs",                  require("./routes/logs"));
+app.use("/api/location",              require("./routes/location"));
+app.use("/api/po",                    require("./routes/po"));
+app.use("/api/vehicle",               require("./routes/vehicle"));
+app.use("/api/furniture",             require("./routes/furniture"));
+app.use("/api/it-supplies",           require("./routes/itSupplies"));
+app.use("/api/globe",                 require("./routes/globe"));
+app.use("/api/m365",                  require("./routes/m365"));
+app.use("/api/laptops",               require("./routes/laptops"));
+app.use("/api/laptop-maintenance",    require("./routes/laptopMaintenance"));
+app.use("/api/finance-documents",     require("./routes/finance"));
+app.use("/api/contracts",             require("./routes/contracts"));
+app.use("/api/attachments",           require("./routes/attachments"));
+app.use("/api/subscriptions",         require("./routes/subscriptions"));
+app.use("/api/insurance",             require("./routes/insurance"));
+app.use("/api/subscriptions-master",  require("./routes/subscriptionsMaster"));
+app.use("/api/vehicle-plans",         require("./routes/vehicleMaintPlans"));
+
+/* ── HEALTH CHECK ───────────────────────────────────────── */
+app.get("/api/health", (req, res) => res.send("Server is running"));
+
+/* ── FRONTEND FALLBACK ──────────────────────────────────────
+   Any GET that isn't a static file and isn't under /api gets
+   index.html, so deep links / refreshes on pages/dashboard.html
+   style navigation still resolve. Registered LAST so it never
+   shadows a real API route or a 404 from one. ✅ NEW ────────── */
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+
+-- CONFIG FRONTEND:
+
+const API_URL = "";
