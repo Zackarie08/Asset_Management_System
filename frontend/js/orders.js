@@ -139,8 +139,8 @@ function _renderPOTable() {
         <td>${o.purchase_order_id}</td>
         <td>${o.item_name || '—'}</td>
         <td>${o.quantity_ordered}</td>
-        <td>${o.order_date || '—'}</td>
-        <td>${o.expected_delivery_date || '—'}</td>
+        <td>${formatDateHuman(o.order_date)}</td>
+        <td>${formatDateHuman(o.expected_delivery_date)}</td>
         <td><span class="badge ${badgeCls}">${status}</span></td>
       `;
 
@@ -203,9 +203,9 @@ async function dpOrder(id) {
         ${dpField('Supplier',       o.supplier_name || '—')}
         ${dpField('Contact',        o.supplier_contact || '—')}
         ${dpField('Unit Price',     o.unit_price ? '₱' + o.unit_price : '—')}
-        ${dpField('Order Date',     o.order_date || '—')}
-        ${dpField('Expected',       o.expected_delivery_date || '—')}
-        ${dpField('Delivered',      o.actual_delivery_date || 'Pending')}
+        ${dpField('Order Date',     formatDateHuman(o.order_date))}
+        ${dpField('Expected',       formatDateHuman(o.expected_delivery_date))}
+        ${dpField('Delivered',      o.actual_delivery_date ? formatDateHuman(o.actual_delivery_date) : 'Pending')}
         ${o.remarks ? dpFieldFull('Remarks', o.remarks) : ''}
       </div>
     </div>
