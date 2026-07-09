@@ -844,6 +844,8 @@
               <option value="For Renewal">For Renewal</option>
               <option value="Expired">Expired</option>
               <option value="Inactive">Inactive</option>
+              <option value="Licensed">Licensed</option>
+              <option value="No License">No License</option>
             </select>
 
             <!-- Category filter -->
@@ -937,6 +939,7 @@
               <option value="all">Coverage: All</option>
               <option value="GENERAL">General</option>
               <option value="SPECIFIC">Specific</option>
+              <option value="CUSTOM">Custom</option>
             </select>
 
             <!-- Status filter -->
@@ -2403,23 +2406,10 @@
           <label>Monthly Cost (₱)</label>
           <input class="form-ctrl" id="m365-f-cost" type="number" min="0" placeholder="0.00"/>
         </div>
-      </div>
-
-      <div class="form-row">
         <div class="form-grp">
-          <label>Start Date</label>
-          <input class="form-ctrl" id="m365-f-start" type="date"/>
-        </div>
-        <div class="form-grp">
-          <label>Expiry Date</label>
-          <input class="form-ctrl" id="m365-f-expiry" type="date"/>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-grp">
-          <label>Renewal Date</label>
+          <label>Renewal Date *</label>
           <input class="form-ctrl" id="m365-f-renew" type="date"/>
+          <span class="form-note">M365 renews yearly — alerts fire 3 days before and on this date.</span>
         </div>
       </div>
 
@@ -2529,15 +2519,11 @@
           </select>
         </div>
       </div>
-      <div class="form-grp">
-        <label>Freebie</label>
-        <input class="form-ctrl" id="globe-f-freebie" placeholder="e.g. Free Netflix, Free Landline Calls" maxlength="150"/>
-      </div>
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Start Date</label>
-          <input id="globe-f-start" type="date" class="form-ctrl"/>
+          <label>Freebie</label>
+          <input class="form-ctrl" id="globe-f-freebie" placeholder="e.g. Free Netflix, Free Landline Calls" maxlength="150"/>
         </div>
         <div class="form-grp">
           <label>Renewal Date *</label>
@@ -2650,16 +2636,10 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Start Date</label>
-          <input class="form-ctrl" id="sub-f-start" type="date"/>
+          <label>Renewal Date</label>
+          <input class="form-ctrl" id="sub-f-renew" type="date"/>
+          <span class="form-note">Leave blank for subscriptions with no recurring renewal.</span>
         </div>
-        <div class="form-grp">
-          <label>Expiry Date</label>
-          <input class="form-ctrl" id="sub-f-expiry" type="date"/>
-        </div>
-      </div>
-
-      <div class="form-row">
         <div class="form-grp">
           <label>Status</label>
           <select class="form-ctrl" id="sub-f-status">
@@ -2800,6 +2780,7 @@
           <select class="form-ctrl" id="ins-f-coverage" onchange="toggleCoverageType()">
             <option value="GENERAL">General — Applies to all employees</option>
             <option value="SPECIFIC">Specific — Assign employees manually</option>
+            <option value="CUSTOM">Custom — Specify a coverage target</option>
           </select>
         </div>
       </div>
@@ -2816,12 +2797,7 @@
         </div>
       </div>
 
-      <!-- Remarks -->
-      <div class="form-grp">
-        <label>Remarks</label>
-        <textarea class="form-ctrl" id="ins-f-remarks" rows="2" maxlength="255"
-          placeholder="Optional notes…"></textarea>
-      </div>
+
 
       <!-- ✅ EMPLOYEE SELECTION (shown only for SPECIFIC coverage) -->
       <div id="ins-emp-section" style="display:none;margin-top:8px">
@@ -2835,6 +2811,21 @@
             <div style="color:var(--slate-400);font-size:12px;padding:8px 0">Loading employees...</div>
           </div>
         </div>
+      </div>
+
+      <div id="ins-target-section" style="display:none;margin-top:8px">
+        <div class="form-grp">
+          <label>Coverage Target *</label>
+          <input class="form-ctrl" id="ins-f-target" placeholder="e.g. Company Vehicles, GPCCI Building" maxlength="150"/>
+          <span class="form-note">Describe what this policy covers (not tied to specific employees).</span>
+        </div>
+      </div>
+
+      <!-- Remarks -->
+      <div class="form-grp">
+        <label>Remarks</label>
+        <textarea class="form-ctrl" id="ins-f-remarks" rows="2" maxlength="255"
+          placeholder="Optional notes…"></textarea>
       </div>
 
       <div class="form-footer">
@@ -3207,6 +3198,9 @@
 <script src="js/users.js"></script>
 <script src="js/exports.js"></script>
 <script src="js/laptop_dashboard_patches.js"></script>
+<script src="js/subscriptions_renewal_patch.js"></script>
+<script src="js/insurance_custom_patch.js"></script>
+<script src="js/auth_logout_patch.js"></script>
 
 </body>
 </html>

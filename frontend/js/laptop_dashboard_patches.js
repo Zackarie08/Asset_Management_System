@@ -310,15 +310,8 @@ async function refreshDashboard() {
   if (adminPanel) adminPanel.style.display = isAdminUser() ? '' : 'none';
 
   if (isAdminUser()) {
-    const globeAlerts = globe.filter(g => {
-      if (g.status === 'Inactive') return false;
-      const d = daysFromNow(g.renewal_date);
-      return d !== null && d <= 7;
-    });
-    const m365Alerts = m365.filter(m => {
-      const d = daysFromNow(m.expiry_date);
-      return d !== null && d <= 7;
-    });
+    const globeAlerts = globe.filter(g => g.status !== 'Inactive' && g.renewal_alert_active);
+    const m365Alerts  = m365.filter(m => m.renewal_alert_active);
     const totalSubs = globe.filter(g => g.status === 'Active').length + m365.filter(m => m.status === 'Active').length;
 
     _setText('dash-admin-ct', `${globeAlerts.length + m365Alerts.length} alerts`);

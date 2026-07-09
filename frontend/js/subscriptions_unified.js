@@ -342,13 +342,6 @@ async function dpM365(id) {
             : '<span class="badge b-red">No</span>')}
           ${dpField('Monthly Cost',   fmtCost(m.monthly_cost ?? m.license_cost))}
           ${dpField('Status',         statusBadge(status))}
-        </div>
-      </div>
-      <div class="dp-section">
-        <div class="dp-section-hd">📅 Dates</div>
-        <div class="dp-grid">
-          ${dpField('Start Date',   fmtDate(m.start_date))}
-          ${dpField('Expiry Date',  fmtDate(m.expiry_date))}
           ${dpField('Renewal Date', fmtDate(m.renewal_date))}
         </div>
       </div>
@@ -515,7 +508,6 @@ async function dpGlobe(id) {
           ${dpField('Monthly Cost', fmtCost(g.monthly_cost))}
           ${dpField('Data',         g.data_allocation|| '—')}
           ${dpField('Credit Limit', fmtCost(g.credit_limit))}
-          ${dpField('Start Date',   fmtDate(g.start_date))}
           ${dpField('Renewal Date', fmtDate(g.renewal_date))}
         </div>
       </div>
@@ -529,7 +521,7 @@ async function dpGlobe(id) {
             ? '<span class="badge b-green">Included</span>'
             : '<span class="badge b-slate">Not Included</span>')}
           ${dpField('Data Allocation', g.data_allocation || null)}
-          ${dpFieldFull('Freebie', g.freebie || null)}
+          ${dpField('Freebie', g.freebie || null)}
         </div>
       </div>
       ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}

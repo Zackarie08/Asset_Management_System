@@ -1,25 +1,40 @@
-// backend/routes/subscriptions.js — REFACTORED
+// backend/routes/subscriptions.js — RENEWAL SYSTEM UPDATE
+// See Other_Subscription_Renewal_System.md
+//
 // Changes:
-//   • New schema: subscription_name, supplier, billing_cycle
-//   • GET /api/subscriptions/:id  (was missing)
-//   • Auto-status: Expired / Expiring Soon / Active
-//   • assigned_user_id FK support
-//   • Consistent error handling
+//   • start_date/expiry_date replaced by renewal_date (see migration
+//     003_subscription_insurance_updates.sql — adds the column and
+//     backfills it from the old expiry_date).
+//   • Status is now computed from renewal_date + billing_cycle:
+//       - one-time: never recurs; becomes "Expired" once past, no
+//         further alerts.
+//       - monthly/yearly: recurs every cycle; "For Renewal" while
+//         within the 3-day-before→on-date alert window.
 
 const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
+const { computeRenewalAlert } = require("../utils/renewalAlerts");
 
-// ── helpers ────────────────────────────────────────────────
-
-function computeSubStatus(expiryDate, storedStatus) {
+function computeSubStatus(renewalDate, billingCycle, storedStatus) {
   if (storedStatus === "Cancelled") return "Cancelled";
-  if (!expiryDate) return storedStatus || "Active";
+  if (!renewalDate) return storedStatus || "Active";
 
-  const daysLeft = (new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
-  if (daysLeft < 0)  return "Expired";
-  if (daysLeft <= 30) return "Expiring Soon";
+  const alert = computeRenewalAlert(renewalDate, billingCycle);
+  if (billingCycle === "one-time" && alert.isPastOneTime) return "Expired";
+  if (alert.alertActive) return "For Renewal";
   return storedStatus || "Active";
+}
+
+function withComputed(row) {
+  const alert = computeRenewalAlert(row.renewal_date, row.billing_cycle);
+  return {
+    ...row,
+    computed_status: computeSubStatus(row.renewal_date, row.billing_cycle, row.status),
+    renewal_alert_active: alert.alertActive,
+    renewal_days_until: alert.daysUntil,
+    next_renewal_date: alert.nextDate,
+  };
 }
 
 // ── GET ALL ────────────────────────────────────────────────
@@ -33,13 +48,7 @@ router.get("/", async (req, res) => {
       LEFT JOIN users u ON s.assigned_user_id = u.user_id
       ORDER BY s.subscription_id DESC
     `);
-
-    const rows = result.rows.map(r => ({
-      ...r,
-      computed_status: computeSubStatus(r.expiry_date, r.status),
-    }));
-
-    res.json(rows);
+    res.json(result.rows.map(withComputed));
   } catch (err) {
     console.error("Subscriptions GET /", err);
     res.status(500).json({ error: "Failed to fetch subscriptions" });
@@ -58,12 +67,8 @@ router.get("/:id", async (req, res) => {
       WHERE s.subscription_id = $1
     `, [req.params.id]);
 
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Subscription not found" });
-    }
-
-    const row = result.rows[0];
-    res.json({ ...row, computed_status: computeSubStatus(row.expiry_date, row.status) });
+    if (!result.rows.length) return res.status(404).json({ error: "Subscription not found" });
+    res.json(withComputed(result.rows[0]));
   } catch (err) {
     console.error("Subscriptions GET /:id", err);
     res.status(500).json({ error: "Failed to fetch subscription" });
@@ -81,8 +86,7 @@ router.post("/", async (req, res) => {
       assigned_to,
       monthly_cost,
       billing_cycle,
-      start_date,
-      expiry_date,
+      renewal_date,
       status,
       remarks,
     } = req.body;
@@ -96,8 +100,8 @@ router.post("/", async (req, res) => {
         subscription_name, category, supplier,
         assigned_user_id, assigned_to,
         monthly_cost, billing_cycle,
-        start_date, expiry_date, status, remarks
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        renewal_date, status, remarks
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
       RETURNING *
     `, [
       subscription_name,
@@ -107,13 +111,12 @@ router.post("/", async (req, res) => {
       assigned_to || null,
       monthly_cost || null,
       billing_cycle || "monthly",
-      start_date || null,
-      expiry_date || null,
+      renewal_date || null,
       status || "Active",
       remarks || null,
     ]);
 
-    res.json(result.rows[0]);
+    res.json(withComputed(result.rows[0]));
   } catch (err) {
     console.error("Subscriptions POST /", err);
     res.status(500).json({ error: "Failed to create subscription" });
@@ -131,8 +134,7 @@ router.put("/:id", async (req, res) => {
       assigned_to,
       monthly_cost,
       billing_cycle,
-      start_date,
-      expiry_date,
+      renewal_date,
       status,
       remarks,
     } = req.body;
@@ -146,12 +148,11 @@ router.put("/:id", async (req, res) => {
         assigned_to       = $5,
         monthly_cost      = $6,
         billing_cycle     = $7,
-        start_date        = $8,
-        expiry_date       = $9,
-        status            = $10,
-        remarks           = $11,
+        renewal_date      = $8,
+        status            = $9,
+        remarks           = $10,
         updated_at        = NOW()
-      WHERE subscription_id = $12
+      WHERE subscription_id = $11
       RETURNING *
     `, [
       subscription_name,
@@ -161,18 +162,14 @@ router.put("/:id", async (req, res) => {
       assigned_to || null,
       monthly_cost || null,
       billing_cycle || "monthly",
-      start_date || null,
-      expiry_date || null,
+      renewal_date || null,
       status || "Active",
       remarks || null,
       req.params.id,
     ]);
 
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Subscription not found" });
-    }
-
-    res.json(result.rows[0]);
+    if (!result.rows.length) return res.status(404).json({ error: "Subscription not found" });
+    res.json(withComputed(result.rows[0]));
   } catch (err) {
     console.error("Subscriptions PUT /:id", err);
     res.status(500).json({ error: "Failed to update subscription" });
@@ -186,11 +183,7 @@ router.delete("/:id", async (req, res) => {
       "DELETE FROM subscriptions WHERE subscription_id = $1 RETURNING subscription_id",
       [req.params.id]
     );
-
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Subscription not found" });
-    }
-
+    if (!result.rows.length) return res.status(404).json({ error: "Subscription not found" });
     res.json({ deleted: result.rows[0].subscription_id });
   } catch (err) {
     console.error("Subscriptions DELETE /:id", err);
