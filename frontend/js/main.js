@@ -3341,7 +3341,7 @@ if (totalConItems === 0) {
     ];
 
     if (allSubAlerts.length === 0) {
-      _setHTML('dash-admin-list', _emptyMsg('✅ No subscription alerts'));
+      _setHTML('dash-admin-list', _emptyMsg('No subscription alerts'));
     } else {
       const rows = allSubAlerts.slice(0, 5).map(a => {
         const expired = a.daysLeft < 0;

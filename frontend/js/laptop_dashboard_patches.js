@@ -323,7 +323,7 @@ async function refreshDashboard() {
     ];
 
     if (allSubAlerts.length === 0) {
-      _setHTML('dash-admin-list', _emptyMsg('✅ No subscription alerts'));
+      _setHTML('dash-admin-list', _emptyMsg('No subscription alerts'));
     } else {
       const rows = allSubAlerts.map(a => {
         const expired = a.daysLeft < 0;
