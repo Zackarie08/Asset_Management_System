@@ -1,12 +1,24 @@
 /* ============================================================
-   insurance_custom_patch.js
+   insurance_custom_patch.js — DISPLAY FIX PASS
    ============================================================
    Adds CUSTOM coverage type support on top of insurance.js.
    Load AFTER insurance.js (order after main.js, same as other
    patch files, is fine too).
 
-   REQUIRED index.html changes — see
-   Insurance_Custom_Coverage_Update.md for exact find/replace.
+   THIS REVISION FIXES:
+   ✅ List table coverage column defaulted every non-SPECIFIC
+      record to "General" — CUSTOM was never checked. Fixed by
+      overriding _renderInsTable() here.
+   ✅ Detail panel never actually ran this file's dpInsurance() —
+      main.js's DP_RENDERERS map captured a reference to the OLD
+      dpInsurance (from insurance.js) at load time, before this
+      patch ran. Redeclaring the function name alone does not
+      update that stored reference (same gotcha documented for
+      dpLaptop in laptop_dashboard_patches.js). Fixed by explicitly
+      re-pointing DP_RENDERERS.insurance at the bottom of this file.
+   ✅ Custom coverage section redesigned to be visually distinct
+      from the General ("applies to all employees") card instead
+      of reusing its layout with a different color.
    ============================================================ */
 
 function toggleCoverageType() {
@@ -99,6 +111,51 @@ async function editInsurance(id) {
   }
 }
 
+/* ── ✅ FIX 1: List table — coverage column now recognizes CUSTOM ── */
+function _insCoverageBadge(coverageType) {
+  if (coverageType === 'SPECIFIC') return `<span class="badge b-blue">Specific</span>`;
+  if (coverageType === 'CUSTOM')   return `<span class="badge b-purple">Custom</span>`;
+  return `<span class="badge b-slate">General</span>`;
+}
+
+function _renderInsTable() {
+  const filtered  = _filterInsurance(_allInsurance);
+  const total     = filtered.length;
+  const start     = (currentInsPage - 1) * insPerPage;
+  const paginated = filtered.slice(start, start + insPerPage);
+
+  const tbody = document.getElementById("ins-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  if (paginated.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--slate-400)">No insurance records found.</td></tr>`;
+  } else {
+    paginated.forEach(ins => {
+      const { badge: expiryBadge } = _computeInsuranceStatus(ins);
+      const coverageBadge = _insCoverageBadge(ins.coverage_type); // ✅ FIX: was inline SPECIFIC-only ternary
+
+      const tr = document.createElement("tr");
+      tr.className = "tr-clickable";
+      tr.innerHTML = `
+        <td class="td-strong">${ins.employee_name}</td>
+        <td>${ins.provider || "—"}</td>
+        <td class="td-mono">${ins.policy_number || "—"}</td>
+        <td>${formatDateHuman(ins.expiry_date)}</td>
+        <td>${expiryBadge}</td>
+        <td>${coverageBadge}</td>
+      `;
+      tr.addEventListener("click", () => openDP("insurance", ins.insurance_id, tr));
+      tbody.appendChild(tr);
+    });
+  }
+
+  const ctEl = document.getElementById("ins-ct");
+  if (ctEl) ctEl.textContent = total + " records";
+  _renderInsPagination(total);
+}
+
+/* ── ✅ FIX 2: Detail panel with redesigned CUSTOM section ── */
 async function dpInsurance(id) {
   try {
     const res = await fetch(`${API_URL}/api/insurance/${id}`);
@@ -142,12 +199,14 @@ async function dpInsurance(id) {
             <div style="color:var(--slate-400);font-size:12px">No employees assigned yet.</div>
           </div>`;
     } else if (isCustom) {
+      // ✅ Toned down to match the app's normal dp-field style — same
+      // shape as every other detail box, just a purple accent instead
+      // of green, no gradient/dashed-chip treatment.
       coverageHTML = `
         <div class="dp-section">
-          <div class="dp-section-hd">🎯 Coverage Target</div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--blue-50);border:1px solid var(--blue-100);border-radius:var(--radius-sm);padding:10px 12px">
-            <span style="font-size:18px">🎯</span>
-            <span style="font-size:13px;font-weight:600;color:#1e40af">${ins.coverage_target || '—'}</span>
+          <div class="dp-section-hd">🎯 Coverage Scope</div>
+          <div class="dp-grid">
+            ${dpFieldFull('Custom Target', ins.coverage_target || '—')}
           </div>
         </div>`;
     } else {
@@ -200,3 +259,11 @@ async function dpInsurance(id) {
     showToast("Failed to load insurance record", "t-error");
   }
 }
+
+// ✅ FIX: DP_RENDERERS.insurance was captured by main.js at load time,
+// pointing at the OLD dpInsurance from insurance.js. Redeclaring the
+// function above does not update that stored reference — must re-point
+// it explicitly, same pattern used for DP_RENDERERS.laptop in
+// laptop_dashboard_patches.js. Without this line, openDP('insurance', ...)
+// silently kept calling the un-patched General-only version.
+if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.insurance = dpInsurance;

@@ -21,49 +21,42 @@
    two listeners at the bottom so the fallback also applies there.
    ============================================================ */
 
+// frontend/js/auth_logout_patch.js — replace these two functions
 function _sendLogoutLog(description) {
-  if (!currentUser) return;
+  if (!currentUser) return Promise.resolve();
 
-  const payload = {
+  const payload = JSON.stringify({
     user_id: currentUser.user_id,
     action_type: "LOGOUT",
     module: "USER",
     description,
-    reference_type: currentUser.user_id,
-    performed_by: currentUser.name, // ✅ was missing from the original payload
-  };
+    reference_type: "MANUAL",       // ✅ was currentUser.user_id (numeric) — now a consistent string
+    performed_by: currentUser.name,
+  });
 
-  const body = JSON.stringify(payload);
-  let sent = false;
-
+  // ✅ Fire BOTH unconditionally instead of beacon-then-fallback-on-failure.
+  // sendBeacon returning true doesn't guarantee delivery, so we no longer
+  // gate the fetch fallback behind it.
   try {
-    sent = navigator.sendBeacon(
-      `${API_URL}/api/logs`,
-      new Blob([body], { type: "application/json" })
-    );
-  } catch (e) {
-    sent = false;
-  }
+    navigator.sendBeacon(`${API_URL}/api/logs`, new Blob([payload], { type: "application/json" }));
+  } catch (e) { /* ignore */ }
 
-  // ✅ Fallback: sendBeacon missing, throwing, or reporting failure —
-  // retry via fetch with keepalive so the request still survives
-  // page unload/reload.
-  if (!sent) {
-    fetch(`${API_URL}/api/logs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      keepalive: true,
-    }).catch(() => {});
-  }
+  return fetch(`${API_URL}/api/logs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: true,
+  }).catch(() => {});
 }
 
 function doLogout() {
-  _sendLogoutLog(`User ${currentUser?.name} logged out`);
   _loggingOut = true;
   _tabCloseLogged = true;
+  const logPromise = _sendLogoutLog(`User ${currentUser?.name} logged out`);
   sessionStorage.removeItem("user");
-  location.reload();
+  // ✅ give the network layer a beat to actually dispatch before reload
+  Promise.race([logPromise, new Promise(r => setTimeout(r, 250))])
+    .finally(() => location.reload());
 }
 
 function _logTabClose() {

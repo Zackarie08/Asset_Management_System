@@ -336,10 +336,6 @@ async function dpM365(id) {
         <div class="dp-grid">
           ${dpField('Assigned Email', m.assigned_email || '—')}
           ${dpField('Assigned User',  m.assigned_user_name || 'Unassigned')}
-          ${dpField('License Type',   m.license_type  || '—')}
-          ${dpField('Licensed Status',       m.licensed
-            ? '<span class="badge b-green">Yes</span>'
-            : '<span class="badge b-red">No</span>')}
           ${dpField('Monthly Cost',   fmtCost(m.monthly_cost ?? m.license_cost))}
           ${dpField('Status',         statusBadge(status))}
           ${dpField('Renewal Date', fmtDate(m.renewal_date))}

@@ -22,6 +22,7 @@ const router  = express.Router();
 const pool    = require("../db");
 
 /* ── GET ALL ────────────────────────────────────────────── */
+// backend/routes/laptops.js — GET ALL, ORDER BY changed
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -30,7 +31,7 @@ router.get("/", async (req, res) => {
              u.role AS user_role
       FROM laptop l
       LEFT JOIN users u ON l.current_user_id = u.user_id
-      ORDER BY l.laptop_id DESC
+      ORDER BY l.asset_number ASC   
     `);
     res.json(result.rows);
   } catch (err) {
