@@ -11,6 +11,8 @@ const cors    = require("cors");
 const path    = require("path"); // ✅ NEW
 require("dotenv").config();
 
+const cleanupOldLogs = require("./utils/logCleanup"); // ✅ NEW
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "15mb" })); // ← allow base64 attachment uploads up to ~10MB
