@@ -8,7 +8,6 @@
 // ============================================================
 const express = require("express");
 const cors    = require("cors");
-const path    = require("path"); // ✅ NEW
 require("dotenv").config();
 
 const cleanupOldLogs = require("./utils/logCleanup"); // ✅ NEW
@@ -16,14 +15,6 @@ const cleanupOldLogs = require("./utils/logCleanup"); // ✅ NEW
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "15mb" })); // ← allow base64 attachment uploads up to ~10MB
-
-/* ── STATIC FRONTEND ────────────────────────────────────────
-   Serves everything in backend/public (index.html, css/, js/,
-   pages/) directly. Must come before the API routes only in
-   the sense that it doesn't matter — Express checks static
-   files first for any GET that matches a real file path, then
-   falls through to the routes below. ─────────────────────── */
-app.use(express.static(path.join(__dirname, "public"))); // ✅ NEW
 
 /* ── ROUTES ─────────────────────────────────────────────── */
 app.use("/api/inventory",             require("./routes/inventory"));
@@ -47,20 +38,10 @@ app.use("/api/subscriptions-master",  require("./routes/subscriptionsMaster"));
 app.use("/api/vehicle-plans",         require("./routes/vehicleMaintPlans"));
 
 /* ── HEALTH CHECK ───────────────────────────────────────── */
-app.get("/api/health", (req, res) => res.send("Server is running"));
-
-/* ── FRONTEND FALLBACK ──────────────────────────────────────
-   Any GET that isn't a static file and isn't under /api gets
-   index.html, so deep links / refreshes on pages/dashboard.html
-   style navigation still resolve. Registered LAST so it never
-   shadows a real API route or a 404 from one. ✅ NEW ────────── */
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+app.get("/", (req, res) => res.send("Server is running"));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
 
 /* ── LOG RETENTION (✅ NEW) ─────────────────────────────────
    Removes system_log rows older than 30 days. Runs once on
