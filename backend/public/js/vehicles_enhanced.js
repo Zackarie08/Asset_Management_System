@@ -204,10 +204,10 @@ async function renderVehicles() {
     const ws     = worstPlanStatus(plans, km);
 
     const maintBadge =
-      v.status === 'UNDER_MAINTENANCE' ? `<span class="badge b-amber">🛠 Under Maint.</span>` :
-      ws === 'overdue'                  ? `<span class="badge b-red">⚠️ Overdue</span>` :
-      ws === 'due_soon'                 ? `<span class="badge b-amber">⚠️ Due Soon</span>` :
-      plans.length > 0                  ? `<span class="badge b-green">✅ On Track</span>` :
+      v.status === 'UNDER_MAINTENANCE' ? `<span class="badge b-amber">Under Maint.</span>` :
+      ws === 'overdue'                  ? `<span class="badge b-red">Overdue</span>` :
+      ws === 'due_soon'                 ? `<span class="badge b-amber">Due Soon</span>` :
+      plans.length > 0                  ? `<span class="badge b-green">On Track</span>` :
                                           `<span class="badge b-slate">No Plans</span>`;
 
     // Next due label
