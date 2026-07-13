@@ -874,9 +874,10 @@ function applyLpFilters() {
 function _filterLaptops(data) {
   return data.filter(lp => {
 
-    // Search — asset no., description, serial
+    // Search — asset no., description, serial, assigned user name
+    // ✅ NEW: user_name added so searching an employee's name surfaces their laptop(s)
     if (lpSearchQuery) {
-      const haystack = `${lp.asset_number} ${lp.item_description} ${lp.serial_number || ''}`.toLowerCase();
+      const haystack = `${lp.asset_number} ${lp.item_description} ${lp.serial_number || ''} ${lp.user_name || ''}`.toLowerCase();
       if (!haystack.includes(lpSearchQuery)) return false;
     }
 
