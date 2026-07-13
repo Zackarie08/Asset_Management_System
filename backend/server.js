@@ -36,6 +36,7 @@ app.use("/api/subscriptions",         require("./routes/subscriptions"));
 app.use("/api/insurance",             require("./routes/insurance"));
 app.use("/api/subscriptions-master",  require("./routes/subscriptionsMaster"));
 app.use("/api/vehicle-plans",         require("./routes/vehicleMaintPlans"));
+app.use("/api/item-history",          require("./routes/itemHistory"));
 
 /* ── HEALTH CHECK ───────────────────────────────────────── */
 app.get("/", (req, res) => res.send("Server is running"));

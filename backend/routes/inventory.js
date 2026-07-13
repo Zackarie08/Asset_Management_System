@@ -1,7 +1,18 @@
+// backend/routes/inventory.js — ITEM HISTORY INTEGRATION (Part 8 reference impl)
+// This is the pattern every other module (wine/event supplies, IT supplies,
+// laptops, vehicles, contracts, insurance, subscriptions, finance, furniture,
+// users) will copy in the later parts of this rollout:
+//   1. Fetch the "before" row when the action needs an old_value.
+//   2. Perform the write.
+//   3. Call logItemHistory() with module + record_id + action (+ optional
+//      field_name/old_value/new_value/remarks).
+//   4. Keep the existing logAction() (system_log) call untouched — the two
+//      are independent and both still fire.
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const logAction = require("../utils/log");
+const { logItemHistory } = require("../utils/itemHistory");
 
 // ✅ GET ALL ITEMS
 router.get("/", async (req, res) => {
@@ -20,24 +31,34 @@ router.post("/", async (req, res) => {
   try {
     const { 
       name, qty, category, quantity_limit, price, unit, remarks,
-      user_id, performed_by, location_id    // ✅ NEW
+      user_id, performed_by, location_id
     } = req.body;
 
-    await pool.query(
-      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+    const inserted = await pool.query(
+      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING inventory_gen_id",
       [name, qty, category, quantity_limit, price, unit, remarks, location_id]
     );
+    const newId = inserted.rows[0].inventory_gen_id;
 
-    // ✅ FIXED LOG
     await logAction({
-      user_id,                      // ✅ REAL USER
+      user_id,
       action_type: "CREATE",
       module: "INVENTORY",
       description: `Added ${name}`,
       quantity: qty,
       movement_type: "ADD",
       reference_type: "MANUAL",
-      performed_by             // ✅ REAL PERSON
+      performed_by
+    });
+
+    // ✅ NEW: item history entry for this specific record
+    await logItemHistory({
+      module: "inventory",
+      record_id: newId,
+      action: "CREATED",
+      remarks: `Initial stock: ${qty} ${unit || ''} · ${category}`,
+      performed_by_id: user_id,
+      performed_by_name: performed_by,
     });
 
     res.sendStatus(200);
@@ -54,15 +75,13 @@ router.post("/withdraw", async (req, res) => {
   try {
     const { id, qty, user_id, performed_by } = req.body;
 
-    // ✅ FIX: look up the item name BEFORE updating stock, so the log
-    // description is meaningful ("Withdrew 5 units of HDMI Cable")
-    // instead of the old generic "Withdraw 5" with no item context.
     const itemRes = await pool.query(
-      "SELECT item_name, unit FROM inventory_gen WHERE inventory_gen_id = $1",
+      "SELECT item_name, unit, current_quantity FROM inventory_gen WHERE inventory_gen_id = $1",
       [id]
     );
     const itemName = itemRes.rows[0]?.item_name || `Item #${id}`;
     const unitLabel = itemRes.rows[0]?.unit || "unit";
+    const beforeQty = itemRes.rows[0]?.current_quantity;
 
     await pool.query(
       "UPDATE inventory_gen SET current_quantity = current_quantity - $1 WHERE inventory_gen_id = $2",
@@ -80,6 +99,19 @@ router.post("/withdraw", async (req, res) => {
       performed_by
     });
 
+    // ✅ NEW
+    await logItemHistory({
+      module: "inventory",
+      record_id: id,
+      action: "QUANTITY_ADJUSTED",
+      field_name: "current_quantity",
+      old_value: beforeQty,
+      new_value: beforeQty != null ? beforeQty - qty : null,
+      remarks: `Withdrew ${qty} ${unitLabel}${qty == 1 ? '' : 's'}`,
+      performed_by_id: user_id,
+      performed_by_name: performed_by,
+    });
+
     res.sendStatus(200);
 
   } catch (err) {
@@ -95,6 +127,11 @@ router.delete("/:id", async (req, res) => {
     const user_id = req.query.user_id;
     const performed_by = req.query.performed_by;
 
+    const existing = await pool.query(
+      "SELECT item_name FROM inventory_gen WHERE inventory_gen_id = $1",
+      [req.params.id]
+    );
+    const itemName = existing.rows[0]?.item_name || `Item #${req.params.id}`;
 
     await pool.query(
       "DELETE FROM inventory_gen WHERE inventory_gen_id = $1",
@@ -107,6 +144,17 @@ router.delete("/:id", async (req, res) => {
       module: "INVENTORY",
       description: `Deleted item ID ${req.params.id}`,
       performed_by
+    });
+
+    // ✅ NEW — logged AFTER delete since record_id no longer needs to exist
+    // in inventory_gen; item_history is independent of the parent row.
+    await logItemHistory({
+      module: "inventory",
+      record_id: req.params.id,
+      action: "DELETED",
+      remarks: `Deleted "${itemName}"`,
+      performed_by_id: user_id,
+      performed_by_name: performed_by,
     });
 
     res.sendStatus(200);
@@ -132,6 +180,12 @@ router.put("/:id", async (req, res) => {
       performed_by
     } = req.body;
 
+    const before = await pool.query(
+      "SELECT * FROM inventory_gen WHERE inventory_gen_id = $1",
+      [req.params.id]
+    );
+    const old = before.rows[0];
+
     await pool.query(
       `UPDATE inventory_gen
        SET item_name = $1,
@@ -155,7 +209,6 @@ router.put("/:id", async (req, res) => {
       ]
     );
 
-    // ✅ LOG EDIT
     await logAction({
       user_id,
       action_type: "UPDATE",
@@ -165,6 +218,33 @@ router.put("/:id", async (req, res) => {
       reference_type: "MANUAL",
       performed_by
     });
+
+    // ✅ NEW — one history row per changed field, so the timeline reads
+    // like "reorder_level: 5 → 10" instead of one vague "Edited" blob.
+    if (old) {
+      const fieldChecks = [
+        ["item_name", old.item_name, name],
+        ["category", old.category, category],
+        ["reorder_level", old.reorder_level, quantity_limit],
+        ["price", old.price, price],
+        ["unit", old.unit, unit],
+        ["location_id", old.location_id, location_id],
+      ];
+      for (const [field, oldVal, newVal] of fieldChecks) {
+        if (String(oldVal ?? '') !== String(newVal ?? '')) {
+          await logItemHistory({
+            module: "inventory",
+            record_id: req.params.id,
+            action: "EDITED",
+            field_name: field,
+            old_value: oldVal,
+            new_value: newVal,
+            performed_by_id: user_id,
+            performed_by_name: performed_by,
+          });
+        }
+      }
+    }
 
     res.sendStatus(200);
 
