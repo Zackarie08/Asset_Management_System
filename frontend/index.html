@@ -2242,15 +2242,10 @@
       <div id="plan-time-section" style="display:none">
         <div class="form-row">
           <div class="form-grp">
-            <label>Every *</label>
-            <input class="form-ctrl" id="plan-f-interval" type="number" min="1" placeholder="e.g. 1"/>
-          </div>
-          <div class="form-grp">
-            <label>Unit</label>
+            <label>Frequency *</label>
             <select class="form-ctrl" id="plan-f-unit">
-              <option value="week">Week(s)</option>
-              <option value="month" selected>Month(s)</option>
-              <option value="year">Year(s)</option>
+              <option value="month" selected>Monthly</option>
+              <option value="year">Yearly</option>
             </select>
           </div>
         </div>
@@ -2796,13 +2791,16 @@
 
       <!-- ✅ EMPLOYEE SELECTION (shown only for SPECIFIC coverage) -->
       <div id="ins-emp-section" style="display:none;margin-top:8px">
-        <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px">
-          <div style="font-size:12.5px;font-weight:700;color:#1e40af;margin-bottom:4px">👥 Select Covered Employees</div>
-          <div style="font-size:11.5px;color:#3b5bdb">Check all employees covered under this policy.</div>
+        <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;cursor:pointer"
+            onclick="toggleInsEmpCollapse()">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:12.5px;font-weight:700;color:#1e40af">👥 Select Covered Employees</div>
+            <span id="ins-emp-collapse-arrow" style="font-size:11px;color:#1e40af">▼ Hide</span>
+          </div>
+          <div style="font-size:11.5px;color:#3b5bdb;margin-top:2px">Check all employees covered under this policy.</div>
         </div>
-        <div style="max-height:240px;overflow-y:auto;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:8px 12px">
+        <div id="ins-emp-list-wrap" style="max-height:240px;overflow-y:auto;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:8px 12px">
           <div id="ins-emp-list">
-            <!-- Populated by buildEmployeeCheckboxes() -->
             <div style="color:var(--slate-400);font-size:12px;padding:8px 0">Loading employees...</div>
           </div>
         </div>
@@ -2930,6 +2928,34 @@
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-fin-del')">Cancel</button>
         <button class="btn btn-red" onclick="confirmDeleteFinance()">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Move Financial Document -->
+<div class="modal-overlay" id="m-fin-move">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hd">
+      <div class="modal-title">🔄 Move Document</div>
+      <button class="modal-close" onclick="closeM('m-fin-move')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="fin-move-summary" style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:13px;line-height:1.6"></div>
+      <div class="form-grp">
+        <label>Performed By *</label>
+        <div class="search-select">
+          <input id="fin-move-by" class="form-ctrl" placeholder="Type user name..."/>
+          <div id="fin-move-by-list" class="select-list"></div>
+        </div>
+      </div>
+      <div class="form-grp">
+        <label>Remarks *</label>
+        <textarea class="form-ctrl" id="fin-move-remarks" rows="2" maxlength="255" placeholder="Reason for the move..."></textarea>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-fin-move')">Cancel</button>
+        <button class="btn btn-green" onclick="confirmFinanceMove()">✅ Confirm Move</button>
       </div>
     </div>
   </div>
@@ -3199,15 +3225,20 @@
 <script src="js/orders.js"></script>
 <script src="js/subscriptions_unified.js"></script>
 <script src="js/vehicles_enhanced.js"></script>
+<script src="js/vehicle_maintenance_patch.js"></script>
 <script src="js/insurance.js"></script>
 <script src="js/main.js"></script>
 <script src="js/users.js"></script>
 <script src="js/exports.js"></script>
 <script src="js/item_history_panel.js"></script>
+<script src="js/finance_history_patch.js"></script>
+<script src="js/contracts_history_patch.js"></script>
+<script src="js/nav_notification_patch.js"></script>
 <script src="js/inventory_history_dp_patch.js"></script>
 <script src="js/laptop_dashboard_patches.js"></script>
 <script src="js/subscriptions_renewal_patch.js"></script>
 <script src="js/insurance_custom_patch.js"></script>
+<script src="js/insurance_history_patch.js"></script>
 <script src="js/auth_logout_patch.js"></script>
 <script src="js/user_session_patch.js"></script>
 

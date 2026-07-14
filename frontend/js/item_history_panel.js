@@ -76,7 +76,11 @@ function _renderItemHistory(rows) {
       changeLine = `<div class="mh-remarks">${_ihEsc(r.old_value)} ${r.old_value && r.new_value ? '→' : ''} ${_ihEsc(r.new_value)}</div>`;
     }
 
-    const who = r.current_user_name || r.performed_by_name || 'System';
+    // ✅ IMMUTABILITY FIX (see Global_Item_History_Immutability_Review.md):
+    // performed_by_name is a permanent snapshot captured when the row was
+    // written. Never fall back to a live-joined "current" name here — a
+    // user rename/deletion must NOT change what past history displays.
+    const who = r.performed_by_name || 'System';
 
     return `
       <li class="mh-item">

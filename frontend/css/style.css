@@ -1010,3 +1010,20 @@ textarea.form-ctrl { resize: vertical; line-height: 1.5; }
 .dp-section-hd:hover {
   opacity: 0.75;
 }
+
+/* ═══ DASHBOARD NOTIFICATION INDICATOR (Part 1) ═══ */
+.nav-icon-wrap { position: relative; display: inline-flex; }
+.nav-notif-dot {
+  position: absolute; top: -2px; right: -3px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red-600);
+  border: 1.5px solid var(--navy-900);
+}
+.nav-notif-count {
+  margin-left: auto; background: var(--red-600); color: #fff;
+  font-size: 9.5px; font-weight: 700; padding: 1px 6px;
+  border-radius: var(--radius-pill); min-width: 18px; text-align: center;
+  opacity: 0; transition: opacity var(--trans);
+}
+.sidebar:hover .nav-notif-count,
+.sidebar:focus-within .nav-notif-count { opacity: 1; }

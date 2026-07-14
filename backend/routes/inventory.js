@@ -181,10 +181,24 @@ router.put("/:id", async (req, res) => {
     } = req.body;
 
     const before = await pool.query(
-      "SELECT * FROM inventory_gen WHERE inventory_gen_id = $1",
+      `SELECT i.*, l.location_name FROM inventory_gen i
+       LEFT JOIN location l ON i.location_id = l.location_id
+       WHERE i.inventory_gen_id = $1`,
       [req.params.id]
     );
     const old = before.rows[0];
+
+    // ✅ IMMUTABILITY FIX: resolve the NEW location's name now too, so the
+    // history diff is human-readable ("Main Office" → "Warehouse") and not
+    // dependent on resolving a location_id at read time later.
+    let newLocationName = null;
+    if (location_id) {
+      const locRes = await pool.query(
+        "SELECT location_name FROM location WHERE location_id = $1",
+        [location_id]
+      );
+      newLocationName = locRes.rows[0]?.location_name || null;
+    }
 
     await pool.query(
       `UPDATE inventory_gen
@@ -228,7 +242,9 @@ router.put("/:id", async (req, res) => {
         ["reorder_level", old.reorder_level, quantity_limit],
         ["price", old.price, price],
         ["unit", old.unit, unit],
-        ["location_id", old.location_id, location_id],
+        // ✅ FIX: snapshot location NAME, not the raw location_id FK —
+        // see History_Snapshot_Strategy.md
+        ["location", old.location_name, newLocationName],
       ];
       for (const [field, oldVal, newVal] of fieldChecks) {
         if (String(oldVal ?? '') !== String(newVal ?? '')) {

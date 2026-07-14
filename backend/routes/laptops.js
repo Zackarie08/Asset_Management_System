@@ -1,28 +1,25 @@
 // ============================================================
 // laptops.js — Laptop management
-// AUDIT PASS (this revision):
-//   ✅ NEW: `remarks` and `supplier` columns supported end-to-end
-//      (create, edit, list, detail). See
-//      backend/migrations/002_laptop_add_remarks_supplier.sql
-//   ✅ FIX: PUT /assign/:id now explicitly normalizes an empty
-//      string / undefined current_user_id to NULL so "Remove
-//      Current User" (unassign) reliably clears the assignment
-//      instead of accidentally writing "" into an integer FK
-//      column (which some drivers/queries would reject or coerce
-//      unpredictably). Assignment HISTORY is still always written,
-//      including the unassign event (new_user_id = NULL), so the
-//      audit trail is never lost.
-//   (Older fix retained) Two router.put("/:id") handlers existed.
-//      Express only executes the FIRST match, so the "edit laptop"
-//      handler was silently ignored. Fixed by splitting into
-//      PUT /assign/:id (assignment only) and PUT /:id (full edit).
+// IMMUTABILITY FIX PASS (this revision):
+//   See Assignment_History_Protection.md for full detail.
+//   - laptop_history now stores previous_user_name/role and
+//     new_user_name/role SNAPSHOTS at the moment of assignment,
+//     resolved once and never re-joined. GET /:id/history no
+//     longer LEFT JOINs users — renaming or deleting a user can
+//     no longer alter past assignment history.
+//   - Also wired into the Global Item History table (item_history,
+//     module "laptop") on create/edit/assign/unassign/delete, using
+//     the same snapshot values, per Global_Item_History_Architecture.md.
+//
+// (Prior fixes retained below, unchanged: remarks/supplier columns,
+// PUT /assign vs PUT /:id split, "" -> NULL normalization on unassign.)
 // ============================================================
 const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
+const { logItemHistory } = require("../utils/itemHistory");
 
 /* ── GET ALL ────────────────────────────────────────────── */
-// backend/routes/laptops.js — GET ALL, ORDER BY changed
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -47,21 +44,30 @@ router.post("/", async (req, res) => {
       asset_number, item_description, serial_number,
       category, price, current_user_id, current_location,
       status, warranty_end_date, date_of_purchase,
-      remarks, supplier                       // ✅ NEW FIELDS
+      remarks, supplier
     } = req.body;
 
-    await pool.query(`
+    const inserted = await pool.query(`
       INSERT INTO laptop (
         asset_number, item_description, serial_number, category,
         price, current_user_id, current_location, status,
         warranty_end_date, date_of_purchase, remarks, supplier
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      RETURNING laptop_id
     `, [
       asset_number, item_description, serial_number, category,
       price, current_user_id || null, current_location, status,
       warranty_end_date || null, date_of_purchase,
       remarks || null, supplier || null
     ]);
+
+    await logItemHistory({
+      module: "laptop",
+      record_id: inserted.rows[0].laptop_id,
+      action: "CREATED",
+      remarks: `${asset_number} · ${serial_number}`,
+    });
+
     res.sendStatus(200);
   } catch (err) {
     console.error(err);
@@ -72,7 +78,21 @@ router.post("/", async (req, res) => {
 /* ── DELETE ─────────────────────────────────────────────── */
 router.delete("/:id", async (req, res) => {
   try {
+    const existing = await pool.query(
+      "SELECT asset_number, serial_number FROM laptop WHERE laptop_id=$1",
+      [req.params.id]
+    );
+    const lp = existing.rows[0];
+
     await pool.query("DELETE FROM laptop WHERE laptop_id=$1", [req.params.id]);
+
+    await logItemHistory({
+      module: "laptop",
+      record_id: req.params.id,
+      action: "DELETED",
+      remarks: lp ? `${lp.asset_number} · ${lp.serial_number}` : null,
+    });
+
     res.sendStatus(200);
   } catch (err) {
     console.error(err);
@@ -81,33 +101,64 @@ router.delete("/:id", async (req, res) => {
 });
 
 /* ── ASSIGN / UNASSIGN USER — PUT /assign/:id ───────────── */
-// Body: { current_user_id: <id> }  → assign
-// Body: { current_user_id: null }  → unassign / return to pool
-// ✅ FIX: normalize "" / undefined to NULL so unassign works cleanly
-// and the assignment_history row correctly records new_user_id = NULL.
+// Body: { current_user_id: <id>, user_id, performed_by } → assign
+// Body: { current_user_id: null, user_id, performed_by }  → unassign
 router.put("/assign/:id", async (req, res) => {
   try {
     const rawId = req.body.current_user_id;
     const current_user_id = (rawId === "" || rawId === undefined) ? null : rawId;
+    const { user_id, performed_by } = req.body;
 
-    // Save previous user for history
     const old = await pool.query(
       "SELECT current_user_id FROM laptop WHERE laptop_id=$1",
       [req.params.id]
     );
     const previous_user = old.rows[0]?.current_user_id;
 
+    // ✅ IMMUTABILITY FIX: resolve both names/roles NOW, at write time.
+    // These are stored as permanent snapshots — a later rename or deletion
+    // of either user can never alter this history row again.
+    const [prevUserRes, newUserRes] = await Promise.all([
+      previous_user
+        ? pool.query("SELECT name, role FROM users WHERE user_id=$1", [previous_user])
+        : Promise.resolve({ rows: [] }),
+      current_user_id
+        ? pool.query("SELECT name, role FROM users WHERE user_id=$1", [current_user_id])
+        : Promise.resolve({ rows: [] }),
+    ]);
+    const previous_user_name = prevUserRes.rows[0]?.name || null;
+    const previous_user_role = prevUserRes.rows[0]?.role || null;
+    const new_user_name      = newUserRes.rows[0]?.name  || null;
+    const new_user_role      = newUserRes.rows[0]?.role  || null;
+
     await pool.query(
       "UPDATE laptop SET current_user_id=$1 WHERE laptop_id=$2",
       [current_user_id, req.params.id]
     );
 
-    // Log assignment history (unassign events are recorded too,
-    // with new_user_id = NULL, so the trail is never lost)
+    // Assignment history — snapshot columns now, live IDs kept only for
+    // internal reference (never used to resolve display names again).
     await pool.query(`
-      INSERT INTO laptop_history (laptop_id, previous_user_id, new_user_id, date_changed)
-      VALUES ($1,$2,$3,NOW())
-    `, [req.params.id, previous_user, current_user_id]);
+      INSERT INTO laptop_history
+        (laptop_id, previous_user_id, new_user_id, date_changed,
+         previous_user_name, previous_user_role, new_user_name, new_user_role)
+      VALUES ($1,$2,$3,NOW(),$4,$5,$6,$7)
+    `, [
+      req.params.id, previous_user, current_user_id,
+      previous_user_name, previous_user_role, new_user_name, new_user_role
+    ]);
+
+    // Global Item History — same snapshot values, no re-resolution.
+    await logItemHistory({
+      module: "laptop",
+      record_id: req.params.id,
+      action: current_user_id ? "ASSIGNED" : "UNASSIGNED",
+      field_name: "current_user",
+      old_value: previous_user_name,
+      new_value: new_user_name,
+      performed_by_id: user_id,
+      performed_by_name: performed_by,
+    });
 
     res.sendStatus(200);
   } catch (err) {
@@ -123,8 +174,11 @@ router.put("/:id", async (req, res) => {
       asset_number, item_description, serial_number,
       category, price, current_location, status,
       warranty_end_date, date_of_purchase,
-      remarks, supplier                       // ✅ NEW FIELDS
+      remarks, supplier, user_id, performed_by
     } = req.body;
+
+    const before = await pool.query("SELECT * FROM laptop WHERE laptop_id=$1", [req.params.id]);
+    const old = before.rows[0];
 
     await pool.query(`
       UPDATE laptop SET
@@ -147,6 +201,31 @@ router.put("/:id", async (req, res) => {
       remarks || null, supplier || null,
       req.params.id
     ]);
+
+    if (old) {
+      const fieldChecks = [
+        ["asset_number", old.asset_number, asset_number],
+        ["serial_number", old.serial_number, serial_number],
+        ["category", old.category, category],
+        ["status", old.status, status],
+        ["price", old.price, price],
+      ];
+      for (const [field, oldVal, newVal] of fieldChecks) {
+        if (String(oldVal ?? '') !== String(newVal ?? '')) {
+          await logItemHistory({
+            module: "laptop",
+            record_id: req.params.id,
+            action: "EDITED",
+            field_name: field,
+            old_value: oldVal,
+            new_value: newVal,
+            performed_by_id: user_id,
+            performed_by_name: performed_by,
+          });
+        }
+      }
+    }
+
     res.sendStatus(200);
   } catch (err) {
     console.error(err);
@@ -155,15 +234,19 @@ router.put("/:id", async (req, res) => {
 });
 
 /* ── ASSIGNMENT HISTORY ─────────────────────────────────── */
+// ✅ IMMUTABILITY FIX: no longer joins `users`. Snapshot columns are the
+// source of truth; rows written before migration 006 (snapshot columns
+// NULL) fall back to a clearly-labeled placeholder, never to a live join.
 router.get("/:id/history", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT h.*,
-             u1.name AS previous_user_name,
-             u2.name AS new_user_name
+      SELECT
+        h.history_id, h.laptop_id, h.previous_user_id, h.new_user_id, h.date_changed,
+        COALESCE(h.previous_user_name, '(unknown — recorded before snapshot upgrade)') AS previous_user_name,
+        COALESCE(h.new_user_name,      '(unknown — recorded before snapshot upgrade)') AS new_user_name,
+        h.previous_user_role,
+        h.new_user_role
       FROM laptop_history h
-      LEFT JOIN users u1 ON h.previous_user_id = u1.user_id
-      LEFT JOIN users u2 ON h.new_user_id = u2.user_id
       WHERE h.laptop_id = $1
       ORDER BY h.date_changed DESC
     `, [req.params.id]);
