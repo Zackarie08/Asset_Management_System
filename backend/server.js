@@ -38,6 +38,8 @@ app.use("/api/subscriptions-master",  require("./routes/subscriptionsMaster"));
 app.use("/api/vehicle-plans",         require("./routes/vehicleMaintPlans"));
 app.use("/api/item-history",          require("./routes/itemHistory"));
 app.use("/api/notifications",         require("./routes/notifications"));
+app.use("/api/borrow-return",         require("./routes/borrowReturn")); 
+app.use("/api/wine-requests",         require("./routes/wineRequests")); 
 
 /* ── HEALTH CHECK ───────────────────────────────────────── */
 app.get("/", (req, res) => res.send("Server is running"));

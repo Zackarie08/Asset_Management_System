@@ -1,6 +1,8 @@
+// backend/routes/itSupplies.js — Part 3 (item history hooks added)
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const { logItemHistory } = require("../utils/itemHistory");
 
 // ✅ GET ALL
 router.get("/", async (req, res) => {
@@ -26,13 +28,16 @@ router.post("/", async (req, res) => {
     warranty_end_date,
     remarks,
     location_id,
-    status
+    status,
+    user_id,
+    performed_by,
   } = req.body;
 
-  await pool.query(`
+  const inserted = await pool.query(`
     INSERT INTO it_supplies
     (asset_name, serial_number, quantity, date_of_purchase, price, warranty_end_date, remarks, location_id, status)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    RETURNING it_supplies_id
   `, [
     asset_name,
     serial_number,
@@ -44,6 +49,15 @@ router.post("/", async (req, res) => {
     location_id,
     status
   ]);
+
+  await logItemHistory({
+    module: "itsupplies",
+    record_id: inserted.rows[0].it_supplies_id,
+    action: "CREATED",
+    remarks: `${asset_name}${serial_number ? ' · ' + serial_number : ''}`,
+    performed_by_id: user_id || null,
+    performed_by_name: performed_by || null,
+  });
 
   res.sendStatus(200);
 });
@@ -60,8 +74,13 @@ router.put("/:id", async (req, res) => {
     warranty_end_date,
     remarks,
     location_id,
-    status
+    status,
+    user_id,
+    performed_by,
   } = req.body;
+
+  const before = await pool.query("SELECT * FROM it_supplies WHERE it_supplies_id=$1", [req.params.id]);
+  const old = before.rows[0];
 
   await pool.query(`
     UPDATE it_supplies SET
@@ -88,16 +107,49 @@ router.put("/:id", async (req, res) => {
     req.params.id
   ]);
 
+  if (old) {
+    const fieldChecks = [
+      ["asset_name", old.asset_name, asset_name],
+      ["serial_number", old.serial_number, serial_number],
+      ["quantity", old.quantity, quantity],
+      ["status", old.status, status],
+      ["price", old.price, price],
+    ];
+    for (const [field, oldVal, newVal] of fieldChecks) {
+      if (String(oldVal ?? '') !== String(newVal ?? '')) {
+        await logItemHistory({
+          module: "itsupplies",
+          record_id: req.params.id,
+          action: "EDITED",
+          field_name: field,
+          old_value: oldVal,
+          new_value: newVal,
+          performed_by_id: user_id || null,
+          performed_by_name: performed_by || null,
+        });
+      }
+    }
+  }
+
   res.sendStatus(200);
 });
 
 
 // ✅ DELETE
 router.delete("/:id", async (req, res) => {
+  const existing = await pool.query("SELECT asset_name FROM it_supplies WHERE it_supplies_id=$1", [req.params.id]);
+
   await pool.query(
     "DELETE FROM it_supplies WHERE it_supplies_id=$1",
     [req.params.id]
   );
+
+  await logItemHistory({
+    module: "itsupplies",
+    record_id: req.params.id,
+    action: "DELETED",
+    remarks: existing.rows[0]?.asset_name || null,
+  });
 
   res.sendStatus(200);
 });

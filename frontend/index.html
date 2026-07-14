@@ -1535,6 +1535,86 @@
   </div>
 </div>
 
+<!-- Borrow Item -->
+<div class="modal-overlay" id="m-borrow-item">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📤 Borrow Item</div>
+      <button class="modal-close" onclick="closeM('m-borrow-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--amber-50);border:1.5px solid var(--amber-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#92400e">Item: <span id="borrow-item-name">—</span></div>
+        <div style="font-size:12px;color:#b45309;margin-top:2px" id="borrow-available">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="borrow-qty" type="number" min="1"/></div>
+        <div class="form-grp"><label>Borrow Date *</label><input class="form-ctrl" id="borrow-date" type="date"/></div>
+      </div>
+      <div class="form-grp">
+        <label>Borrowed By *</label>
+        <div class="search-select">
+          <input id="borrow-by" class="form-ctrl" placeholder="Type user name..."/>
+          <div id="borrow-by-list" class="select-list"></div>
+        </div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="borrow-remarks" rows="2" maxlength="255"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-borrow-item')">Cancel</button>
+        <button class="btn btn-amber" onclick="confirmBorrowItem()">📤 Confirm Borrow</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Return Item -->
+<div class="modal-overlay" id="m-return-item">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📥 Return Item</div>
+      <button class="modal-close" onclick="closeM('m-return-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grp"><label>Return Date *</label><input class="form-ctrl" id="return-date" type="date"/></div>
+      <div class="form-grp">
+        <label>Returned By *</label>
+        <div class="search-select">
+          <input id="return-by" class="form-ctrl" placeholder="Type user name..."/>
+          <div id="return-by-list" class="select-list"></div>
+        </div>
+      </div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="return-remarks" rows="2" maxlength="255"></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-return-item')">Cancel</button>
+        <button class="btn btn-green" onclick="confirmReturnItem()">✅ Confirm Return</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Request Wine -->
+<div class="modal-overlay" id="m-wine-request">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🍷 Request Wine Withdrawal</div>
+      <button class="modal-close" onclick="closeM('m-wine-request')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="wine-req-item-id"/>
+      <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1e40af">Item: <span id="wine-req-item-name">—</span></div>
+        <div style="font-size:12px;color:#3b5bdb;margin-top:2px" id="wine-req-available">—</div>
+      </div>
+      <div class="form-grp"><label>Quantity Requested *</label><input class="form-ctrl" id="wine-req-qty" type="number" min="1"/></div>
+      <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="wine-req-remarks" rows="2" maxlength="255" placeholder="Purpose of withdrawal..."></textarea></div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-wine-request')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitWineRequest()">📩 Submit Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -3235,6 +3315,8 @@
 <script src="js/contracts_history_patch.js"></script>
 <script src="js/nav_notification_patch.js"></script>
 <script src="js/inventory_history_dp_patch.js"></script>
+<script src="js/inventory_borrow_wine_patch.js"></script>
+<script src="js/itsupplies_borrow_patch.js"></script>
 <script src="js/laptop_dashboard_patches.js"></script>
 <script src="js/subscriptions_renewal_patch.js"></script>
 <script src="js/insurance_custom_patch.js"></script>
