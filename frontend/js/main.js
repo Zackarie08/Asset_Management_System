@@ -2641,10 +2641,12 @@ function _filterLogs(logs) {
 
   return logs.filter(log => {
 
-    // Search — user name
+    // Search — user name + description
+    // ✅ NEW: description included so searching by keyword (e.g. item name,
+    // "withdrew", a specific PO #) surfaces relevant log entries
     if (logSearchQuery) {
-      const name = (log.name || '').toLowerCase();
-      if (!name.includes(logSearchQuery)) return false;
+      const haystack = `${log.name || ''} ${log.description || ''}`.toLowerCase();
+      if (!haystack.includes(logSearchQuery)) return false;
     }
 
     // Action filter
