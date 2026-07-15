@@ -210,40 +210,12 @@ function _filterFurniture(data) {
   });
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderFurPagination(total) {
-  const container = document.getElementById('fur-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / furPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentFurPage === 1;
-  prev.onclick = () => { currentFurPage--; _renderFurTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentFurPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentFurPage = i; _renderFurTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentFurPage === totalPages;
-  next.onclick = () => { currentFurPage++; _renderFurTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('fur-pagination-container', total, furPerPage, currentFurPage, (newPage) => {
+    currentFurPage = newPage;
+    _renderFurTable();
+  });
 }
 
 function _renderFurTable() {
@@ -532,40 +504,12 @@ function _filterIT(data) {
   });
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderITPagination(total) {
-  const container = document.getElementById('it-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / itPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentITPage === 1;
-  prev.onclick = () => { currentITPage--; _renderITTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentITPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentITPage = i; _renderITTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentITPage === totalPages;
-  next.onclick = () => { currentITPage++; _renderITTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('it-pagination-container', total, itPerPage, currentITPage, (newPage) => {
+    currentITPage = newPage;
+    _renderITTable();
+  });
 }
 
 function _warrantyBadge(warrantyDate) {
@@ -829,6 +773,7 @@ let lpSearchQuery    = '';
 let lpFilterStatus   = 'all';
 let lpFilterLocation = 'all';
 let lpFilterWarranty = 'all';
+let lpFilterAssigned = 'all'; 
 let currentLpPage    = 1;
 const lpPerPage      = 20;
 let _allLaptops      = [];
@@ -867,6 +812,7 @@ function applyLpFilters() {
   lpFilterStatus   = document.getElementById('lp-filter-status').value;
   lpFilterLocation = document.getElementById('lp-filter-location').value;
   lpFilterWarranty = document.getElementById('lp-filter-warranty').value;
+  lpFilterAssigned = document.getElementById('lp-filter-assigned').value;
   currentLpPage    = 1;
   _renderLpTable();
 }
@@ -875,7 +821,6 @@ function _filterLaptops(data) {
   return data.filter(lp => {
 
     // Search — asset no., description, serial, assigned user name
-    // ✅ NEW: user_name added so searching an employee's name surfaces their laptop(s)
     if (lpSearchQuery) {
       const haystack = `${lp.asset_number} ${lp.item_description} ${lp.serial_number || ''} ${lp.user_name || ''}`.toLowerCase();
       if (!haystack.includes(lpSearchQuery)) return false;
@@ -892,6 +837,9 @@ function _filterLaptops(data) {
       if (!lp.warranty_end_date) return false;
       if (_lpWarrantyCategory(lp.warranty_end_date) !== lpFilterWarranty) return false;
     }
+
+    if (lpFilterAssigned === 'assigned' && !lp.current_user_id) return false;
+    if (lpFilterAssigned === 'unassigned' && lp.current_user_id) return false;
 
     return true;
   });
@@ -1689,40 +1637,12 @@ function _renderConTable() {
   _renderConPagination(total);
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderConPagination(total) {
-  const container = document.getElementById('con-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / conPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentConPage === 1;
-  prev.onclick = () => { currentConPage--; _renderConTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentConPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentConPage = i; _renderConTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentConPage === totalPages;
-  next.onclick = () => { currentConPage++; _renderConTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('con-pagination-container', total, conPerPage, currentConPage, (newPage) => {
+    currentConPage = newPage;
+    _renderConTable();
+  });
 }
 
 
@@ -2258,40 +2178,12 @@ function _filterFinance(data) {
   });
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderFinPagination(total) {
-  const container = document.getElementById('fin-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / finPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentFinPage === 1;
-  prev.onclick = () => { currentFinPage--; _renderFinTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentFinPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentFinPage = i; _renderFinTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentFinPage === totalPages;
-  next.onclick = () => { currentFinPage++; _renderFinTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('fin-pagination-container', total, finPerPage, currentFinPage, (newPage) => {
+    currentFinPage = newPage;
+    _renderFinTable();
+  });
 }
 
 function _renderFinTable() {
@@ -2688,40 +2580,12 @@ function _filterLogs(logs) {
   });
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderLogPagination(total) {
-  const container = document.getElementById('log-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / logsPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentLogPage === 1;
-  prev.onclick = () => { currentLogPage--; renderLogs(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentLogPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentLogPage = i; renderLogs(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentLogPage === totalPages;
-  next.onclick = () => { currentLogPage++; renderLogs(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('log-pagination-container', total, logsPerPage, currentLogPage, (newPage) => {
+    currentLogPage = newPage;
+    renderLogs();
+  });
 }
 
 async function renderLogs() {
@@ -2772,6 +2636,7 @@ function _logActionCls(action) {
     DELETE:   'la-delete',
     DELIVER:  'la-deliver',
     WITHDRAW: 'la-withdraw',
+    REQUEST:  'la-request',
     LOGIN:    'la-system',
     LOGOUT:   'la-system',
   };
@@ -2842,7 +2707,7 @@ function dpLog(id) {
 
       const clsMap = {
         CREATE:'la-create', UPDATE:'la-update', DELETE:'la-delete',
-        DELIVER:'la-deliver', WITHDRAW:'la-withdraw',
+        DELIVER:'la-deliver', WITHDRAW:'la-withdraw', REQUEST:'la-request',
         LOGIN:'la-system', LOGOUT:'la-system'
       };
 

@@ -243,40 +243,12 @@ async function renderVehicles() {
 /* ─────────────────────────────────────────────────────────
    PAGINATION
 ───────────────────────────────────────────────────────── */
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function renderVehPagination(total) {
-  const container = document.getElementById('veh-pagination');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / VEH_PAGE_SIZE);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = vehCurrentPage === 1;
-  prev.onclick = () => { vehCurrentPage--; renderVehicles(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = `btn btn-xs pg-btn ${i === vehCurrentPage ? 'btn-primary' : 'btn-outline'}`;
-    btn.textContent = i;
-    btn.onclick = () => { vehCurrentPage = i; renderVehicles(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = vehCurrentPage === totalPages;
-  next.onclick = () => { vehCurrentPage++; renderVehicles(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('veh-pagination', total, VEH_PAGE_SIZE, vehCurrentPage, (newPage) => {
+    vehCurrentPage = newPage;
+    renderVehicles();
+  });
 }
 
 /* ─────────────────────────────────────────────────────────

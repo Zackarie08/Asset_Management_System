@@ -117,40 +117,12 @@ function _filterInsurance(data) {
   });
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderInsPagination(total) {
-  const container = document.getElementById('ins-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / insPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentInsPage === 1;
-  prev.onclick = () => { currentInsPage--; _renderInsTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentInsPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentInsPage = i; _renderInsTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentInsPage === totalPages;
-  next.onclick = () => { currentInsPage++; _renderInsTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('ins-pagination-container', total, insPerPage, currentInsPage, (newPage) => {
+    currentInsPage = newPage;
+    _renderInsTable();
+  });
 }
 
 /* ── RENDER TABLE ───────────────────────────────────────── */

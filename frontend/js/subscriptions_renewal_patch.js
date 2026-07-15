@@ -42,10 +42,9 @@ async function renderSubscriptionsUnified() {
     fetch(`${API_URL}/api/globe`).then(r => r.json()).catch(() => []),
     fetch(`${API_URL}/api/subscriptions`).then(r => r.json()).catch(() => []),
   ]);
-
   const sourceFilter   = document.getElementById('uni-filter-source')?.value   || 'all';
   const statusFilter   = document.getElementById('uni-filter-status')?.value   || 'all';
-  const categoryFilter = document.getElementById('uni-filter-category')?.value || 'all';
+  const assignedFilter = document.getElementById('uni-filter-assigned')?.value || 'all';
 
   let rows = [];
 
@@ -101,7 +100,12 @@ async function renderSubscriptionsUnified() {
   }
 
   if (statusFilter !== 'all') rows = rows.filter(r => r.status === statusFilter);
-  if (categoryFilter !== 'all') rows = rows.filter(r => r.category === categoryFilter);
+  if (assignedFilter !== 'all') {
+    const isUnassigned = r => !r.assignedTo || r.assignedTo === 'Unassigned' || r.assignedTo === '—';
+    rows = assignedFilter === 'assigned'
+      ? rows.filter(r => !isUnassigned(r))
+      : rows.filter(r => isUnassigned(r));
+  }
 
   const total    = rows.length;
   const active   = rows.filter(r => r.status === 'Active' || r.status === 'Licensed').length;

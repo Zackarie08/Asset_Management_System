@@ -147,3 +147,68 @@ function makeSearchable(inputId, listId, items) {
   });
 }
 
+/* ──────────────────────────────────────────────────────────────
+   SHARED PAGINATION CONTROL
+   ──────────────────────────────────────────────────────────────
+   Sliding-window pagination, no ellipsis. Shows up to 10 page
+   numbers at once. Window stays fixed at 1-10 while the current
+   page is within the first 6; once current page reaches 7+, the
+   window slides so the current page always sits as the 6th number
+   shown, clamped so it never goes past page 1 or the last page.
+
+   Named renderPaginationControls (not renderPagination) to avoid
+   colliding with inventory.js's existing global renderPagination().
+
+   @param containerId  - id of the element to render controls into
+   @param total         - total number of filtered items
+   @param perPage       - items per page
+   @param currentPage   - the currently active page (1-indexed)
+   @param onPageChange  - callback(newPage) fired when a page/prev/next is clicked
+───────────────────────────────────────────────────────────────── */
+function renderPaginationControls(containerId, total, perPage, currentPage, onPageChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const totalPages = Math.ceil(total / perPage);
+  container.innerHTML = '';
+  if (totalPages <= 1) return;
+
+  const WINDOW_SIZE = 10;
+  let start, end;
+
+  if (totalPages <= WINDOW_SIZE) {
+    start = 1;
+    end = totalPages;
+  } else {
+    // current page sits at the 6th slot once sliding begins, clamped at both ends
+    start = Math.min(Math.max(currentPage - 5, 1), totalPages - WINDOW_SIZE + 1);
+    end = start + WINDOW_SIZE - 1;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pagination-wrap';
+
+  const prev = document.createElement('button');
+  prev.className = 'btn btn-xs btn-outline pg-btn';
+  prev.textContent = '← Prev';
+  prev.disabled = currentPage === 1;
+  prev.onclick = () => onPageChange(currentPage - 1);
+  wrap.appendChild(prev);
+
+  for (let i = start; i <= end; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-xs pg-btn ' + (i === currentPage ? 'btn-primary' : 'btn-outline');
+    btn.textContent = i;
+    btn.onclick = () => onPageChange(i);
+    wrap.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className = 'btn btn-xs btn-outline pg-btn';
+  next.textContent = 'Next →';
+  next.disabled = currentPage === totalPages;
+  next.onclick = () => onPageChange(currentPage + 1);
+  wrap.appendChild(next);
+
+  container.appendChild(wrap);
+}

@@ -76,40 +76,12 @@ function _filterOrders(data) {
   });
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderPOPagination(total) {
-  const container = document.getElementById('po-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / poPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentPOPage === 1;
-  prev.onclick = () => { currentPOPage--; _renderPOTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentPOPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentPOPage = i; _renderPOTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentPOPage === totalPages;
-  next.onclick = () => { currentPOPage++; _renderPOTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('po-pagination-container', total, poPerPage, currentPOPage, (newPage) => {
+    currentPOPage = newPage;
+    _renderPOTable();
+  });
 }
 
 /* ── RENDER TABLE ───────────────────────────────────────── */
@@ -123,7 +95,12 @@ function _renderPOTable() {
   tbody.innerHTML = '';
 
   let delayedCount = 0;
-  _allOrders.forEach(o => { if (computePOStatus(o) === 'DELAYED') delayedCount++; });
+  let activeCount  = 0;
+  _allOrders.forEach(o => {
+    const status = computePOStatus(o);
+    if (status === 'DELAYED') delayedCount++;
+    if (status !== 'DELIVERED' && status !== 'CANCELLED') activeCount++;
+  });
 
   if (paginated.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--slate-400)">No orders found.</td></tr>`;
@@ -151,8 +128,10 @@ function _renderPOTable() {
 
   const totalEl   = document.getElementById('po-total-ct');
   const delayedEl = document.getElementById('po-delay-ct');
+  const activeEl  = document.getElementById('po-active-ct');
   if (totalEl)   totalEl.textContent   = `${total} orders`;
   if (delayedEl) delayedEl.textContent = `${delayedCount} delayed`;
+  if (activeEl)  activeEl.textContent  = `${activeCount} active`;
 
   _renderPOPagination(total);
 }

@@ -930,6 +930,7 @@ textarea.form-ctrl { resize: vertical; line-height: 1.5; }
 .la-delete  { background: var(--red-100); color: #991b1b; }
 .la-deliver { background: var(--amber-100); color: #92400e; }
 .la-withdraw{ background: #f3e8ff; color: #6b21a8; }
+.la-request { background: #e0e7ff; color: #3730a3; }
 .la-system  { background: var(--slate-100); color: var(--slate-600); }
 
 /* ═══════════════════════════════════════════

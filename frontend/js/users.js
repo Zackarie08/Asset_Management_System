@@ -45,40 +45,12 @@ function _filterUsers(users) {
 }
 
 /* ── PAGINATION ─────────────────────────────────────────── */
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderUserPagination(total) {
-  const container = document.getElementById('user-pagination-container');
-  if (!container) return;
-
-  const totalPages = Math.ceil(total / usersPerPage);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = currentUserPage === 1;
-  prev.onclick = () => { currentUserPage--; _renderUserTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-xs pg-btn ' + (i === currentUserPage ? 'btn-primary' : 'btn-outline');
-    btn.textContent = i;
-    btn.onclick = () => { currentUserPage = i; _renderUserTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = currentUserPage === totalPages;
-  next.onclick = () => { currentUserPage++; _renderUserTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('user-pagination-container', total, usersPerPage, currentUserPage, (newPage) => {
+    currentUserPage = newPage;
+    _renderUserTable();
+  });
 }
 
 /* ── RENDER TABLE (client-side filter + paginate) ───────── */

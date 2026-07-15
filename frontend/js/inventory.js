@@ -86,57 +86,12 @@ async function renderInventory() {
   renderPagination(totalItems);
 }
 
+// helper (utils.js) instead of rendering every page number individually.
 function renderPagination(totalItems) {
-  const container = document.getElementById("pagination-container");
-  if (!container) return;
-
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  container.innerHTML = "";
-
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement("div");
-  wrap.className = "pagination-wrap";
-
-  // Prev button
-  const prev = document.createElement("button");
-  prev.className = "btn btn-xs btn-outline pg-btn";
-  prev.textContent = "← Prev";
-  prev.disabled = currentInvPage === 1;
-  prev.onclick = () => {
-    if (currentInvPage > 1) {
-      currentInvPage--;
-      renderInventory();
-    }
-  };
-  wrap.appendChild(prev);
-
-  // Page number buttons
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement("button");
-    btn.className = "btn btn-xs pg-btn " + (i === currentInvPage ? "btn-primary" : "btn-outline");
-    btn.textContent = i;
-    btn.onclick = () => {
-      currentInvPage = i;
-      renderInventory();
-    };
-    wrap.appendChild(btn);
-  }
-
-  // Next button
-  const next = document.createElement("button");
-  next.className = "btn btn-xs btn-outline pg-btn";
-  next.textContent = "Next →";
-  next.disabled = currentInvPage === totalPages;
-  next.onclick = () => {
-    if (currentInvPage < totalPages) {
-      currentInvPage++;
-      renderInventory();
-    }
-  };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('pagination-container', totalItems, itemsPerPage, currentInvPage, (newPage) => {
+    currentInvPage = newPage;
+    renderInventory();
+  });
 }
 
 async function exportInventory() {

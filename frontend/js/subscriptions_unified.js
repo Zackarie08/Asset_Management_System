@@ -218,39 +218,12 @@ function _renderUniTable() {
   _renderUniPagination(total);
 }
 
+// ✅ CHANGED: now delegates to the shared sliding-window pagination helper
 function _renderUniPagination(total) {
-  const container = document.getElementById('uni-pagination');
-  if (!container) return;
-  const totalPages = Math.ceil(total / UNI_PAGE_SIZE);
-  container.innerHTML = '';
-  if (totalPages <= 1) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'pagination-wrap';
-
-  const prev = document.createElement('button');
-  prev.className = 'btn btn-xs btn-outline pg-btn';
-  prev.textContent = '← Prev';
-  prev.disabled = uniCurrentPage === 1;
-  prev.onclick = () => { uniCurrentPage--; _renderUniTable(); };
-  wrap.appendChild(prev);
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = `btn btn-xs pg-btn ${i === uniCurrentPage ? 'btn-primary' : 'btn-outline'}`;
-    btn.textContent = i;
-    btn.onclick = () => { uniCurrentPage = i; _renderUniTable(); };
-    wrap.appendChild(btn);
-  }
-
-  const next = document.createElement('button');
-  next.className = 'btn btn-xs btn-outline pg-btn';
-  next.textContent = 'Next →';
-  next.disabled = uniCurrentPage === totalPages;
-  next.onclick = () => { uniCurrentPage++; _renderUniTable(); };
-  wrap.appendChild(next);
-
-  container.appendChild(wrap);
+  renderPaginationControls('uni-pagination', total, UNI_PAGE_SIZE, uniCurrentPage, (newPage) => {
+    uniCurrentPage = newPage;
+    _renderUniTable();
+  });
 }
 
 function _setTxt(id, val) {

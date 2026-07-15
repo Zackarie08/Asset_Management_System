@@ -541,6 +541,14 @@
               <option value="expired">Expired</option>
             </select>
 
+            <!-- ✅ NEW: Assigned To filter -->
+            <select class="form-ctrl" id="lp-filter-assigned" onchange="applyLpFilters()"
+              style="font-size:12px; padding:5px 10px; width:auto;">
+              <option value="all">Assigned To: All</option>
+              <option value="assigned">Assigned</option>
+              <option value="unassigned">Unassigned</option>
+            </select>
+
           </div>
 
           <!-- Right side -->
@@ -611,6 +619,7 @@
           <div class="card-hd">
             <div class="card-title">🛒 Orders</div>
             <div class="card-actions">
+              <span class="badge b-blue" id="po-active-ct">0 active</span>
               <span class="badge b-red" id="po-delay-ct">0 delayed</span>
               <span class="badge b-slate" id="po-total-ct">0 orders</span>
             </div>
@@ -849,23 +858,11 @@
             </select>
 
             <!-- Category filter -->
-            <select class="form-ctrl" id="uni-filter-category" onchange="renderSubscriptionsUnified()"
+            <select class="form-ctrl" id="uni-filter-assigned" onchange="renderSubscriptionsUnified()"
               style="font-size:12px; padding:5px 10px; width:auto;">
-              <option value="all">Category: All</option>
-              <option value="Telecom">Telecom</option>
-              <option value="Business">Business</option>
-              <option value="Enterprise">Enterprise</option>
-              <option value="Education">Education</option>
-              <option value="Perpetual">Perpetual</option>
-              <option value="Trial">Trial</option>
-              <option value="Software">Software</option>
-              <option value="Security">Security</option>
-              <option value="Communications">Communications</option>
-              <option value="Cloud Storage">Cloud Storage</option>
-              <option value="Productivity">Productivity</option>
-              <option value="Design">Design</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Other">Other</option>
+              <option value="all">Assigned To: All</option>
+              <option value="assigned">Assigned</option>
+              <option value="unassigned">Unassigned</option>
             </select>
 
           </div>
@@ -1083,6 +1080,7 @@
               <option value="UPDATE">UPDATE</option>
               <option value="DELETE">DELETE</option>
               <option value="WITHDRAW">WITHDRAW</option>
+              <option value="REQUEST">REQUEST</option>
               <option value="LOGIN">LOGIN</option>
               <option value="LOGOUT">LOGOUT</option>
             </select>
