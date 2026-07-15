@@ -1,6 +1,8 @@
+// backend/routes/furniture.js — Main History added
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
+const { logItemHistory } = require("../utils/itemHistory");
 
 // ✅ GET ALL
 router.get("/", async (req, res) => {
@@ -17,38 +19,47 @@ router.get("/", async (req, res) => {
 // ✅ CREATE
 router.post("/", async (req, res) => {
   const {
-    furniture_name,
-    quantity,
-    date_of_purchase,
-    price,
-    remarks,
-    current_location,
-    condition          // ✅ NEW
+    furniture_name, quantity, date_of_purchase, price, remarks,
+    current_location, condition, user_id, performed_by,
   } = req.body;
 
-  await pool.query(`
+  const inserted = await pool.query(`
     INSERT INTO office_furniture
     (furniture_name, quantity, date_of_purchase, price, remarks, current_location, condition)
     VALUES ($1,$2,$3,$4,$5,$6,$7)
+    RETURNING office_furniture_id
   `, [
-    furniture_name,
-    quantity,
-    date_of_purchase,
-    price,
-    remarks,
-    current_location,
-    condition || 'Good'   // ✅ NEW
+    furniture_name, quantity, date_of_purchase, price, remarks,
+    current_location, condition || 'Good'
   ]);
+
+  await logItemHistory({
+    module: "furniture",
+    record_id: inserted.rows[0].office_furniture_id,
+    action: "CREATED",
+    remarks: `${furniture_name} · Qty ${quantity}`,
+    performed_by_id: user_id || null,
+    performed_by_name: performed_by || null,
+  });
 
   res.sendStatus(200);
 });
 
 // ✅ DELETE
 router.delete("/:id", async (req, res) => {
+  const existing = await pool.query("SELECT furniture_name FROM office_furniture WHERE office_furniture_id=$1", [req.params.id]);
+
   await pool.query(
     "DELETE FROM office_furniture WHERE office_furniture_id = $1",
     [req.params.id]
   );
+
+  await logItemHistory({
+    module: "furniture",
+    record_id: req.params.id,
+    action: "DELETED",
+    remarks: existing.rows[0]?.furniture_name || null,
+  });
 
   res.sendStatus(200);
 });
@@ -56,14 +67,22 @@ router.delete("/:id", async (req, res) => {
 // ✅ UPDATE (EDIT)
 router.put("/:id", async (req, res) => {
   const {
-    furniture_name,
-    quantity,
-    date_of_purchase,
-    price,
-    remarks,
-    current_location,
-    condition          // ✅ NEW
+    furniture_name, quantity, date_of_purchase, price, remarks,
+    current_location, condition, user_id, performed_by,
   } = req.body;
+
+  const before = await pool.query(`
+    SELECT f.*, l.location_name FROM office_furniture f
+    LEFT JOIN location l ON f.current_location = l.location_id
+    WHERE f.office_furniture_id=$1
+  `, [req.params.id]);
+  const old = before.rows[0];
+
+  let newLocationName = null;
+  if (current_location) {
+    const locRes = await pool.query("SELECT location_name FROM location WHERE location_id=$1", [current_location]);
+    newLocationName = locRes.rows[0]?.location_name || null;
+  }
 
   await pool.query(`
     UPDATE office_furniture SET
@@ -76,15 +95,32 @@ router.put("/:id", async (req, res) => {
       condition=$7
     WHERE office_furniture_id=$8
   `, [
-    furniture_name,
-    quantity,
-    date_of_purchase,
-    price,
-    remarks,
-    current_location,
-    condition || 'Good',   // ✅ NEW
-    req.params.id
+    furniture_name, quantity, date_of_purchase, price, remarks,
+    current_location, condition || 'Good', req.params.id
   ]);
+
+  if (old) {
+    const fieldChecks = [
+      ["furniture_name", old.furniture_name, furniture_name],
+      ["quantity", old.quantity, quantity],
+      ["condition", old.condition, condition],
+      ["location", old.location_name, newLocationName], // ✅ name snapshot, not location_id
+    ];
+    for (const [field, oldVal, newVal] of fieldChecks) {
+      if (String(oldVal ?? '') !== String(newVal ?? '')) {
+        await logItemHistory({
+          module: "furniture",
+          record_id: req.params.id,
+          action: field === "condition" ? "STATUS_CHANGED" : "EDITED",
+          field_name: field,
+          old_value: oldVal,
+          new_value: newVal,
+          performed_by_id: user_id || null,
+          performed_by_name: performed_by || null,
+        });
+      }
+    }
+  }
 
   res.sendStatus(200);
 });

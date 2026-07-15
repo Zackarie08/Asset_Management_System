@@ -41,7 +41,7 @@ async function dpITSupplies(id) {
             ${b.borrow_remarks ? `<div class="mh-remarks">📝 ${b.borrow_remarks}</div>` : ''}
             ${b.status === 'RETURNED' ? `<div class="mh-remarks">↩️ Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
           </div>
-          ${b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id})">✅ Mark Returned</button>` : ''}
+          ${b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${it.asset_name.replace(/'/g,"\\'")}')">✅ Mark Returned</button>` : ''}
         </li>`).join('')}
     </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
 

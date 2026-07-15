@@ -12,6 +12,7 @@
 
 let _finMoveId = null;
 let _finMoveCurrentLoc = null;
+let _finMoveLabel = null;
 
 // ✅ REPLACES the old one-click version in main.js — now opens a modal
 // instead of PUTting immediately.
@@ -22,6 +23,7 @@ function toggleFinanceLocation(id) {
       if (!f) return;
       _finMoveId = id;
       _finMoveCurrentLoc = f.location;
+      _finMoveLabel = `${f.category} · Folder #${f.folder_number}`; // business folder label, not a DB id
       const nextLoc = f.location === 'STORAGE' ? 'OFFICE' : 'STORAGE';
 
       document.getElementById('fin-move-summary').innerHTML =
@@ -68,7 +70,7 @@ function confirmFinanceMove() {
     })
     .then(data => {
       showToast(`Moved to ${data.location}`, 't-success');
-      addLog('UPDATE', 'FINANCE', `Moved finance document #${_finMoveId} to ${data.location} — ${remarks}`, _finMoveId);
+      addLog('UPDATE', 'FINANCE', `Moved ${_finMoveLabel} to ${data.location} — ${remarks}`, _finMoveId);
       closeM('m-fin-move');
       renderFinance();
       if (dpOpen && dpCurrentType === 'finance' && dpCurrentId === _finMoveId) dpFinance(_finMoveId);

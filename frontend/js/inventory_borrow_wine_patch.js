@@ -110,7 +110,7 @@ async function _buildEventSupplyActionsHTML(item, isAdmin) {
             ${b.borrow_remarks ? `<div class="mh-remarks">📝 ${b.borrow_remarks}</div>` : ''}
             ${b.status === 'RETURNED' ? `<div class="mh-remarks">↩️ Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
           </div>
-          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id})">✅ Mark Returned</button>` : ''}
+          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${_escInv(item.item_name)}')">✅ Mark Returned</button>` : ''}
         </li>`).join('')}
     </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
 
@@ -137,10 +137,12 @@ function _escInv(str) {
 
 let _borrowItemId = null;
 let _borrowItemModule = null;
+let _borrowItemName = null;
 
 function openBorrowItem(recordId, itemName, module, available) {
   _borrowItemId = recordId;
   _borrowItemModule = module;
+  _borrowItemName = itemName;
   document.getElementById('borrow-item-name').textContent = itemName;
   document.getElementById('borrow-available').textContent = `Available: ${available}`;
   document.getElementById('borrow-qty').value = '';
@@ -171,7 +173,7 @@ function confirmBorrowItem() {
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); return res.json(); })
     .then(() => {
       showToast('Item borrowed', 't-success');
-      addLog('UPDATE', _borrowItemModule === 'inventory' ? 'INVENTORY' : 'IT SUPPLY', `Borrowed ${quantity} unit(s) — record #${_borrowItemId} — by ${borrowed_by}`, _borrowItemId);
+      addLog('UPDATE', _borrowItemModule === 'inventory' ? 'INVENTORY' : 'IT SUPPLY', `Borrowed ${quantity} unit(s) of ${_borrowItemName} — by ${borrowed_by}`, _borrowItemId);
       closeM('m-borrow-item');
       if (_borrowItemModule === 'inventory') { renderInventory(); if (dpOpen && dpCurrentId === _borrowItemId) dpInventory(_borrowItemId); }
       else { renderITSupplies(); if (dpOpen && dpCurrentId === _borrowItemId) dpITSupplies(_borrowItemId); }
@@ -180,9 +182,11 @@ function confirmBorrowItem() {
 }
 
 let _returnBorrowId = null;
+let _returnItemName = null;
 
-function openReturnItem(borrowId) {
+function openReturnItem(borrowId, itemName) {
   _returnBorrowId = borrowId;
+  _returnItemName = itemName || 'item';
   document.getElementById('return-date').value = todayStr();
   document.getElementById('return-by').value = '';
   selectState['return-by'] = false;
@@ -208,7 +212,7 @@ function confirmReturnItem() {
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); return res.json(); })
     .then(() => {
       showToast('Item returned', 't-success');
-      addLog('UPDATE', 'INVENTORY', `Returned borrow #${_returnBorrowId} — by ${returned_by}`, _returnBorrowId);
+      addLog('UPDATE', 'INVENTORY', `Returned ${_returnItemName} — by ${returned_by}`, _returnBorrowId);
       closeM('m-return-item');
       if (dpOpen && dpCurrentType === 'inventory') dpInventory(dpCurrentId);
       if (dpOpen && dpCurrentType === 'itsupplies') dpITSupplies(dpCurrentId);
@@ -245,11 +249,11 @@ async function _buildWineActionsHTML(item, isAdmin) {
           </div>
           ${isAdmin && r.status === 'PENDING' ? `
             <div style="display:flex;gap:4px">
-              <button class="btn btn-xs btn-green" onclick="approveWineRequest(${r.request_id})">✅</button>
-              <button class="btn btn-xs btn-red" onclick="denyWineRequest(${r.request_id})">❌</button>
+              <button class="btn btn-xs btn-green" onclick="approveWineRequest(${r.request_id}, '${_escInv(item.item_name)}')">✅</button>
+              <button class="btn btn-xs btn-red" onclick="denyWineRequest(${r.request_id}, '${_escInv(item.item_name)}')">❌</button>
             </div>` : ''}
           ${!isAdmin && r.status === 'PENDING' && r.requested_by_id === currentUser.user_id ? `
-            <button class="btn btn-xs btn-outline" onclick="cancelWineRequest(${r.request_id})">Cancel</button>` : ''}
+            <button class="btn btn-xs btn-outline" onclick="cancelWineRequest(${r.request_id}, '${_escInv(item.item_name)}')">Cancel</button>` : ''}
         </li>`;
       }).join('')}
     </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No withdrawal requests yet.</div>`;
@@ -285,11 +289,14 @@ function openWineRequest(itemId, itemName, available) {
   document.getElementById('wine-req-qty').value = '';
   document.getElementById('wine-req-remarks').value = '';
   document.getElementById('wine-req-item-id').value = itemId;
+  document.getElementById('wine-req-item-id').dataset.name = itemName;
   openM('m-wine-request');
 }
 
 function submitWineRequest() {
-  const inventory_gen_id = parseInt(document.getElementById('wine-req-item-id').value);
+  const idEl = document.getElementById('wine-req-item-id');
+  const inventory_gen_id = parseInt(idEl.value);
+  const itemName = idEl.dataset.name || 'item';
   const quantity = parseInt(document.getElementById('wine-req-qty').value);
   const remarks  = document.getElementById('wine-req-remarks').value;
 
@@ -303,14 +310,14 @@ function submitWineRequest() {
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); return res.json(); })
     .then(() => {
       showToast('Withdrawal request submitted', 't-success');
-      addLog('REQUEST', 'INVENTORY', `Requested wine withdrawal — item #${inventory_gen_id} — qty ${quantity}`, inventory_gen_id);
+      addLog('REQUEST', 'INVENTORY', `Requested wine withdrawal of ${quantity} unit(s) — ${itemName}`, inventory_gen_id);
       closeM('m-wine-request');
       if (dpOpen && dpCurrentId === inventory_gen_id) dpInventory(inventory_gen_id);
     })
     .catch(err => showToast(err.message || 'Failed to submit request', 't-error'));
 }
 
-function approveWineRequest(requestId) {
+function approveWineRequest(requestId, itemName) {
   fetch(`${API_URL}/api/wine-requests/${requestId}/approve`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ admin_id: currentUser.user_id }),
@@ -318,14 +325,14 @@ function approveWineRequest(requestId) {
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); })
     .then(() => {
       showToast('Request approved', 't-success');
-      addLog('REQUEST', 'INVENTORY', `Approved wine withdrawal request #${requestId}`, requestId);
+      addLog('REQUEST', 'INVENTORY', `Approved wine withdrawal request — ${itemName || 'item'}`, requestId);
       renderInventory();
       if (dpOpen && dpCurrentType === 'inventory') dpInventory(dpCurrentId);
     })
     .catch(err => showToast(err.message || 'Approve failed', 't-error'));
 }
 
-function denyWineRequest(requestId) {
+function denyWineRequest(requestId, itemName) {
   fetch(`${API_URL}/api/wine-requests/${requestId}/deny`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ admin_id: currentUser.user_id }),
@@ -333,18 +340,18 @@ function denyWineRequest(requestId) {
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); })
     .then(() => {
       showToast('Request denied', 't-warning');
-      addLog('REQUEST', 'INVENTORY', `Denied wine withdrawal request #${requestId}`, requestId);
+      addLog('REQUEST', 'INVENTORY', `Denied wine withdrawal request — ${itemName || 'item'}`, requestId);
       if (dpOpen && dpCurrentType === 'inventory') dpInventory(dpCurrentId);
     })
     .catch(err => showToast(err.message || 'Deny failed', 't-error'));
 }
 
-function cancelWineRequest(requestId) {
+function cancelWineRequest(requestId, itemName) {
   fetch(`${API_URL}/api/wine-requests/${requestId}`, { method: 'DELETE' })
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); })
     .then(() => {
       showToast('Request cancelled', 't-warning');
-      addLog('REQUEST', 'INVENTORY', `Cancelled wine withdrawal request #${requestId}`, requestId);
+      addLog('REQUEST', 'INVENTORY', `Cancelled wine withdrawal request — ${itemName || 'item'}`, requestId);
       if (dpOpen && dpCurrentType === 'inventory') dpInventory(dpCurrentId);
     })
     .catch(err => showToast(err.message || 'Cancel failed', 't-error'));

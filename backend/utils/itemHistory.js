@@ -38,6 +38,7 @@ const ALLOWED_MODULES = [
   "finance",
   "furniture",
   "users",
+  "po",              // ✅ NEW — Purchase Orders
 ];
 
 async function logItemHistory({

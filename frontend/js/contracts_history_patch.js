@@ -22,6 +22,16 @@ const CONTRACT_REQ_STATUS_META = {
   RETURNED:  { icon: '↩️', label: 'Returned',  cls: 'b-blue'  },
 };
 
+// ✅ NEW: request timeline is now collapsible (default collapsed — the
+// status pill above already shows the current state at a glance; the
+// full timeline is opt-in detail).
+let showContractRequestTimeline = false;
+
+function toggleContractRequestTimeline() {
+  showContractRequestTimeline = !showContractRequestTimeline;
+  if (dpOpen && dpCurrentType === 'contracts') renderContractActions(_currentContract);
+}
+
 function _crMeta(status) {
   return CONTRACT_REQ_STATUS_META[status] || { icon: '•', label: status || '—', cls: 'b-slate' };
 }
@@ -129,7 +139,10 @@ async function renderContractActions(c) {
     // ── Full timeline — every request cycle, oldest action last ──
     if (requests.length) {
       timelineHTML = `
-        <div class="dp-section-hd" style="margin-top:12px">📜 Request Timeline</div>
+        <div class="dp-section-hd" style="margin-top:12px;cursor:pointer" onclick="toggleContractRequestTimeline()">
+          📜 Request Timeline (${requests.length}) ${showContractRequestTimeline ? '▲ Hide' : '▼ Show'}
+        </div>
+        ${showContractRequestTimeline ? `
         <ul class="mh-list">
           ${requests.map(r => {
             const meta = _crMeta(r.status);
@@ -149,7 +162,7 @@ async function renderContractActions(c) {
                 </div>
               </li>`;
           }).join('')}
-        </ul>`;
+        </ul>` : ''}`;
     }
 
     // ── Action buttons (same logic as before, unaffected by the fix) ──

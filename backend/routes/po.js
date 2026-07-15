@@ -1,13 +1,12 @@
-// backend/routes/po.js — FIXED VERSION
-// Changes:
-//   • Cancel now works for PARTIAL orders (was blocking with wrong check)
-//   • Status logic: ORDERED → PARTIAL → DELIVERED / CANCELLED
-//   • Receive blocked when CANCELLED
+// backend/routes/po.js — Main History added (Global Item History rollout)
+// Status logic: ORDERED → PARTIAL → DELIVERED / CANCELLED
+// See Module_History_Rollout.md
 
 const express   = require('express');
 const router    = express.Router();
 const pool      = require('../db');
 const logAction = require('../utils/log');
+const { logItemHistory } = require('../utils/itemHistory');
 
 // GET ALL
 router.get('/', async (req, res) => {
@@ -34,12 +33,16 @@ router.post('/', async (req, res) => {
       supplier_name, supplier_contact, unit_price
     } = req.body;
 
-    await pool.query(
+    const itemRes = await pool.query('SELECT item_name FROM inventory_gen WHERE inventory_gen_id=$1', [item_id]);
+    const itemName = itemRes.rows[0]?.item_name || 'item';
+
+    const inserted = await pool.query(
       `INSERT INTO purchase_orders
       (item_id, quantity_ordered, received_quantity, order_date,
       expected_delivery_date, status, remarks, unit,
       performed_by, supplier_name, supplier_contact, unit_price)
-      VALUES ($1,$2,0,$3,$4,'ORDERED',$5,$6,$7,$8,$9,$10)`,
+      VALUES ($1,$2,0,$3,$4,'ORDERED',$5,$6,$7,$8,$9,$10)
+      RETURNING purchase_order_id`,
       [
         item_id, quantity, order_date,
         expected_delivery_date || null, remarks || null,
@@ -47,11 +50,21 @@ router.post('/', async (req, res) => {
         supplier_name || null, supplier_contact || null, unit_price || null
       ]
     );
+    const newId = inserted.rows[0].purchase_order_id;
 
     await logAction({
       user_id, action_type: 'CREATED PO', module: 'ORDER',
       description: `Created PO for item ID ${item_id} (Qty: ${quantity})`,
       quantity, reference_type: 'MANUAL', performed_by
+    });
+
+    await logItemHistory({
+      module: 'po',
+      record_id: newId,
+      action: 'CREATED',
+      remarks: `Ordered ${quantity} ${unit || 'unit'}(s) of ${itemName}${supplier_name ? ' from ' + supplier_name : ''}`,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
     });
 
     res.sendStatus(200);
@@ -70,12 +83,11 @@ router.post('/receive/:id', async (req, res) => {
     if (!qty || qty <= 0) return res.status(400).send('Invalid quantity');
 
     const poRes = await pool.query(
-      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1', [req.params.id]
+      'SELECT p.*, i.item_name FROM purchase_orders p LEFT JOIN inventory_gen i ON p.item_id = i.inventory_gen_id WHERE purchase_order_id=$1', [req.params.id]
     );
     const po = poRes.rows[0];
     if (!po) return res.status(404).send('PO not found');
 
-    // ✅ FIX: Block receive if CANCELLED (was only blocking DELIVERED)
     if (po.status === 'DELIVERED' || po.status === 'CANCELLED') {
       return res.status(400).send(`Cannot receive on ${po.status} order`);
     }
@@ -115,6 +127,18 @@ router.post('/receive/:id', async (req, res) => {
       quantity: qty, movement_type: 'ADD', reference_type: 'DELIVERY', performed_by
     });
 
+    await logItemHistory({
+      module: 'po',
+      record_id: req.params.id,
+      action: 'STATUS_CHANGED',
+      field_name: 'status',
+      old_value: po.status,
+      new_value: newStatus,
+      remarks: `Received ${qty} ${po.unit || 'unit'}(s) of ${po.item_name || 'item'} (${newReceived}/${po.quantity_ordered} total)`,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
+    });
+
     res.json({ status: newStatus, received: newReceived, remaining: po.quantity_ordered - newReceived });
   } catch (err) {
     console.error(err);
@@ -123,7 +147,6 @@ router.post('/receive/:id', async (req, res) => {
 });
 
 // ── CANCEL ──────────────────────────────────────────────────
-// ✅ FIX: Now works for PARTIAL orders (was checking po.status === 'DELIVERED' only)
 router.post('/cancel/:id', async (req, res) => {
   try {
     const { user_id, performed_by, role } = req.body;
@@ -132,12 +155,11 @@ router.post('/cancel/:id', async (req, res) => {
     }
 
     const poRes = await pool.query(
-      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1', [req.params.id]
+      'SELECT p.*, i.item_name FROM purchase_orders p LEFT JOIN inventory_gen i ON p.item_id = i.inventory_gen_id WHERE purchase_order_id=$1', [req.params.id]
     );
     const po = poRes.rows[0];
     if (!po) return res.status(404).send('Not found');
 
-    // ✅ FIX: Only block cancel for DELIVERED, not PARTIAL
     if (po.status === 'DELIVERED') return res.status(400).send('Already delivered — cannot cancel');
     if (po.status === 'CANCELLED') return res.status(400).send('Already cancelled');
 
@@ -150,6 +172,17 @@ router.post('/cancel/:id', async (req, res) => {
       user_id, action_type: 'CANCELED PO', module: 'ORDER',
       description: `Cancelled PO #${po.purchase_order_id} (was ${po.status})`,
       quantity: po.quantity_ordered, reference_type: 'MANUAL', performed_by
+    });
+
+    await logItemHistory({
+      module: 'po',
+      record_id: req.params.id,
+      action: 'CANCELLED',
+      old_value: po.status,
+      new_value: 'CANCELLED',
+      remarks: `Cancelled order for ${po.item_name || 'item'}`,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
     });
 
     res.sendStatus(200);
@@ -166,7 +199,7 @@ router.post('/deliver/:id', async (req, res) => {
 
   try {
     const poRes = await pool.query(
-      'SELECT * FROM purchase_orders WHERE purchase_order_id=$1', [req.params.id]
+      'SELECT p.*, i.item_name FROM purchase_orders p LEFT JOIN inventory_gen i ON p.item_id = i.inventory_gen_id WHERE purchase_order_id=$1', [req.params.id]
     );
     const po = poRes.rows[0];
     if (!po) return res.status(404).send('Not found');
@@ -192,6 +225,18 @@ router.post('/deliver/:id', async (req, res) => {
       user_id, action_type: 'DELIVERED PO', module: 'ORDER',
       description: `Full delivery of PO #${po.purchase_order_id}`,
       quantity: remaining, movement_type: 'ADD', reference_type: 'DELIVERY', performed_by
+    });
+
+    await logItemHistory({
+      module: 'po',
+      record_id: req.params.id,
+      action: 'STATUS_CHANGED',
+      field_name: 'status',
+      old_value: po.status,
+      new_value: 'DELIVERED',
+      remarks: `Full delivery of ${po.item_name || 'item'}`,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
     });
 
     res.sendStatus(200);

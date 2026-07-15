@@ -210,7 +210,7 @@ router.put("/request/:id/approve", async (req, res) => {
       record_id: contract_id,
       action: "APPROVED",
       new_value: request.requested_name,
-      remarks: `Request #${id} approved`,
+      remarks: `Contract request by ${request.requested_name} approved`,
       performed_by_id: admin_id,
       performed_by_name: adminName,
     });
@@ -241,7 +241,7 @@ router.put("/request/:id/return", async (req, res) => {
       module: "contracts",
       record_id: contract_id,
       action: "RETURNED",
-      remarks: `Request #${id} returned`,
+      remarks: `Contract returned by ${reqData.rows[0].requested_name}`,
       performed_by_id: user_id || null,
       performed_by_name: performed_by || null,
     });
@@ -277,7 +277,7 @@ router.put("/request/:id/deny", async (req, res) => {
       module: "contracts",
       record_id: reqData.rows[0].contract_id,
       action: "DENIED",
-      remarks: `Request #${req.params.id} denied`,
+      remarks: `Contract request by ${reqData.rows[0].requested_name} denied`,
       performed_by_id: admin_id,
       performed_by_name: adminName,
     });
@@ -315,7 +315,7 @@ router.delete("/request/:id", async (req, res) => {
       module: "contracts",
       record_id: row.contract_id,
       action: "CANCELLED",
-      remarks: `Request #${req.params.id} cancelled by requester`,
+      remarks: `Contract request cancelled by requester`,
       performed_by_name: row.requested_name,
     });
 
