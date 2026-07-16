@@ -1,5 +1,17 @@
 // backend/routes/inventory.js — ITEM HISTORY INTEGRATION (Part 8 reference impl)
-// + Part 6: Supplier / Supplier Contact fields added to CREATE/EDIT + history.
+// + Part 6 (Supplier fields) + Duplicate Delete Log fix
+//
+// ✅ FIX (Duplicate Delete Log): DELETE /:id used to call BOTH logAction()
+// (system_log) AND logItemHistory() (item_history). The frontend
+// (confirmDeleteInventory in inventory.js) ALSO calls addLog() after this
+// route resolves — so every inventory delete produced TWO system_log rows:
+// one from here (with no performed_by, since the frontend's DELETE fetch
+// never sends user_id/performed_by as query params) and one from the
+// frontend (with correct attribution). Removed the logAction() call here —
+// every other module's delete route (furniture/itSupplies/laptops/vehicle/
+// contracts/insurance/finance/users) already relies SOLELY on the frontend
+// addLog() call for system_log, with logItemHistory() as the separate,
+// untouched Item History record. This just brings Inventory in line.
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
@@ -24,7 +36,7 @@ router.post("/", async (req, res) => {
     const { 
       name, qty, category, quantity_limit, price, unit, remarks,
       user_id, performed_by, location_id,
-      supplier, supplier_contact, // ✅ NEW (Part 6)
+      supplier, supplier_contact,
     } = req.body;
 
     const inserted = await pool.query(
@@ -36,6 +48,10 @@ router.post("/", async (req, res) => {
     );
     const newId = inserted.rows[0].inventory_gen_id;
 
+    // NOTE: this route's own POST/PUT (create/edit) and /withdraw have NO
+    // frontend addLog() counterpart — inventory.js (frontend) never calls
+    // addLog() for save/edit/withdraw — so logAction() here remains the
+    // SOLE system_log source for those three actions and is correct as-is.
     await logAction({
       user_id,
       action_type: "CREATE",
@@ -47,7 +63,6 @@ router.post("/", async (req, res) => {
       performed_by
     });
 
-    // ✅ NEW: item history entry for this specific record
     await logItemHistory({
       module: "inventory",
       record_id: newId,
@@ -95,7 +110,6 @@ router.post("/withdraw", async (req, res) => {
       performed_by
     });
 
-    // ✅ NEW
     await logItemHistory({
       module: "inventory",
       record_id: id,
@@ -134,16 +148,13 @@ router.delete("/:id", async (req, res) => {
       [req.params.id]
     );
 
-    await logAction({
-      user_id,
-      action_type: "DELETE",
-      module: "INVENTORY",
-      description: `Deleted item ID ${req.params.id}`,
-      performed_by
-    });
+    // ✅ FIX: removed the duplicate logAction() (system_log) call that used
+    // to sit here — it never received user_id/performed_by (the frontend's
+    // DELETE fetch sends no query params), so it always produced a blank-
+    // attribution row alongside the frontend's own, correctly-attributed
+    // addLog() call. system_log is now written ONLY by the frontend for
+    // this action, consistent with every other module.
 
-    // ✅ NEW — logged AFTER delete since record_id no longer needs to exist
-    // in inventory_gen; item_history is independent of the parent row.
     await logItemHistory({
       module: "inventory",
       record_id: req.params.id,
@@ -174,7 +185,7 @@ router.put("/:id", async (req, res) => {
       location_id,
       user_id,
       performed_by,
-      supplier, supplier_contact, // ✅ NEW (Part 6)
+      supplier, supplier_contact,
     } = req.body;
 
     const before = await pool.query(
@@ -185,9 +196,6 @@ router.put("/:id", async (req, res) => {
     );
     const old = before.rows[0];
 
-    // ✅ IMMUTABILITY FIX: resolve the NEW location's name now too, so the
-    // history diff is human-readable ("Main Office" → "Warehouse") and not
-    // dependent on resolving a location_id at read time later.
     let newLocationName = null;
     if (location_id) {
       const locRes = await pool.query(
@@ -234,8 +242,6 @@ router.put("/:id", async (req, res) => {
       performed_by
     });
 
-    // ✅ NEW — one history row per changed field, so the timeline reads
-    // like "reorder_level: 5 → 10" instead of one vague "Edited" blob.
     if (old) {
       const fieldChecks = [
         ["item_name", old.item_name, name],
@@ -243,10 +249,7 @@ router.put("/:id", async (req, res) => {
         ["reorder_level", old.reorder_level, quantity_limit],
         ["price", old.price, price],
         ["unit", old.unit, unit],
-        // ✅ FIX: snapshot location NAME, not the raw location_id FK —
-        // see History_Snapshot_Strategy.md
         ["location", old.location_name, newLocationName],
-        // ✅ NEW (Part 6): supplier changes now tracked in Item History
         ["supplier", old.supplier, supplier],
         ["supplier_contact", old.supplier_contact, supplier_contact],
       ];

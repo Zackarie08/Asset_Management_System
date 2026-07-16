@@ -69,6 +69,8 @@ async function _buildWineActionsHTML(item, isAdmin) {
       : `<button class="btn btn-primary btn-sm" onclick="openWineRequest(${item.inventory_gen_id},'${_escInv(item.item_name)}',${trueAvailable})">🍷 Request Withdrawal</button>`;
   } else {
     actionButtons = `
+      <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
+      <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
       <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
       <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')">🗑️ Delete</button>`;
   }

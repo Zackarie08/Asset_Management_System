@@ -1,6 +1,16 @@
-// backend/routes/po.js — Main History added (Global Item History rollout)
-// Status logic: ORDERED → PARTIAL → DELIVERED / CANCELLED
-// See Module_History_Rollout.md
+// backend/routes/po.js — Main History added
+// + Duplicate Log fix (found while auditing the Inventory delete-log bug)
+//
+// ✅ FIX: Same root cause as Inventory's delete bug. /receive/:id,
+// /cancel/:id, and /deliver/:id each called logAction() (system_log)
+// server-side AND the frontend (orders.js) ALSO calls addLog() after each
+// one resolves — producing two system_log rows per action, one with
+// server-resolved attribution and one from the frontend. Removed the
+// logAction() calls from those three routes; the frontend's addLog() is
+// now the sole system_log source for them, same as every other module.
+// POST / (create) is UNCHANGED — the frontend's savePO() never calls
+// addLog(), so logAction() there remains the only system_log source and
+// was never duplicated.
 
 const express   = require('express');
 const router    = express.Router();
@@ -52,6 +62,8 @@ router.post('/', async (req, res) => {
     );
     const newId = inserted.rows[0].purchase_order_id;
 
+    // ✅ unchanged — savePO() (frontend) has no addLog() call, so this is
+    // the only system_log entry for order creation. Not duplicated.
     await logAction({
       user_id, action_type: 'CREATED PO', module: 'ORDER',
       description: `Created PO for item ID ${item_id} (Qty: ${quantity})`,
@@ -121,11 +133,9 @@ router.post('/receive/:id', async (req, res) => {
       [qty, po.item_id]
     );
 
-    await logAction({
-      user_id, action_type: 'RECEIVE PO', module: 'ORDER',
-      description: `Received ${qty} of ${po.quantity_ordered} for PO #${po.purchase_order_id} (${newStatus})`,
-      quantity: qty, movement_type: 'ADD', reference_type: 'DELIVERY', performed_by
-    });
+    // ✅ FIX: removed the duplicate logAction() call — submitReceive()
+    // (frontend, orders.js) already calls addLog('UPDATE','ORDER',...)
+    // with correct attribution after this route resolves.
 
     await logItemHistory({
       module: 'po',
@@ -168,11 +178,9 @@ router.post('/cancel/:id', async (req, res) => {
       [req.params.id]
     );
 
-    await logAction({
-      user_id, action_type: 'CANCELED PO', module: 'ORDER',
-      description: `Cancelled PO #${po.purchase_order_id} (was ${po.status})`,
-      quantity: po.quantity_ordered, reference_type: 'MANUAL', performed_by
-    });
+    // ✅ FIX: removed the duplicate logAction() call — cancelOrder()
+    // (frontend, orders.js) already calls addLog('UPDATE','ORDER',...)
+    // with correct attribution after this route resolves.
 
     await logItemHistory({
       module: 'po',
@@ -221,11 +229,9 @@ router.post('/deliver/:id', async (req, res) => {
       [remaining, po.item_id]
     );
 
-    await logAction({
-      user_id, action_type: 'DELIVERED PO', module: 'ORDER',
-      description: `Full delivery of PO #${po.purchase_order_id}`,
-      quantity: remaining, movement_type: 'ADD', reference_type: 'DELIVERY', performed_by
-    });
+    // ✅ FIX: removed the duplicate logAction() call — markDelivered()
+    // (frontend, orders.js) already calls addLog('UPDATE','ORDER',...)
+    // with correct attribution after this route resolves.
 
     await logItemHistory({
       module: 'po',
