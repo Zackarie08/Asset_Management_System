@@ -1,4 +1,4 @@
-// backend/routes/furniture.js — Main History added
+// backend/routes/furniture.js — Main History + Part 6 (Supplier fields)
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
@@ -21,23 +21,24 @@ router.post("/", async (req, res) => {
   const {
     furniture_name, quantity, date_of_purchase, price, remarks,
     current_location, condition, user_id, performed_by,
+    supplier, supplier_contact, // ✅ NEW (Part 6)
   } = req.body;
 
   const inserted = await pool.query(`
     INSERT INTO office_furniture
-    (furniture_name, quantity, date_of_purchase, price, remarks, current_location, condition)
-    VALUES ($1,$2,$3,$4,$5,$6,$7)
+    (furniture_name, quantity, date_of_purchase, price, remarks, current_location, condition, supplier, supplier_contact)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     RETURNING office_furniture_id
   `, [
     furniture_name, quantity, date_of_purchase, price, remarks,
-    current_location, condition || 'Good'
+    current_location, condition || 'Good', supplier || null, supplier_contact || null
   ]);
 
   await logItemHistory({
     module: "furniture",
     record_id: inserted.rows[0].office_furniture_id,
     action: "CREATED",
-    remarks: `${furniture_name} · Qty ${quantity}`,
+    remarks: `${furniture_name} · Qty ${quantity}${supplier ? ' · Supplier: ' + supplier : ''}`,
     performed_by_id: user_id || null,
     performed_by_name: performed_by || null,
   });
@@ -69,6 +70,7 @@ router.put("/:id", async (req, res) => {
   const {
     furniture_name, quantity, date_of_purchase, price, remarks,
     current_location, condition, user_id, performed_by,
+    supplier, supplier_contact, // ✅ NEW (Part 6)
   } = req.body;
 
   const before = await pool.query(`
@@ -92,11 +94,13 @@ router.put("/:id", async (req, res) => {
       price=$4,
       remarks=$5,
       current_location=$6,
-      condition=$7
-    WHERE office_furniture_id=$8
+      condition=$7,
+      supplier=$8,
+      supplier_contact=$9
+    WHERE office_furniture_id=$10
   `, [
     furniture_name, quantity, date_of_purchase, price, remarks,
-    current_location, condition || 'Good', req.params.id
+    current_location, condition || 'Good', supplier || null, supplier_contact || null, req.params.id
   ]);
 
   if (old) {
@@ -105,6 +109,8 @@ router.put("/:id", async (req, res) => {
       ["quantity", old.quantity, quantity],
       ["condition", old.condition, condition],
       ["location", old.location_name, newLocationName], // ✅ name snapshot, not location_id
+      ["supplier", old.supplier, supplier], // ✅ NEW (Part 6)
+      ["supplier_contact", old.supplier_contact, supplier_contact], // ✅ NEW (Part 6)
     ];
     for (const [field, oldVal, newVal] of fieldChecks) {
       if (String(oldVal ?? '') !== String(newVal ?? '')) {

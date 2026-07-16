@@ -1,22 +1,12 @@
-// backend/routes/contracts.js — IMMUTABILITY FIX PASS
-// See Assignment_History_Protection.md / User_Reference_History_Audit.md
+// backend/routes/contracts.js — IMMUTABILITY FIX PASS + Part 4 audit fix
 //
-// Changes in this revision:
-//   - contract_requests now stores requested_name / approved_by_name /
-//     denied_by_name SNAPSHOTS at the moment each action happens.
-//   - GET /requests reads those snapshot columns directly. A live join to
-//     `users` is kept ONLY as a fallback for rows written before migration
-//     007 (requested_name IS NULL) — see History_Snapshot_Strategy.md
-//     "Grandfathering exception". Every row written from now on is fully
-//     snapshotted and never needs that fallback.
-//   - current_holder_name (GET / and GET /:id) is UNCHANGED and stays a
-//     live LATERAL join — it describes who currently holds the contract
-//     right now, which is current state, not a historical record.
-//   - Wired into the Global Item History table (item_history, module
-//     "contracts") for CREATE/EDIT/REQUEST/APPROVE/DENY/CANCEL/RETURN.
-//
-// (Prior fixes retained: requireSuperAdmin() server-side role check,
-// approve/deny state guards, cancel 400-on-no-op, NA validity_type.)
+// ✅ FIX (Part 4 audit): PUT /:id only tracked other_party/description/status
+// changes in Item History — a change to validity_type/valid_year/valid_from/
+// valid_to (e.g. converting a YEAR contract to a RANGE, or extending an
+// expiry date) was silently invisible in the item's history timeline.
+// Added those four fields to the field-diff check below. Everything else
+// (CREATE/REQUEST/APPROVE/DENY/CANCEL/RETURN/DELETE) was already wired into
+// Global Item History in the prior pass and is unchanged here.
 
 const router = require("express").Router();
 const db     = require("../db");
@@ -76,16 +66,9 @@ router.get("/requests", async (req, res) => {
         cr.*,
         c.other_party,
         c.description,
-        -- ✅ FIX: snapshot column is the source of truth. The live join to
-        -- users is kept ONLY to backfill requests created before migration
-        -- 007 — see the "Grandfathering exception" note in
-        -- History_Snapshot_Strategy.md.
         COALESCE(cr.requested_name, u.name) AS requested_name
       FROM contract_requests cr
       JOIN contracts c ON cr.contract_id = c.contract_id
-      -- ✅ FIX (Part 5): LEFT JOIN, not JOIN — if the requesting user is
-      -- later deleted, an INNER JOIN would silently drop this row from the
-      -- timeline entirely. The snapshot column keeps the name regardless.
       LEFT JOIN users u ON cr.requested_by = u.user_id
       ORDER BY cr.request_date DESC
     `);
@@ -102,7 +85,7 @@ router.post("/", async (req, res) => {
     const {
       contract_date, other_party, description,
       validity_type, valid_year, valid_from, valid_to, remarks,
-      user_id, performed_by, // optional — see note in Global_Item_History_Architecture.md
+      user_id, performed_by,
     } = req.body;
 
     const cleanYear = validity_type === 'NA' ? null : valid_year;
@@ -147,7 +130,6 @@ router.post("/request", async (req, res) => {
       return res.status(400).json({ error: "Contract already requested or approved" });
     }
 
-    // ✅ FIX: snapshot the requester's name NOW, permanently.
     const userRes = await db.query("SELECT name FROM users WHERE user_id=$1", [user_id]);
     const requested_name = userRes.rows[0]?.name || null;
 
@@ -178,7 +160,6 @@ router.put("/request/:id/approve", async (req, res) => {
     const { id }      = req.params;
     const { admin_id } = req.body;
 
-    // ✅ FIX: also returns the admin's name for snapshotting
     const adminName = await requireSuperAdmin(req, res);
     if (adminName === null) return;
 
@@ -290,12 +271,6 @@ router.put("/request/:id/deny", async (req, res) => {
 });
 
 /* ── CANCEL REQUEST (user) ───────────────────────────────────── */
-// ✅ FIX (Part 5): previously hard-DELETEd the row, which erased the
-// request from the timeline entirely — this was the literal cause of
-// "request status disappears after actions occur". Now soft-cancels by
-// updating status to CANCELLED, so the row (and its snapshot name)
-// survives forever in both contract_requests and the Global Item History
-// timeline, and can be displayed instead of vanishing.
 router.delete("/request/:id", async (req, res) => {
   try {
     const result = await db.query(
@@ -359,7 +334,7 @@ router.put("/:id", async (req, res) => {
     const {
       contract_date, other_party, description,
       validity_type, valid_year, valid_from, valid_to, remarks, status,
-      user_id, performed_by, // optional — see note below
+      user_id, performed_by,
     } = req.body;
 
     const cleanYear = validity_type === 'NA' ? null : valid_year;
@@ -383,15 +358,17 @@ router.put("/:id", async (req, res) => {
       WHERE contract_id = $10
     `, [contract_date, other_party, description, validity_type, cleanYear, cleanFrom, cleanTo, remarks, status, req.params.id]);
 
-    // NOTE: the frontend's saveContract() does not currently send
-    // user_id/performed_by for edits — these fields are optional here so
-    // logging degrades gracefully (performed_by_name = null) rather than
-    // failing. Wire currentUser into that payload to get full attribution.
     if (old) {
+      // ✅ FIX (Part 4 audit): validity_type/valid_year/valid_from/valid_to
+      // added — previously a validity change left no trace in Item History.
       const fieldChecks = [
         ["other_party", old.other_party, other_party],
         ["description", old.description, description],
         ["status", old.status, status],
+        ["validity_type", old.validity_type, validity_type],
+        ["valid_year", old.valid_year, cleanYear],
+        ["valid_from", old.valid_from, cleanFrom],
+        ["valid_to", old.valid_to, cleanTo],
       ];
       for (const [field, oldVal, newVal] of fieldChecks) {
         if (String(oldVal ?? '') !== String(newVal ?? '')) {

@@ -1,7 +1,16 @@
-// backend/routes/wineRequests.js — Part 2 (Wine)
+// backend/routes/wineRequests.js — Part 1 fix: stock validation on request
 // Withdrawal request/approval flow for Wine-category inventory items —
 // mirrors the Contracts request pattern (Part 5), including the soft-
 // cancel / snapshot-name lessons from that fix.
+//
+// ✅ FIX (Part 1): POST / previously let a user request more units than
+// were actually available — it only checked quantity > 0, never against
+// stock. A user could request 7 bottles when only 3 existed. Now checks
+// requested qty against (current_quantity - sum of other PENDING request
+// quantities for the same item), so concurrent pending requests can't be
+// double-committed either. Mirrored on the frontend in
+// wine_stock_validation_patch.js so the UI can't even submit an over-limit
+// request, but this server-side check is the one that can't be bypassed.
 
 const express = require("express");
 const router  = express.Router();
@@ -57,6 +66,25 @@ router.post("/", async (req, res) => {
     if (!itemRes.rows.length) return res.status(404).json({ error: "Item not found" });
     if (itemRes.rows[0].category !== "Wine") {
       return res.status(400).json({ error: "Withdrawal requests only apply to Wine category items" });
+    }
+
+    // ✅ NEW (Part 1): compute TRUE availability — stock minus whatever is
+    // already tied up in other pending requests for this same item — and
+    // reject anything over that. This is the authoritative check; the
+    // frontend check is just UX.
+    const pendingRes = await pool.query(
+      `SELECT COALESCE(SUM(quantity),0) AS pending_qty
+       FROM wine_withdrawal_requests
+       WHERE inventory_gen_id=$1 AND status='PENDING'`,
+      [inventory_gen_id]
+    );
+    const pendingQty  = parseInt(pendingRes.rows[0].pending_qty) || 0;
+    const available   = itemRes.rows[0].current_quantity - pendingQty;
+
+    if (qty > available) {
+      return res.status(400).json({
+        error: `Cannot request more than available stock (${Math.max(available, 0)} available)`,
+      });
     }
 
     const userRes = await pool.query("SELECT name FROM users WHERE user_id=$1", [user_id]);

@@ -1,13 +1,5 @@
 // backend/routes/inventory.js — ITEM HISTORY INTEGRATION (Part 8 reference impl)
-// This is the pattern every other module (wine/event supplies, IT supplies,
-// laptops, vehicles, contracts, insurance, subscriptions, finance, furniture,
-// users) will copy in the later parts of this rollout:
-//   1. Fetch the "before" row when the action needs an old_value.
-//   2. Perform the write.
-//   3. Call logItemHistory() with module + record_id + action (+ optional
-//      field_name/old_value/new_value/remarks).
-//   4. Keep the existing logAction() (system_log) call untouched — the two
-//      are independent and both still fire.
+// + Part 6: Supplier / Supplier Contact fields added to CREATE/EDIT + history.
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
@@ -31,12 +23,16 @@ router.post("/", async (req, res) => {
   try {
     const { 
       name, qty, category, quantity_limit, price, unit, remarks,
-      user_id, performed_by, location_id
+      user_id, performed_by, location_id,
+      supplier, supplier_contact, // ✅ NEW (Part 6)
     } = req.body;
 
     const inserted = await pool.query(
-      "INSERT INTO inventory_gen (item_name, current_quantity, category, reorder_level, price, unit, remarks, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING inventory_gen_id",
-      [name, qty, category, quantity_limit, price, unit, remarks, location_id]
+      `INSERT INTO inventory_gen
+        (item_name, current_quantity, category, reorder_level, price, unit, remarks, location_id, supplier, supplier_contact)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING inventory_gen_id`,
+      [name, qty, category, quantity_limit, price, unit, remarks, location_id, supplier || null, supplier_contact || null]
     );
     const newId = inserted.rows[0].inventory_gen_id;
 
@@ -56,7 +52,7 @@ router.post("/", async (req, res) => {
       module: "inventory",
       record_id: newId,
       action: "CREATED",
-      remarks: `Initial stock: ${qty} ${unit || ''} · ${category}`,
+      remarks: `Initial stock: ${qty} ${unit || ''} · ${category}${supplier ? ' · Supplier: ' + supplier : ''}`,
       performed_by_id: user_id,
       performed_by_name: performed_by,
     });
@@ -177,7 +173,8 @@ router.put("/:id", async (req, res) => {
       remarks,
       location_id,
       user_id,
-      performed_by
+      performed_by,
+      supplier, supplier_contact, // ✅ NEW (Part 6)
     } = req.body;
 
     const before = await pool.query(
@@ -209,8 +206,10 @@ router.put("/:id", async (req, res) => {
            unit = $5,
            remarks = $6,
            location_id = $7,
+           supplier = $8,
+           supplier_contact = $9,
            last_updated = NOW()
-       WHERE inventory_gen_id = $8`,
+       WHERE inventory_gen_id = $10`,
       [
         name,
         category,
@@ -219,6 +218,8 @@ router.put("/:id", async (req, res) => {
         unit,
         remarks,
         location_id,
+        supplier || null,
+        supplier_contact || null,
         req.params.id
       ]
     );
@@ -245,6 +246,9 @@ router.put("/:id", async (req, res) => {
         // ✅ FIX: snapshot location NAME, not the raw location_id FK —
         // see History_Snapshot_Strategy.md
         ["location", old.location_name, newLocationName],
+        // ✅ NEW (Part 6): supplier changes now tracked in Item History
+        ["supplier", old.supplier, supplier],
+        ["supplier_contact", old.supplier_contact, supplier_contact],
       ];
       for (const [field, oldVal, newVal] of fieldChecks) {
         if (String(oldVal ?? '') !== String(newVal ?? '')) {

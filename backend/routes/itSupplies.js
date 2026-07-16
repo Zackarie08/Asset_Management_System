@@ -1,4 +1,4 @@
-// backend/routes/itSupplies.js — Part 3 (item history hooks added)
+// backend/routes/itSupplies.js — Part 3 (item history) + Part 6 (Supplier fields)
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
@@ -31,12 +31,13 @@ router.post("/", async (req, res) => {
     status,
     user_id,
     performed_by,
+    supplier, supplier_contact, // ✅ NEW (Part 6)
   } = req.body;
 
   const inserted = await pool.query(`
     INSERT INTO it_supplies
-    (asset_name, serial_number, quantity, date_of_purchase, price, warranty_end_date, remarks, location_id, status)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    (asset_name, serial_number, quantity, date_of_purchase, price, warranty_end_date, remarks, location_id, status, supplier, supplier_contact)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     RETURNING it_supplies_id
   `, [
     asset_name,
@@ -47,14 +48,16 @@ router.post("/", async (req, res) => {
     warranty_end_date,
     remarks,
     location_id,
-    status
+    status,
+    supplier || null,
+    supplier_contact || null,
   ]);
 
   await logItemHistory({
     module: "itsupplies",
     record_id: inserted.rows[0].it_supplies_id,
     action: "CREATED",
-    remarks: `${asset_name}${serial_number ? ' · ' + serial_number : ''}`,
+    remarks: `${asset_name}${serial_number ? ' · ' + serial_number : ''}${supplier ? ' · Supplier: ' + supplier : ''}`,
     performed_by_id: user_id || null,
     performed_by_name: performed_by || null,
   });
@@ -77,6 +80,7 @@ router.put("/:id", async (req, res) => {
     status,
     user_id,
     performed_by,
+    supplier, supplier_contact, // ✅ NEW (Part 6)
   } = req.body;
 
   const before = await pool.query("SELECT * FROM it_supplies WHERE it_supplies_id=$1", [req.params.id]);
@@ -92,8 +96,10 @@ router.put("/:id", async (req, res) => {
       warranty_end_date=$6,
       remarks=$7,
       location_id=$8,
-      status=$9
-    WHERE it_supplies_id=$10
+      status=$9,
+      supplier=$10,
+      supplier_contact=$11
+    WHERE it_supplies_id=$12
   `, [
     asset_name,
     serial_number,
@@ -104,6 +110,8 @@ router.put("/:id", async (req, res) => {
     remarks,
     location_id,
     status,
+    supplier || null,
+    supplier_contact || null,
     req.params.id
   ]);
 
@@ -114,6 +122,8 @@ router.put("/:id", async (req, res) => {
       ["quantity", old.quantity, quantity],
       ["status", old.status, status],
       ["price", old.price, price],
+      ["supplier", old.supplier, supplier], // ✅ NEW (Part 6)
+      ["supplier_contact", old.supplier_contact, supplier_contact], // ✅ NEW (Part 6)
     ];
     for (const [field, oldVal, newVal] of fieldChecks) {
       if (String(oldVal ?? '') !== String(newVal ?? '')) {

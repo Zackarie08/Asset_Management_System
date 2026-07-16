@@ -1,7 +1,13 @@
 // backend/routes/borrowReturn.js — Parts 2 & 3
 // Generic borrow/return ledger shared by Event Supplies (module=inventory,
 // category="Company Event Supplies") and IT Supplies (module=itsupplies).
-// See Inventory_Borrow_Return_System.md / ITSupplies_Borrow_Return_System.md
+//
+// ✅ FIX (Part 3): POST /return had NO role check at all — any employee
+// could hit this endpoint (or click a button that shouldn't exist) and
+// finalize a return. The frontend now hides the button for non-admins
+// (see itsupplies_borrow_patch.js), but that alone is bypassable, so the
+// real enforcement lives here: the request's user_id is resolved to a
+// role server-side and rejected unless admin/super_admin.
 
 const express = require("express");
 const router  = express.Router();
@@ -108,6 +114,19 @@ router.post("/return", async (req, res) => {
 
     if (!returned_by || !returned_by.trim()) {
       return res.status(400).json({ error: "Returned By is required" });
+    }
+
+    // ✅ NEW (Part 3): server-side role enforcement. Only admin/super_admin
+    // may finalize a return — mirrors the same gate already enforced on
+    // Event Supplies returns via the frontend, now enforced for BOTH
+    // modules, and unbypassable regardless of what the UI shows.
+    if (!user_id) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
+    const userRes = await pool.query("SELECT role FROM users WHERE user_id=$1", [user_id]);
+    const role = userRes.rows[0]?.role;
+    if (role !== "admin" && role !== "super_admin") {
+      return res.status(403).json({ error: "Only Admin or Super Admin can process returns" });
     }
 
     const br = await pool.query("SELECT * FROM borrow_records WHERE borrow_id=$1", [borrow_id]);
