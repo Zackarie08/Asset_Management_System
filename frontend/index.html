@@ -1368,6 +1368,7 @@
         <div class="form-grp"><label>Reorder Level</label><input class="form-ctrl" id="inv-f-reorder" type="number" min="0" placeholder="5"/></div>
         <div class="form-grp"><label>Price / Unit (₱)</label><input class="form-ctrl" id="inv-f-price" type="number" placeholder="0.00"/></div>
       </div>
+
       <div class="form-row">
         <div class="form-grp"><label>Location</label><select class="form-ctrl" id="inv-f-loc"  placeholder="Storage location"></select></div>
         <div class="form-grp">
@@ -1386,6 +1387,12 @@
           </div>
         </div>
       </div>
+
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="inv-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="inv-f-supplier-contact" placeholder="Contact information"/></div>
+      </div>
+
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="inv-f-remarks" rows="2" placeholder="Optional notes..." maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-inv')">Cancel</button>
@@ -1673,6 +1680,11 @@
         </div>
       </div>
 
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="fur-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="fur-f-supplier-contact" placeholder="Contact information"/></div>
+      </div>
+
       <!-- Remarks -->
       <div class="form-grp">
         <label>Remarks</label>
@@ -1785,6 +1797,11 @@
             <option>Damaged</option>
           </select>
         </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="it-f-supplier" placeholder="Supplier name"/></div>
+        <div class="form-grp"><label>Supplier Contact</label><input class="form-ctrl" id="it-f-supplier-contact" placeholder="Contact information"/></div>
       </div>
 
       <!-- Remarks -->
