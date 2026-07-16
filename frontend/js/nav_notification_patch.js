@@ -50,22 +50,22 @@ function buildSidebar() {
     if (item.admin) extras += `<span class="nav-admin-tag">Admin</span>`;
 
     if (item.id === "dashboard") {
-      // ✅ NEW: persistent dot (visible collapsed or expanded) + count
-      // badge (fades in with the label, same as other nav badges).
       div.innerHTML = `
         <span class="nav-icon-wrap">
-          <span class="nav-icon">${item.icon}</span>
+          <i class="nav-icon" data-lucide="${item.icon}"></i>
           <span class="nav-notif-dot" id="nb-dash-dot" style="display:none"></span>
         </span>
         <span class="nav-label">${item.label}</span>
         <span class="nav-notif-count" id="nb-dash-count" style="display:none">0</span>
         ${extras}`;
     } else {
-      div.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${extras}`;
+      div.innerHTML = `<i class="nav-icon" data-lucide="${item.icon}"></i><span class="nav-label">${item.label}</span>${extras}`;
     }
 
     nav.appendChild(div);
   });
+
+  if (window.lucide) lucide.createIcons();
 
   refreshNotifications();
 }

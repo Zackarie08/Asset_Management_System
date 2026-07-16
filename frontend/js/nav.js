@@ -35,10 +35,11 @@ function buildSidebar() {
     if (item.badge) extras  = `<span class="nav-badge" id="nb-${item.badge}" style="display:none">0</span>`;
     if (item.admin) extras += `<span class="nav-admin-tag">Admin</span>`;
 
-    // ✅ FIX: label now wrapped so it can be hidden independently of the icon
-    div.innerHTML = `<span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span>${extras}`;
+    div.innerHTML = `<i class="nav-icon" data-lucide="${item.icon}"></i><span class="nav-label">${item.label}</span>${extras}`;
     nav.appendChild(div);
   });
+
+  if (window.lucide) lucide.createIcons();
 }
 
 function navigate(page, navEl) {

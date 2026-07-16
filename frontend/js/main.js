@@ -23,21 +23,19 @@ function isAdminUser() {
 
 /* ── NAV ITEMS ──────────────────────────────────────────── */
 const ADMIN_NAV = [
-  { id: "dashboard",     icon: "🏠", label: "Dashboard"           },
-  { id: "inventory",     icon: "📦", label: "Inventory Management", badge: "inv" },
-  { id: "orders",        icon: "🛒", label: "Purchase Orders",     badge: "po"  },
-  { id: "furniture",     icon: "🪑", label: "Office Furniture"     },
-  { id: "itsupplies",    icon: "🖨️", label: "IT Supplies",         badge: "it"  },
-  { id: "laptops",       icon: "💻", label: "Laptops"              },
-  { id: "vehicles",      icon: "🚗", label: "Vehicle Management"   },
-  { id: "contracts",     icon: "📄", label: "Contracts"            },
-  // ✅ CHANGE: globe, m365, subscriptions, master-subscriptions
-  //           replaced with ONE unified subscriptions entry
-  { id: "subscriptions", icon: "🔐", label: "Subscriptions",       admin: true  },
-  { id: "insurance",     icon: "🛡️", label: "Insurance",           admin: true  },
-  { id: "finance",       icon: "📁", label: "Finance Documents",   admin: true  },
-  { id: "logs",          icon: "📜", label: "System Logs",         admin: true  },
-  { id: "users",         icon: "👤", label: "Users",               admin: true  },
+  { id: "dashboard",     icon: "layout-dashboard", label: "Dashboard"           },
+  { id: "inventory",     icon: "box",              label: "Inventory Management", badge: "inv" },
+  { id: "orders",        icon: "shopping-cart",    label: "Purchase Orders",     badge: "po"  },
+  { id: "furniture",     icon: "armchair",         label: "Office Furniture"     },
+  { id: "itsupplies",    icon: "plug",             label: "IT Supplies",         badge: "it"  },
+  { id: "laptops",       icon: "laptop",           label: "Laptops"              },
+  { id: "vehicles",      icon: "car",              label: "Vehicle Management"   },
+  { id: "contracts",     icon: "file-text",        label: "Contracts"            },
+  { id: "subscriptions", icon: "calendar-clock",   label: "Subscriptions",       admin: true  },
+  { id: "insurance",     icon: "shield",           label: "Insurance",           admin: true  },
+  { id: "finance",       icon: "folder",           label: "Finance Documents",   admin: true  },
+  { id: "logs",          icon: "scroll-text",      label: "System Logs",         admin: true  },
+  { id: "users",         icon: "users",            label: "Users",               admin: true  },
 ];
 
 // Pages accessible to non-admin roles
