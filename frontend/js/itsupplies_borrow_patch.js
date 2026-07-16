@@ -1,10 +1,17 @@
 /* ============================================================
-   itsupplies_borrow_patch.js — Part 3
+   itsupplies_borrow_patch.js — Part 3 (+ Return permission fix)
    ============================================================
    Same Borrow/Return system as Event Supplies (Part 2), applied to
    IT Supplies. Reuses the generic backend/routes/borrowReturn.js
    (module='itsupplies') and the SAME modals (#m-borrow-item /
    #m-return-item) — no new backend or modal markup needed.
+
+   ✅ FIX (Part 3): "Mark Returned" was shown to EVERY user regardless
+   of role — Event Supplies already gated this behind isAdmin (see
+   inventory_borrow_wine_patch.js's _buildEventSupplyActionsHTML), but
+   this file's dpITSupplies() never had the same check. Now gated
+   behind isAdmin, matching Event Supplies. Real enforcement is
+   server-side in backend/routes/borrowReturn.js POST /return.
 
    Load AFTER main.js, item_history_panel.js, and
    inventory_borrow_wine_patch.js (for openBorrowItem/openReturnItem/
@@ -30,6 +37,8 @@ async function dpITSupplies(id) {
   } catch { /* ignore */ }
   const currentlyOut = openBorrows.filter(b => b.status === 'BORROWED');
 
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
+
   const listHTML = openBorrows.length ? `
     <ul class="mh-list">
       ${openBorrows.map(b => `
@@ -41,11 +50,9 @@ async function dpITSupplies(id) {
             ${b.borrow_remarks ? `<div class="mh-remarks">📝 ${b.borrow_remarks}</div>` : ''}
             ${b.status === 'RETURNED' ? `<div class="mh-remarks">↩️ Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
           </div>
-          ${b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${it.asset_name.replace(/'/g,"\\'")}')">✅ Mark Returned</button>` : ''}
+          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${it.asset_name.replace(/'/g,"\\'")}')">✅ Mark Returned</button>` : ''}
         </li>`).join('')}
     </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
-
-  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
@@ -56,6 +63,8 @@ async function dpITSupplies(id) {
         ${dpField('Quantity', it.quantity)}
         ${dpField('Date Purchased', it.date_of_purchase ? new Date(it.date_of_purchase).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—')}
         ${dpField('Price', it.price ? '₱' + Number(it.price).toLocaleString() : '—')}
+        ${dpField('Supplier', it.supplier || '—')}
+        ${dpField('Supplier Contact', it.supplier_contact || '—')}
         ${dpField('Location', it.location_name || '—')}
         ${dpField('Status', it.status ? `<span class="badge ${statusCls}">${it.status}</span>` : '—')}
         ${dpField('Warranty', _warrantyBadge(it.warranty_end_date))}

@@ -104,12 +104,14 @@ async function exportFurniture() {
       ? _filterFurniture(_allFurniture)
       : await (await fetch(`${API_URL}/api/furniture`)).json();
 
-    const headers = ['Asset Name', 'Quantity', 'Date Purchased', 'Price', 'Location', 'Remarks'];
+    const headers = ['Asset Name', 'Quantity', 'Date Purchased', 'Price', 'Supplier', 'Supplier Contact', 'Location', 'Remarks'];
     const rows = source.map(f => [
       _csvStr(f.furniture_name),
       f.quantity,
       _csvStr(f.date_of_purchase),
       f.price ?? '',
+      _csvStr(f.supplier),
+      _csvStr(f.supplier_contact),
       _csvStr(f.location_name),
       _csvStr(f.remarks)
     ]);
@@ -130,13 +132,15 @@ async function exportITSupplies() {
       : await (await fetch(`${API_URL}/api/it-supplies`)).json();
 
     const headers = ['Asset Name', 'Serial / Model', 'Quantity', 'Date Purchased',
-      'Price', 'Warranty End', 'Location', 'Status', 'Remarks'];
+      'Price', 'Supplier', 'Supplier Contact', 'Warranty End', 'Location', 'Status', 'Remarks'];
     const rows = source.map(it => [
       _csvStr(it.asset_name),
       _csvStr(it.serial_number),
       it.quantity,
       _csvStr(it.date_of_purchase),
       it.price ?? '',
+      _csvStr(it.supplier),
+      _csvStr(it.supplier_contact),
       _csvStr(it.warranty_end_date),
       _csvStr(it.location_name),
       _csvStr(it.status),
