@@ -64,3 +64,4 @@ function computeRenewalAlert(renewalDateStr, cycle = 'yearly') {
 }
 
 module.exports = { computeRenewalAlert, nextRenewalOccurrence };
+
