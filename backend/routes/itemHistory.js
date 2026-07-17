@@ -36,16 +36,4 @@ router.get("/:module/:record_id", async (req, res) => {
   }
 });
 
-
-// add to backend/utils/itemHistory.js, exported alongside logItemHistory
-function numChanged(oldVal, newVal) {
-  const a = (oldVal === null || oldVal === undefined || oldVal === '') ? null : Number(oldVal);
-  const b = (newVal === null || newVal === undefined || newVal === '') ? null : Number(newVal);
-  if (a === null && b === null) return false;
-  if (a === null || b === null) return true;
-  return Math.abs(a - b) > 0.001;
-}
-
-module.exports = { logItemHistory, ALLOWED_MODULES, numChanged };
-
 module.exports = router;
