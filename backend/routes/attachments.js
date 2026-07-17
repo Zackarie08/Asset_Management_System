@@ -12,6 +12,7 @@
 const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
+const { logItemHistory } = require("../utils/itemHistory"); 
 
 // ── Allowed modules (whitelist to prevent injection) ───────
 const ALLOWED_MODULES = [
@@ -96,7 +97,14 @@ router.post("/", async (req, res) => {
       uploaded_by || null,
     ]);
 
+    await logItemHistory({
+      module, record_id, action: "ATTACHMENT_ADDED",
+      new_value: file_name,
+      remarks: `Uploaded "${file_name}"`,
+      performed_by_id: uploaded_by || null,
+    });
     res.json(result.rows[0]);
+
   } catch (err) {
     console.error("Attachments POST /", err);
     res.status(500).json({ error: "Failed to save attachment" });
@@ -107,20 +115,27 @@ router.post("/", async (req, res) => {
 // DELETE /api/attachments/:attachment_id
 router.delete("/:attachment_id", async (req, res) => {
   try {
+    const existing = await pool.query(
+      "SELECT module, record_id, file_name, uploaded_by FROM attachments WHERE attachment_id=$1",
+      [req.params.attachment_id]
+    );
     const result = await pool.query(
       "DELETE FROM attachments WHERE attachment_id = $1 RETURNING attachment_id",
       [req.params.attachment_id]
     );
+    if (!result.rows.length) return res.status(404).json({ error: "Attachment not found" });
 
-    if (!result.rows.length) {
-      return res.status(404).json({ error: "Attachment not found" });
+    if (existing.rows.length) {
+      const a = existing.rows[0];
+      await logItemHistory({
+        module: a.module, record_id: a.record_id, action: "ATTACHMENT_REMOVED",
+        old_value: a.file_name, remarks: `Removed "${a.file_name}"`,
+      });
     }
-
     res.json({ deleted: result.rows[0].attachment_id });
   } catch (err) {
     console.error("Attachments DELETE /:id", err);
     res.status(500).json({ error: "Failed to delete attachment" });
   }
 });
-
 module.exports = router;

@@ -127,11 +127,26 @@ router.post('/receive/:id', async (req, res) => {
       [newReceived, newStatus, deliveryDate, performed_by || null, req.params.id]
     );
 
+    const invBefore = await pool.query("SELECT current_quantity FROM inventory_gen WHERE inventory_gen_id=$1", [po.item_id]);
+    const invQtyBefore = invBefore.rows[0]?.current_quantity;
+
     await pool.query(
-      `UPDATE inventory_gen SET current_quantity=current_quantity+$1, last_updated=NOW()
-       WHERE inventory_gen_id=$2`,
+      `UPDATE inventory_gen SET current_quantity=current_quantity+$1, last_updated=NOW() WHERE inventory_gen_id=$2`,
       [qty, po.item_id]
     );
+
+    // ✅ NEW — inventory item's own Main History entry
+    await logItemHistory({
+      module: "inventory",
+      record_id: po.item_id,
+      action: "QUANTITY_ADJUSTED",
+      field_name: "current_quantity",
+      old_value: invQtyBefore,
+      new_value: invQtyBefore != null ? invQtyBefore + qty : null,
+      remarks: `Quantity increased via PO Receipt — PO #${req.params.id}, +${qty} ${po.unit || 'unit'}(s)`,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
+    });
 
     // ✅ FIX: removed the duplicate logAction() call — submitReceive()
     // (frontend, orders.js) already calls addLog('UPDATE','ORDER',...)
@@ -223,11 +238,29 @@ router.post('/deliver/:id', async (req, res) => {
       [performed_by || null, req.params.id]
     );
 
+    const invBefore = await pool.query(
+      "SELECT current_quantity FROM inventory_gen WHERE inventory_gen_id=$1",
+      [po.item_id]
+    );
+
+    const invQtyBefore = invBefore.rows[0]?.current_quantity;
+
     await pool.query(
-      `UPDATE inventory_gen SET current_quantity=current_quantity+$1, last_updated=NOW()
-       WHERE inventory_gen_id=$2`,
+      `UPDATE inventory_gen SET current_quantity=current_quantity+$1, last_updated=NOW() WHERE inventory_gen_id=$2`,
       [remaining, po.item_id]
     );
+
+    await logItemHistory({
+      module: 'inventory',
+      record_id: po.item_id,
+      action: 'QUANTITY_ADJUSTED',
+      field_name: 'current_quantity',
+      old_value: invQtyBefore,
+      new_value: invQtyBefore != null ? Number(invQtyBefore) + remaining : null,
+      remarks: `Quantity increased via Full PO Delivery — PO #${req.params.id}, +${remaining} ${po.unit || 'unit'}(s)`,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
+    });
 
     // ✅ FIX: removed the duplicate logAction() call — markDelivered()
     // (frontend, orders.js) already calls addLog('UPDATE','ORDER',...)

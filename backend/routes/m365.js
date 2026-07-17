@@ -4,6 +4,7 @@ const router  = express.Router();
 const pool    = require("../db");
 const { computeRenewalAlert } = require("../utils/renewalAlerts");
 const { logItemHistory } = require("../utils/itemHistory");
+const { numChanged } = require("../utils/itemHistory"); 
 
 function licenseStatusLabel(licensed) {
   return licensed ? "Licensed" : "No License";
@@ -159,12 +160,17 @@ router.put("/:id", async (req, res) => {
         });
       }
       const fieldChecks = [
-        ["license_type", old.license_type, license_type],
-        ["licensed", old.licensed, isLicensed],
-        ["monthly_cost", old.monthly_cost, cost],
+        ["license_type", old.license_type, license_type, false],
+        ["licensed", old.licensed, isLicensed, false],
+        ["monthly_cost", old.monthly_cost, cost, true],
       ];
-      for (const [field, oldVal, newVal] of fieldChecks) {
-        if (String(oldVal ?? '') !== String(newVal ?? '')) {
+
+      for (const [field, oldVal, newVal, isNum] of fieldChecks) {
+        const changed = isNum
+          ? numChanged(oldVal, newVal)
+          : String(oldVal ?? '') !== String(newVal ?? '');
+
+        if (changed) {
           await logItemHistory({
             module: "m365",
             record_id: req.params.id,

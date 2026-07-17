@@ -18,6 +18,7 @@ const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
 const { logItemHistory } = require("../utils/itemHistory");
+const { numChanged } = require("../utils/itemHistory"); 
 
 /* ── GET ALL ────────────────────────────────────────────── */
 router.get("/", async (req, res) => {
@@ -203,25 +204,21 @@ router.put("/:id", async (req, res) => {
     ]);
 
     if (old) {
+
+      // replace fieldChecks loop body for price with:
       const fieldChecks = [
-        ["asset_number", old.asset_number, asset_number],
-        ["serial_number", old.serial_number, serial_number],
-        ["category", old.category, category],
-        ["status", old.status, status],
-        ["price", old.price, price],
+        ["asset_number", old.asset_number, asset_number, false],
+        ["serial_number", old.serial_number, serial_number, false],
+        ["category", old.category, category, false],
+        ["status", old.status, status, false],
+        ["price", old.price, price, true], // ✅ numeric flag
       ];
-      for (const [field, oldVal, newVal] of fieldChecks) {
-        if (String(oldVal ?? '') !== String(newVal ?? '')) {
-          await logItemHistory({
-            module: "laptop",
-            record_id: req.params.id,
-            action: "EDITED",
-            field_name: field,
-            old_value: oldVal,
-            new_value: newVal,
-            performed_by_id: user_id,
-            performed_by_name: performed_by,
-          });
+      for (const [field, oldVal, newVal, isNum] of fieldChecks) {
+        const changed = isNum ? numChanged(oldVal, newVal) : String(oldVal ?? '') !== String(newVal ?? '');
+        if (changed) {
+          await logItemHistory({ module: "laptop", record_id: req.params.id, action: "EDITED",
+            field_name: field, old_value: oldVal, new_value: newVal,
+            performed_by_id: user_id, performed_by_name: performed_by });
         }
       }
     }
@@ -242,10 +239,17 @@ router.get("/:id/history", async (req, res) => {
     const result = await pool.query(`
       SELECT
         h.history_id, h.laptop_id, h.previous_user_id, h.new_user_id, h.date_changed,
-        COALESCE(h.previous_user_name, '(unknown — recorded before snapshot upgrade)') AS previous_user_name,
-        COALESCE(h.new_user_name,      '(unknown — recorded before snapshot upgrade)') AS new_user_name,
-        h.previous_user_role,
-        h.new_user_role
+        CASE
+          WHEN h.previous_user_id IS NULL THEN 'Unassigned'
+          WHEN h.previous_user_name IS NULL THEN '(unknown — recorded before snapshot upgrade)'
+          ELSE h.previous_user_name
+        END AS previous_user_name,
+        CASE
+          WHEN h.new_user_id IS NULL THEN 'Unassigned'
+          WHEN h.new_user_name IS NULL THEN '(unknown — recorded before snapshot upgrade)'
+          ELSE h.new_user_name
+        END AS new_user_name,
+        h.previous_user_role, h.new_user_role
       FROM laptop_history h
       WHERE h.laptop_id = $1
       ORDER BY h.date_changed DESC
@@ -256,5 +260,7 @@ router.get("/:id/history", async (req, res) => {
     res.status(500).send("Error fetching history");
   }
 });
+
+
 
 module.exports = router;

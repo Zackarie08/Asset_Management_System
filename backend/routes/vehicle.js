@@ -8,6 +8,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { logItemHistory } = require('../utils/itemHistory');
+const { numChanged } = require("../utils/itemHistory"); 
 
 // ✅ GET ALL VEHICLES
 router.get('/', async (req, res) => {
@@ -85,14 +86,19 @@ router.put("/:id", async (req, res) => {
 
     if (old) {
       const fieldChecks = [
-        ["vehicle_name", old.vehicle_name, vehicle_name],
-        ["plate_number", old.plate_number, plate_number],
-        ["type", old.type, type],
-        ["status", old.status, status],
-        ["price", old.price, price],
+        ["vehicle_name", old.vehicle_name, vehicle_name, false],
+        ["plate_number", old.plate_number, plate_number, false],
+        ["type", old.type, type, false],
+        ["status", old.status, status, false],
+        ["price", old.price, price, true],
       ];
-      for (const [field, oldVal, newVal] of fieldChecks) {
-        if (String(oldVal ?? '') !== String(newVal ?? '')) {
+
+      for (const [field, oldVal, newVal, isNum] of fieldChecks) {
+        const changed = isNum
+          ? numChanged(oldVal, newVal)
+          : String(oldVal ?? '') !== String(newVal ?? '');
+
+        if (changed) {
           await logItemHistory({
             module: 'vehicle',
             record_id: id,

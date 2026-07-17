@@ -128,3 +128,65 @@ async function dpFinance(id) {
 }
 
 if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.finance = dpFinance;
+
+/* ============================================================
+   finance_move_log_patch.js
+   ============================================================
+   Fixes: moving a finance document between STORAGE/OFFICE wrote
+   performed_by correctly into Item History (backend already
+   receives it — see finance.js PUT /:id/move), but the matching
+   System Log entry never passed performed_by as addLog()'s 5th
+   argument, so the System Logs table's "Performed by" column was
+   always blank for this action.
+
+   Also expands the log description to match the richer style
+   used elsewhere in the app (item identity + direction + remarks),
+   instead of the previous minimal "Moved to Office" text.
+
+   Load AFTER finance_history_patch.js (overrides confirmFinanceMove
+   only — toggleFinanceLocation/dpFinance are untouched and still
+   come from finance_history_patch.js).
+   ============================================================ */
+
+function confirmFinanceMove() {
+  const performed_by = document.getElementById('fin-move-by').value.trim();
+  const remarks       = document.getElementById('fin-move-remarks').value.trim();
+
+  if (!selectState['fin-move-by'] || !performed_by) {
+    showToast('Select a valid user for Performed By', 't-error');
+    return;
+  }
+  if (!remarks) {
+    showToast('Remarks are required to move a document', 't-error');
+    return;
+  }
+
+  fetch(`${API_URL}/api/finance-documents/${_finMoveId}/move`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ performed_by, remarks, user_id: currentUser.user_id }),
+  })
+    .then(res => {
+      if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || 'Move failed'); });
+      return res.json();
+    })
+    .then(data => {
+      showToast(`Moved to ${data.location}`, 't-success');
+
+      // ✅ FIX: richer description (matches the style used by other
+      // modules) + performed_by now passed as the 5th addLog() argument
+      // so the System Logs "Performed by" column is populated.
+      const fromLocation = data.location === 'STORAGE' ? 'OFFICE' : 'STORAGE';
+      const description =
+        `Financial Document moved from ${fromLocation} to ${data.location}\n` +
+        `Document: ${_finMoveLabel}\n` +
+        `Remarks: ${remarks}`;
+
+      addLog('UPDATE', 'FINANCE', description, _finMoveId, performed_by);
+
+      closeM('m-fin-move');
+      renderFinance();
+      if (dpOpen && dpCurrentType === 'finance' && dpCurrentId === _finMoveId) dpFinance(_finMoveId);
+    })
+    .catch(err => showToast(err.message || 'Error moving document', 't-error'));
+}

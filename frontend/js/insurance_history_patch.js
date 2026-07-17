@@ -234,3 +234,34 @@ async function dpInsurance(id) {
 }
 
 if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.insurance = dpInsurance;
+
+
+let deleteInsId    = null;
+let deleteInsLabel = '';
+
+function deleteInsurancePrompt(id) {
+  deleteInsId = id;
+  const rec = _allInsurance.find(i => i.insurance_id === id);
+  deleteInsLabel = rec ? `${rec.employee_name} · ${rec.provider}` : `Record #${id}`;
+  const labelEl = document.getElementById('ins-del-label');
+  if (labelEl) labelEl.textContent = deleteInsLabel;
+  openM("m-confirm-ins-del");
+}
+
+function confirmDeleteInsurance() {
+  fetch(`${API_URL}/api/insurance/${deleteInsId}`, { method: "DELETE" })
+    .then(res => {
+      if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || "Delete failed"); });
+    })
+    .then(() => {
+      showToast("Record deleted", "t-warning");
+      addLog("DELETE", "INSURANCE", `Deleted insurance record: ${deleteInsLabel}`, deleteInsId);
+      closeM("m-confirm-ins-del");
+      closeDP();
+      renderInsurance();
+    })
+    .catch(err => {
+      console.error(err);
+      showToast(err.message || "Error deleting record", "t-error");
+    });
+}

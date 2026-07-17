@@ -152,3 +152,52 @@ async function dpLaptop(id, useCache = false) {
 }
 
 if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.laptop = dpLaptop;
+
+/* ============================================================
+   laptop_delete_label_patch.js
+   ============================================================
+   Fixes two problems in the laptop delete flow:
+     1. System Log said "Deleted laptop" with no identifying info.
+     2. confirmDeleteLaptop() passed currentUser.name as the log's
+        reference_type param — that field is meant to identify the
+        RECORD being acted on (the laptop), not who performed the
+        action (system_log already has a separate user_id/
+        performed_by column for that).
+
+   Uses cachedLp (already populated by dpLaptop when the detail
+   panel is open) for the label — no extra fetch needed.
+
+   Load AFTER laptop_history_button_patch.js.
+   ============================================================ */
+
+let deleteLaptopId    = null;
+let deleteLaptopLabel = '';
+
+function deleteLaptop(id) {
+  deleteLaptopId = id;
+  deleteLaptopLabel = (cachedLp && cachedLp.laptop_id === id)
+    ? `${cachedLp.asset_number} (SN: ${cachedLp.serial_number})`
+    : `Laptop #${id}`;
+  const labelEl = document.getElementById('lp-del-label');
+  if (labelEl) labelEl.textContent = deleteLaptopLabel;
+  openM("m-confirm-lp-del");
+}
+
+function confirmDeleteLaptop() {
+  fetch(`${API_URL}/api/laptops/${deleteLaptopId}`, {
+    method: "DELETE"
+  })
+  .then(() => {
+    showToast("Laptop Deleted", "t-warning");
+
+    // ✅ FIX: reference_type is now the laptop's own id (matches every
+    // other module's delete pattern), and the description carries the
+    // asset/serial identity instead of currentUser.name.
+    addLog("DELETE", "LAPTOP", `Deleted laptop: ${deleteLaptopLabel}`, deleteLaptopId);
+
+    closeM("m-confirm-lp-del");
+    closeDP();
+    renderLaptops();
+  })
+  .catch(() => showToast("Error deleting laptop", "t-error"));
+}

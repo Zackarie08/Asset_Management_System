@@ -2028,10 +2028,9 @@
       <div class="modal-title">⚠️ Delete Laptop</div>
       <button onclick="closeM('m-confirm-lp-del')">✕</button>
     </div>
-
     <div class="modal-body">
       <p>Delete this laptop?</p>
-
+      <p id="lp-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-lp-del')">Cancel</button>
         <button class="btn btn-red" onclick="confirmDeleteLaptop()">Delete</button>
@@ -2440,6 +2439,24 @@
   </div>
 </div>
 
+<!-- Confirm Delete Maintenance Plan -->
+<div class="modal-overlay" id="m-confirm-plan-del">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd">
+      <div class="modal-title">⚠️ Delete Maintenance Plan</div>
+      <button class="modal-close" onclick="closeM('m-confirm-plan-del')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Delete this maintenance plan? This action cannot be undone.</p>
+      <p id="plan-del-summary" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="closeM('m-confirm-plan-del')">Cancel</button>
+        <button class="btn btn-red"     onclick="confirmDeletePlan()">🗑️ Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -2536,6 +2553,7 @@
     </div>
     <div class="modal-body">
       <p>Delete this M365 license? This cannot be undone.</p>
+      <p id="m365-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-m365-del')">Cancel</button>
         <button class="btn btn-red"     onclick="confirmDeleteM365()">🗑️ Delete</button>
@@ -2669,6 +2687,7 @@
     </div>
     <div class="modal-body">
       <p>Delete this Globe mobile plan?</p>
+      <p id="globe-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-globe-del')">Cancel</button>
         <button class="btn btn-red"     onclick="confirmDeleteGlobe()">🗑️ Delete</button>
@@ -2773,6 +2792,7 @@
     </div>
     <div class="modal-body">
       <p>Delete this subscription? This cannot be undone.</p>
+      <p id="sub-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-sub-del')">Cancel</button>
         <button class="btn btn-red"     onclick="confirmDeleteSubscription()">🗑️ Delete</button>
@@ -2949,6 +2969,7 @@
     </div>
     <div class="modal-body">
       <p>Delete this insurance record? This cannot be undone.</p>
+      <p id="ins-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-ins-del')">Cancel</button>
         <button class="btn btn-red"     onclick="confirmDeleteInsurance()">🗑️ Delete</button>

@@ -4,6 +4,7 @@ const router  = express.Router();
 const pool    = require("../db");
 const { computeRenewalAlert } = require("../utils/renewalAlerts");
 const { logItemHistory } = require("../utils/itemHistory");
+const { numChanged } = require("../utils/itemHistory"); 
 
 function withComputed(row) {
   const alert = computeRenewalAlert(row.renewal_date, "yearly");
@@ -149,12 +150,17 @@ router.put("/:id", async (req, res) => {
         });
       }
       const fieldChecks = [
-        ["plan_name", old.plan_name, plan_name],
-        ["status", old.status, status],
-        ["monthly_cost", old.monthly_cost, monthly_cost],
+        ["plan_name", old.plan_name, plan_name, false],
+        ["status", old.status, status, false],
+        ["monthly_cost", old.monthly_cost, monthly_cost, true],
       ];
-      for (const [field, oldVal, newVal] of fieldChecks) {
-        if (String(oldVal ?? '') !== String(newVal ?? '')) {
+
+      for (const [field, oldVal, newVal, isNum] of fieldChecks) {
+        const changed = isNum
+          ? numChanged(oldVal, newVal)
+          : String(oldVal ?? '') !== String(newVal ?? '');
+
+        if (changed) {
           await logItemHistory({
             module: "globe",
             record_id: req.params.id,

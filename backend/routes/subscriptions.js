@@ -4,6 +4,7 @@ const router  = express.Router();
 const pool    = require("../db");
 const { computeRenewalAlert } = require("../utils/renewalAlerts");
 const { logItemHistory } = require("../utils/itemHistory");
+const { numChanged } = require("../utils/itemHistory");
 
 function computeSubStatus(renewalDate, billingCycle, storedStatus) {
   if (storedStatus === "Cancelled") return "Cancelled";
@@ -168,13 +169,18 @@ router.put("/:id", async (req, res) => {
         });
       }
       const fieldChecks = [
-        ["subscription_name", old.subscription_name, subscription_name],
-        ["status", old.status, status],
-        ["monthly_cost", old.monthly_cost, monthly_cost],
-        ["billing_cycle", old.billing_cycle, billing_cycle],
+        ["subscription_name", old.subscription_name, subscription_name, false],
+        ["status", old.status, status, false],
+        ["monthly_cost", old.monthly_cost, monthly_cost, true],
+        ["billing_cycle", old.billing_cycle, billing_cycle, false],
       ];
-      for (const [field, oldVal, newVal] of fieldChecks) {
-        if (String(oldVal ?? '') !== String(newVal ?? '')) {
+
+      for (const [field, oldVal, newVal, isNum] of fieldChecks) {
+        const changed = isNum
+          ? numChanged(oldVal, newVal)
+          : String(oldVal ?? '') !== String(newVal ?? '');
+
+        if (changed) {
           await logItemHistory({
             module: "subscriptions",
             record_id: req.params.id,
