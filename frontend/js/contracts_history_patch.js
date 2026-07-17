@@ -208,3 +208,5 @@ async function renderContractActions(c) {
       ${timelineHTML}
     </div>`;
 }
+
+if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.contracts = dpContract;

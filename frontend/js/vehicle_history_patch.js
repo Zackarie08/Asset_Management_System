@@ -253,3 +253,4 @@ async function dpVehicle(id) {
   attachmentPanel('vehicles', id, `veh-att-${id}`);
 }
 
+if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.vehicle = dpVehicle;
