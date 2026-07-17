@@ -106,28 +106,42 @@ function refreshPageActions(page) {
     },
     furniture:  () => {
       const el = document.getElementById("fur-actions");
-      if (el) el.innerHTML = isAdmin
-        ? `<button class="btn btn-green btn-sm" onclick="openAddFurniture()">➕ Add Furniture</button>` : "";
+      if (el) {
+        el.innerHTML = isAdmin
+          ? `<button class="btn btn-green btn-sm" onclick="openAddFurniture()"><i data-lucide="plus"></i> Add Furniture</button>` : "";
+        if (window.lucide) lucide.createIcons();
+      }
     },
     itsupplies: () => {
       const el = document.getElementById("it-actions");
-      if (el) el.innerHTML = isAdmin
-        ? `<button class="btn btn-green btn-sm" onclick="openAddIT()">➕ Add IT Supply</button>` : "";
+      if (el) {
+        el.innerHTML = isAdmin
+          ? `<button class="btn btn-green btn-sm" onclick="openAddIT()"><i data-lucide="plus"></i> Add IT Supply</button>` : "";
+        if (window.lucide) lucide.createIcons();
+      }
     },
     laptops:    () => {
       const el = document.getElementById("lp-actions");
-      if (el) el.innerHTML = isAdmin
-        ? `<button class="btn btn-green btn-sm" onclick="openAddLaptop()">➕ Add Laptop</button>` : "";
+      if (el) {
+        el.innerHTML = isAdmin
+          ? `<button class="btn btn-green btn-sm" onclick="openAddLaptop()"><i data-lucide="plus"></i> Add Laptop</button>` : "";
+        if (window.lucide) lucide.createIcons();
+      }
     },
     vehicles:   () => {
       const el = document.getElementById("veh-actions");
-      if (el) el.innerHTML = isAdmin
-        ? `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')">➕ Add Vehicle</button>` : "";
+      if (el) {
+        el.innerHTML = isAdmin
+          ? `<button class="btn btn-green btn-sm" onclick="openM('m-add-veh')"><i data-lucide="plus"></i> Add Vehicle</button>` : "";
+        if (window.lucide) lucide.createIcons();
+      }
     },
     contracts: () => {
       const el = document.getElementById("con-actions");
-      if (el && isAdmin) el.innerHTML =
-        `<button class="btn btn-green btn-sm" onclick="openAddContract()">➕ Add Contract</button>`;
+      if (el && isAdmin) {
+        el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddContract()"><i data-lucide="plus"></i> Add Contract</button>`;
+        if (window.lucide) lucide.createIcons();
+      }
     },
     insurance:  () => {
       const el = document.getElementById("ins-actions");

@@ -165,11 +165,11 @@ async function dpM365(id) {
   try {
     const m      = await fetchOne('m365', id);
     const status = m.computed_status;
-    setDPHeader('💼', '#f0f9ff', m.assigned_email || '—', 'M365 License');
+    setDPHeader('app-window', '#f0f9ff', m.assigned_email || '—', 'M365 License');
     const html = `
       <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">License status</span></div>
       <div class="dp-section">
-        <div class="dp-section-hd">📧 License Info</div>
+        <div class="dp-section-hd"><i data-lucide="mail"></i> License Info</div>
         <div class="dp-grid">
           ${dpField('Assigned Email', m.assigned_email || '—')}
           ${dpField('Assigned User',  m.assigned_user_name || 'Unassigned')}
@@ -178,25 +178,28 @@ async function dpM365(id) {
         </div>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">📅 Renewal (Yearly)</div>
+        <div class="dp-section-hd"><i data-lucide="calendar"></i> Renewal (Yearly)</div>
         <div class="dp-grid">
           ${dpField('Renewal Date', fmtDate(m.renewal_date))}
           ${dpField('Next Renewal', fmtDate(m.next_renewal_date))}
-          ${m.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber">⚠️ Renewal window (within 3 days)</span>') : ''}
+          ${m.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
-      ${m.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', m.remarks)}</div></div>` : ''}
+      ${m.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', m.remarks)}</div></div>` : ''}
       <div class="dp-section" id="dp-att-m365-${id}"></div>
       ${isAdminUser() ? `
         <div class="dp-section">
-          <div class="dp-section-hd">⚡ Actions</div>
+          <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
           <div class="dp-action-row">
-            <button class="btn btn-primary btn-sm" onclick="editM365(${m.license_id})">✏️ Edit</button>
-            <button class="btn btn-red btn-sm"     onclick="deleteM365Prompt(${m.license_id})">🗑️ Delete</button>
+            <button class="btn btn-primary btn-sm" onclick="editM365(${m.license_id})"><i data-lucide="pencil"></i> Edit</button>
+            <button class="btn btn-red btn-sm"     onclick="deleteM365Prompt(${m.license_id})"><i data-lucide="trash-2"></i> Delete</button>
           </div>
         </div>` : ''}`;
     document.getElementById('dp-body').innerHTML = html;
     document.getElementById('dp-footer').style.display = 'none';
+
+    if (window.lucide) lucide.createIcons();
+
     attachmentPanel('m365', id, `dp-att-m365-${id}`);
   } catch (err) { showToast('Failed to load license', 't-error'); }
 }
@@ -323,11 +326,11 @@ async function dpGlobe(id) {
   try {
     const g      = await fetchOne('globe', id);
     const status = g.computed_status;
-    setDPHeader('📱', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Plan');
+    setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Plan');
     const html = `
       <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">Plan status</span></div>
       <div class="dp-section">
-        <div class="dp-section-hd">👤 Subscriber</div>
+        <div class="dp-section-hd"><i data-lucide="user"></i> Subscriber</div>
         <div class="dp-grid">
           ${dpField('Employee',   g.employee_name  || '—')}
           ${dpField('Mobile No.', g.mobile_number  || '—')}
@@ -335,7 +338,7 @@ async function dpGlobe(id) {
         </div>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">📱 Plan Details</div>
+        <div class="dp-section-hd"><i data-lucide="smartphone"></i> Plan Details</div>
         <div class="dp-grid">
           ${dpField('Plan Name',    g.plan_name      || '—')}
           ${dpField('Monthly Cost', fmtCost(g.monthly_cost))}
@@ -343,11 +346,11 @@ async function dpGlobe(id) {
           ${dpField('Credit Limit', fmtCost(g.credit_limit))}
           ${dpField('Renewal Date', fmtDate(g.renewal_date))}
           ${dpField('Next Renewal', fmtDate(g.next_renewal_date))}
-          ${g.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber">⚠️ Renewal window (within 3 days)</span>') : ''}
+          ${g.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">🎁 Plan Inclusions</div>
+        <div class="dp-section-hd"><i data-lucide="gift"></i> Plan Inclusions</div>
         <div class="dp-grid">
           ${dpField('Unli All-Net Calls', g.unli_allnet_calls ? '<span class="badge b-green">Included</span>' : '<span class="badge b-slate">Not Included</span>')}
           ${dpField('Unli Text', g.unli_text ? '<span class="badge b-green">Included</span>' : '<span class="badge b-slate">Not Included</span>')}
@@ -355,17 +358,20 @@ async function dpGlobe(id) {
           ${dpFieldFull('Freebie', g.freebie || null)}
         </div>
       </div>
-      ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}
+      ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}
       <div class="dp-section" id="dp-att-globe-${id}"></div>
       <div class="dp-section">
-        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
-          <button class="btn btn-primary btn-sm" onclick="editGlobe(${g.plan_id})">✏️ Edit</button>
-          <button class="btn btn-red btn-sm"     onclick="deleteGlobePrompt(${g.plan_id})">🗑️ Delete</button>
+          <button class="btn btn-primary btn-sm" onclick="editGlobe(${g.plan_id})"><i data-lucide="pencil"></i> Edit</button>
+          <button class="btn btn-red btn-sm"     onclick="deleteGlobePrompt(${g.plan_id})"><i data-lucide="trash-2"></i> Delete</button>
         </div>
       </div>`;
     document.getElementById('dp-body').innerHTML = html;
     document.getElementById('dp-footer').style.display = 'none';
+
+    if (window.lucide) lucide.createIcons();
+
     attachmentPanel('globe', id, `dp-att-globe-${id}`);
   } catch (err) { showToast('Failed to load Globe plan', 't-error'); }
 }
@@ -405,11 +411,11 @@ async function dpSubscriptions(id) {
   try {
     const s      = await fetchOne('subscriptions', id);
     const status = s.computed_status;
-    setDPHeader('🔐', '#fdf4ff', s.subscription_name || '—', s.category || '—');
+    setDPHeader('cloud', '#fdf4ff', s.subscription_name || '—', s.category || '—');
     const html = `
       <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">Subscription status</span></div>
       <div class="dp-section">
-        <div class="dp-section-hd">📋 Details</div>
+        <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Details</div>
         <div class="dp-grid">
           ${dpField('Name',        s.subscription_name || '—')}
           ${dpField('Category',    s.category          || '—')}
@@ -420,25 +426,28 @@ async function dpSubscriptions(id) {
         </div>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">📅 Renewal</div>
+        <div class="dp-section-hd"><i data-lucide="calendar"></i> Renewal</div>
         <div class="dp-grid">
           ${dpField('Renewal Date', fmtDate(s.renewal_date))}
           ${s.billing_cycle !== 'one-time' ? dpField('Next Renewal', fmtDate(s.next_renewal_date)) : ''}
-          ${s.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber">⚠️ Renewal window (within 3 days)</span>') : ''}
+          ${s.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
-      ${s.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', s.remarks)}</div></div>` : ''}
+      ${s.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', s.remarks)}</div></div>` : ''}
       <div class="dp-section" id="dp-att-sub-${id}"></div>
       ${isAdminUser() ? `
         <div class="dp-section">
-          <div class="dp-section-hd">⚡ Actions</div>
+          <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
           <div class="dp-action-row">
-            <button class="btn btn-primary btn-sm" onclick="editSubscription(${s.subscription_id})">✏️ Edit</button>
-            <button class="btn btn-red btn-sm"     onclick="deleteSubPrompt(${s.subscription_id})">🗑️ Delete</button>
+            <button class="btn btn-primary btn-sm" onclick="editSubscription(${s.subscription_id})"><i data-lucide="pencil"></i> Edit</button>
+            <button class="btn btn-red btn-sm"     onclick="deleteSubPrompt(${s.subscription_id})"><i data-lucide="trash-2"></i> Delete</button>
           </div>
         </div>` : ''}`;
     document.getElementById('dp-body').innerHTML = html;
     document.getElementById('dp-footer').style.display = 'none';
+
+    if (window.lucide) lucide.createIcons();
+
     attachmentPanel('subscriptions', id, `dp-att-sub-${id}`);
   } catch (err) { showToast('Failed to load subscription', 't-error'); }
 }

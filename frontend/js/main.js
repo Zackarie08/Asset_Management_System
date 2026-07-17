@@ -121,9 +121,11 @@ function closeDP() {
 
 function setDPHeader(icon, iconBg, title, sub) {
   const el = document.getElementById('dp-icon');
-  el.textContent = icon; el.style.background = iconBg;
+  el.innerHTML = `<i data-lucide="${icon}"></i>`;
+  el.style.background = iconBg;
   document.getElementById('dp-title').textContent    = title;
   document.getElementById('dp-subtitle').textContent = sub;
+  if (window.lucide) lucide.createIcons();
 }
 
 
@@ -298,11 +300,11 @@ async function dpFurniture(id) {
     'For Repair': 'b-red'
   }[f.condition] || 'b-slate';
 
-  setDPHeader('🪑', '#fffbeb', f.furniture_name, 'Office Furniture');
+  setDPHeader('armchair', '#fffbeb', f.furniture_name, 'Office Furniture');
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">📦 Asset Information</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Asset Information</div>
       <div class="dp-grid">
         ${dpFieldFull('Asset Name', `<strong>${f.furniture_name}</strong>`)}
         ${dpField('Quantity', f.quantity)}
@@ -314,17 +316,19 @@ async function dpFurniture(id) {
       </div>
     </div>
 
-    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
+    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
 
     ${isAdminUser() ? `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm" onclick="editFur(${f.office_furniture_id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name.replace(/'/g,"\\'")}')">🗑️ Delete</button>
+        <button class="btn btn-primary btn-sm" onclick="editFur(${f.office_furniture_id})"><i data-lucide="pencil"></i> Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>` : ''}
   `;
+  
+  if (window.lucide) lucide.createIcons();
 
   document.getElementById('dp-footer').style.display = 'none';
 }
@@ -601,12 +605,12 @@ async function dpITSupplies(id) {
     'In Use':  'b-blue',
     Damaged:   'b-red'
   }[it.status] || 'b-slate';
-
-  setDPHeader('🖨️', '#eef2ff', it.asset_name, 'IT Supply');
+  
+  setDPHeader('plug', '#eef2ff', it.asset_name, 'IT Supply');
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">💻 Asset Details</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Asset Details</div>
       <div class="dp-grid">
         ${dpFieldFull('Asset Name', `<strong>${it.asset_name}</strong>`)}
         ${dpField('Serial / Model', it.serial_number || '—', 'mono')}
@@ -620,17 +624,21 @@ async function dpITSupplies(id) {
       </div>
     </div>
 
-    ${it.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', it.remarks)}</div></div>` : ''}
+    ${it.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', it.remarks)}</div></div>` : ''}
 
     ${isAdminUser() ? `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')">🗑️ Delete</button>
+        <button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})"><i data-lucide="pencil"></i> Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>` : ''}
   `;
+
+  // ✅ NEW: explicit render call since dp-body content is injected after
+  // setDPHeader()'s own createIcons() scan already ran
+  if (window.lucide) lucide.createIcons();
 
   document.getElementById('dp-footer').style.display = 'none';
 }
@@ -1659,7 +1667,7 @@ async function dpContract(id) {
 
   _currentContract = c;
 
-  setDPHeader("📄", "#eef2ff", c.other_party, c.description);
+  setDPHeader("file-text", "#eef2ff", c.other_party, c.description);
 
   let validity = '—';
   if (c.validity_type === 'NA') {
@@ -1691,7 +1699,7 @@ async function dpContract(id) {
 
   const html = `
     <div class="dp-section">
-      <div class="dp-section-hd">📋 Details</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Details</div>
       <div class="dp-grid">
         ${dpField("Date",          formatDateHuman(c.contract_date))}
         ${dpField("Other Party",   c.other_party)}
@@ -1703,10 +1711,13 @@ async function dpContract(id) {
       </div>
     </div>
 
-    ${c.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', c.remarks)}</div></div>` : ''}
+    ${c.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', c.remarks)}</div></div>` : ''}
     <div id="contract-actions"></div>`;
 
   document.getElementById("dp-body").innerHTML = html;
+
+  if (window.lucide) lucide.createIcons();
+
   renderContractActions(c);
 }
 
@@ -1818,14 +1829,14 @@ async function renderContractActions(c) {
 
     // ✅ EMPLOYEE
 
-    if (!isAdmin) {
+if (!isAdmin) {
 
       // ✅ NO ACTIVE REQUEST → allow
       if (!currentReq) {
         buttons = `
           <button class="btn btn-primary btn-sm"
             onclick="requestContract(${c.contract_id})">
-            📩 Request Contract
+            <i data-lucide="send"></i> Request Contract
           </button>
         `;
       }
@@ -1834,7 +1845,7 @@ async function renderContractActions(c) {
       else if (currentReq.requested_by !== currentUser.user_id) {
         buttons = `
           <button class="btn btn-outline btn-sm" disabled>
-            🔒 Requested by ${currentReq.requested_name}
+            <i data-lucide="lock"></i> Requested by ${currentReq.requested_name}
           </button>
         `;
       }
@@ -1847,13 +1858,13 @@ async function renderContractActions(c) {
         buttons = `
           <button class="btn btn-red btn-sm"
             onclick="cancelRequest(${currentReq.request_id})">
-            ❌ Cancel Request
+            <i data-lucide="x-circle"></i> Cancel Request
           </button>
         `;
       } else if (currentReq.status === "APPROVED") {
         buttons = `
           <span class="td-muted" style="font-size:12px">
-            ✅ You currently hold this contract
+            <i data-lucide="check-circle"></i> You currently hold this contract
           </span>
         `;
       }
@@ -1870,18 +1881,18 @@ async function renderContractActions(c) {
           buttons = `
             <button class="btn btn-green btn-sm"
               onclick="approveRequest(${currentReq.request_id})">
-              Approve
+              <i data-lucide="check"></i> Approve
             </button>
 
             <button class="btn btn-red btn-sm"
               onclick="denyRequest(${currentReq.request_id})">
-              Deny
+              <i data-lucide="x"></i> Deny
             </button>
           `;
         } else {
           buttons = `
             <span class="td-muted" style="font-size:12px">
-              ⏳ Pending — only a Super Admin can approve/deny
+              <i data-lucide="clock"></i> Pending — only a Super Admin can approve/deny
             </span>
           `;
         }
@@ -1891,7 +1902,7 @@ async function renderContractActions(c) {
         buttons += `
           <button class="btn btn-outline btn-sm"
             onclick="returnContract(${currentReq.request_id})">
-            Mark as Returned
+            <i data-lucide="rotate-ccw"></i> Mark as Returned
           </button>
         `;
       }
@@ -1900,12 +1911,12 @@ async function renderContractActions(c) {
       buttons += `
         <button class="btn btn-primary btn-sm"
           onclick="editContract(${c.contract_id})">
-          ✏️ Edit
+          <i data-lucide="pencil"></i> Edit
         </button>
 
         <button class="btn btn-red btn-sm"
           onclick="deleteContract(${c.contract_id})">
-          🗑️ Delete
+          <i data-lucide="trash-2"></i> Delete
         </button>
       `;
     }
@@ -1917,7 +1928,7 @@ async function renderContractActions(c) {
 
   el.innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
 
       <div class="dp-action-row" style="margin-bottom:10px;">
         ${buttons || "<span class='dp-muted'>No actions available</span>"}
@@ -1928,6 +1939,8 @@ async function renderContractActions(c) {
       </div>
     </div>
   `;
+
+  if (window.lucide) lucide.createIcons();
 }
 
 async function editContract(id) {

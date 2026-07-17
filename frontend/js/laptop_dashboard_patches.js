@@ -449,7 +449,7 @@ async function dpLaptop(id, useCache = false) {
   const isIntern = lp.user_role === "intern";
   const needsReplace = ageYears >= 3 && !isIntern;
 
-  setDPHeader('💻', '#f0fdf4', lp.asset_number, lp.serial_number);
+  setDPHeader('laptop', '#f0fdf4', lp.asset_number, lp.serial_number);
 
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -486,14 +486,14 @@ async function dpLaptop(id, useCache = false) {
           </li>`).join('')}
       </ul>` : `<div style="text-align:center;padding:16px;color:var(--slate-400);font-size:12px">No technical check records yet.</div>`;
 
-  const html = `
+const html = `
     <div class="dp-section">
-      ${showMaintenanceAlert ? `<div class="dp-alert warning">⚠️ Technical Check required this month (June/December)</div>` : ""}
-      ${needsReplace ? `<div class="dp-alert danger">⚠️ Laptop is ${ageYears} years old — needs replacement</div>` : ""}
+      ${showMaintenanceAlert ? `<div class="dp-alert warning"><i data-lucide="triangle-alert"></i> Technical Check required this month (June/December)</div>` : ""}
+      ${needsReplace ? `<div class="dp-alert danger"><i data-lucide="triangle-alert"></i> Laptop is ${ageYears} years old — needs replacement</div>` : ""}
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">💻 Device Info</div>
+      <div class="dp-section-hd"><i data-lucide="laptop"></i> Device Info</div>
       <div class="dp-grid">
         ${dpField("Asset Number", lp.asset_number)}
         ${dpField("Serial Number", lp.serial_number || '-')}
@@ -508,7 +508,7 @@ async function dpLaptop(id, useCache = false) {
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">📅 Dates</div>
+      <div class="dp-section-hd"><i data-lucide="calendar"></i> Dates</div>
       <div class="dp-grid">
         ${dpField("Purchased", lp.date_of_purchase || '-')}
         ${dpField("Warranty", lp.warranty_end_date || '-')}
@@ -517,12 +517,12 @@ async function dpLaptop(id, useCache = false) {
 
     ${lp.remarks ? `
     <div class="dp-section">
-      <div class="dp-section-hd">📝 Remarks</div>
+      <div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div>
       <div class="dp-grid">${dpFieldFull('Notes', lp.remarks)}</div>
     </div>` : ''}
 
     <div class="dp-section">
-      <div class="dp-section-hd">👤 Assignment</div>
+      <div class="dp-section-hd"><i data-lucide="user"></i> Assignment</div>
       <div class="dp-grid">
         ${dpField("Assigned To", lp.user_name || "Unassigned")}
       </div>
@@ -530,31 +530,33 @@ async function dpLaptop(id, useCache = false) {
 
     ${isAdminUser() ? `
       <div class="dp-section">
-        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
-          <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})">👤 Assign User</button>
+          <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})"><i data-lucide="user-plus"></i> Assign User</button>
           ${lp.current_user_id ? `
-          <button class="btn btn-amber btn-sm" onclick="removeAssignedUser(${lp.laptop_id})">↩️ Remove Current User</button>
+          <button class="btn btn-amber btn-sm" onclick="removeAssignedUser(${lp.laptop_id})"><i data-lucide="user-minus"></i> Remove Current User</button>
           ` : ''}
-          <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})">🔧 Technical Check</button>
-          <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})">✏️ Edit</button>
-          <button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})">🗑️ Delete</button>
+          <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})"><i data-lucide="wrench"></i> Technical Check</button>
+          <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})"><i data-lucide="pencil"></i> Edit</button>
+          <button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})"><i data-lucide="trash-2"></i> Delete</button>
         </div>
       </div>
     ` : ""}
 
     <div class="dp-section">
-      <div class="dp-section-hd" onclick="toggleAssignHistory()">📜 Assignment History ${showAssignHistory ? "▲" : "▼"}</div>
+      <div class="dp-section-hd" onclick="toggleAssignHistory()"><i data-lucide="history"></i> Assignment History ${showAssignHistory ? "▲" : "▼"}</div>
       ${showAssignHistory ? histHTML : ""}
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd" onclick="toggleMaintHistory()">🔧 Technical Check History ${showMaintHistory ? "▲" : "▼"}</div>
+      <div class="dp-section-hd" onclick="toggleMaintHistory()"><i data-lucide="wrench"></i> Technical Check History ${showMaintHistory ? "▲" : "▼"}</div>
       ${showMaintHistory ? maintHTML : ""}
     </div>
   `;
 
   document.getElementById("dp-body").innerHTML = html;
+
+  if (window.lucide) lucide.createIcons();
 }
 // dpLaptop is stored by reference inside DP_RENDERERS (built when
 // main.js first ran), so we must re-point that entry at our new

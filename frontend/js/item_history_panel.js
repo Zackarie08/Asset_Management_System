@@ -15,25 +15,25 @@
    ============================================================ */
 
 const ITEM_HISTORY_ACTION_META = {
-  CREATED:                { icon: '✅', label: 'Created' },
-  EDITED:                 { icon: '✏️', label: 'Edited' },
-  STATUS_CHANGED:         { icon: '🔄', label: 'Status Changed' },
-  ASSIGNED:               { icon: '👤', label: 'Assigned' },
-  UNASSIGNED:             { icon: '↩️', label: 'Unassigned' },
-  BORROWED:               { icon: '📤', label: 'Borrowed' },
-  RETURNED:               { icon: '📥', label: 'Returned' },
-  REQUESTED:              { icon: '📩', label: 'Requested' },
-  APPROVED:               { icon: '✅', label: 'Approved' },
-  DENIED:                 { icon: '❌', label: 'Denied' },
-  CANCELLED:              { icon: '🚫', label: 'Cancelled' },
-  RENEWED:                { icon: '🔁', label: 'Renewed' },
-  MAINTENANCE_PERFORMED:  { icon: '🔧', label: 'Maintenance Performed' },
-  QUANTITY_ADJUSTED:      { icon: '📊', label: 'Quantity Adjusted' },
-  COVERAGE_CHANGED:       { icon: '🛡️', label: 'Coverage Changed' },
-  ATTACHMENT_ADDED:       { icon: '📎', label: 'Attachment Added' },
-  ATTACHMENT_REMOVED:     { icon: '📎', label: 'Attachment Removed' },
-  LOCATION_MOVED:         { icon: '📦', label: 'Location Moved' },
-  DELETED:                { icon: '🗑️', label: 'Deleted' },
+  CREATED:                { icon: 'check', label: 'Created' },
+  EDITED:                 { icon: 'pencil', label: 'Edited' },
+  STATUS_CHANGED:         { icon: 'refresh-cw', label: 'Status Changed' },
+  ASSIGNED:               { icon: 'user-plus', label: 'Assigned' },
+  UNASSIGNED:             { icon: 'user-minus', label: 'Unassigned' },
+  BORROWED:               { icon: 'package-minus', label: 'Borrowed' },
+  RETURNED:               { icon: 'package-check', label: 'Returned' },
+  REQUESTED:              { icon: 'send', label: 'Requested' },
+  APPROVED:               { icon: 'check', label: 'Approved' },
+  DENIED:                 { icon: 'x', label: 'Denied' },
+  CANCELLED:              { icon: 'x-circle', label: 'Cancelled' },
+  RENEWED:                { icon: 'rotate-cw', label: 'Renewed' },
+  MAINTENANCE_PERFORMED:  { icon: 'wrench', label: 'Maintenance Performed' },
+  QUANTITY_ADJUSTED:      { icon: 'arrow-up-down', label: 'Quantity Adjusted' },
+  COVERAGE_CHANGED:       { icon: 'shield', label: 'Coverage Changed' },
+  ATTACHMENT_ADDED:       { icon: 'paperclip', label: 'Attachment Added' },
+  ATTACHMENT_REMOVED:     { icon: 'paperclip', label: 'Attachment Removed' },
+  LOCATION_MOVED:         { icon: 'move', label: 'Location Moved' },
+  DELETED:                { icon: 'trash-2', label: 'Deleted' },
 };
 
 async function openItemHistory(module, recordId, label = '') {
@@ -86,13 +86,15 @@ function _renderItemHistory(rows) {
       <li class="mh-item">
         <div class="mh-dot ${dotCls}"></div>
         <div style="flex:1">
-          <div class="mh-cond info">${meta.icon} ${meta.label}</div>
+          <div class="mh-cond info"><i data-lucide="${meta.icon}"></i> ${meta.label}</div>
           <div class="mh-date">${new Date(r.created_at).toLocaleString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })} · ${_ihEsc(who)}</div>
           ${changeLine}
-          ${r.remarks ? `<div class="mh-remarks">📝 ${_ihEsc(r.remarks)}</div>` : ''}
+          ${r.remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${_ihEsc(r.remarks)}</div>` : ''}
         </div>
       </li>`;
   }).join('')}</ul>`;
+
+  if (window.lucide) lucide.createIcons();
 }
 
 function _ihEsc(str) {
@@ -106,5 +108,5 @@ function _ihEsc(str) {
  */
 function itemHistoryButton(module, recordId, label = '') {
   const safeLabel = String(label || '').replace(/'/g, "\\'");
-  return `<button class="btn btn-outline btn-sm" onclick="openItemHistory('${module}',${recordId},'${safeLabel}')">🕒 View Item History</button>`;
+  return `<button class="btn btn-outline btn-sm" onclick="openItemHistory('${module}',${recordId},'${safeLabel}')"><i data-lucide="history"></i> View Item History</button>`;
 }

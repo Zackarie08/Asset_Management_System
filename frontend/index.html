@@ -397,14 +397,14 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="fur-actions"></div>
-            <button class="btn btn-ghost btn-sm" onclick="exportFurniture()">📥 Export</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportFurniture()"><i data-lucide="download"></i> Export</button>
           </div>
         </div>
 
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">🪑 Furniture Register</div>
+            <div class="card-title"><i data-lucide="armchair"></i> Furniture Register</div>
             <span class="badge b-slate" id="fur-ct">0 items</span>
           </div>
           <div class="table-wrap">
@@ -473,14 +473,14 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="it-actions"></div>
-            <button class="btn btn-ghost btn-sm" onclick="exportITSupplies()">📥 Export</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportITSupplies()"><i data-lucide="download"></i> Export</button>
           </div>
         </div>
 
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">🖨️ IT Supply Inventory</div>
+            <div class="card-title"><i data-lucide="plug"></i> IT Supply Inventory</div>
             <div class="card-actions">
               <span class="badge b-slate" id="it-total-ct">0 items</span>
             </div>
@@ -559,14 +559,14 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="lp-actions"></div>
-            <button class="btn btn-ghost btn-sm" onclick="exportLaptops()">📥 Export</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportLaptops()"><i data-lucide="download"></i> Export</button>
           </div>
         </div>
 
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">💻 Laptop Inventory</div>
+            <div class="card-title"><i data-lucide="laptop"></i> Laptop Inventory</div>
             <span class="badge b-slate" id="lp-ct">0 units</span>
           </div>
           <div class="table-wrap">
@@ -615,14 +615,14 @@
 
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
-            <button class="btn btn-ghost btn-sm" onclick="exportOrders()">📥 Export</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportOrders()"><i data-lucide="download"></i> Export</button>
           </div>
         </div>
 
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">🛒 Orders</div>
+            <div class="card-title"><i data-lucide="shopping-cart"></i> Orders</div>
             <div class="card-actions">
               <span class="badge b-blue" id="po-active-ct">0 active</span>
               <span class="badge b-red" id="po-delay-ct">0 delayed</span>
@@ -710,14 +710,14 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="con-actions"></div>
-            <button class="btn btn-ghost btn-sm" onclick="exportContracts()">📥 Export</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportContracts()"><i data-lucide="download"></i> Export</button>
           </div>
         </div>
 
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">📄 Contract Records</div>
+            <div class="card-title"><i data-lucide="file-text"></i> Contract Records</div>
             <span class="badge b-slate" id="con-ct">0 records</span>
           </div>
           <div class="table-wrap">
@@ -788,14 +788,14 @@
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
             <div id="veh-actions"></div>
-            <button class="btn btn-ghost btn-sm" onclick="exportVehicles()">📥 Export</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportVehicles()"><i data-lucide="download"></i> Export</button>
           </div>
         </div>
 
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">Fleet Register</div>
+            <div class="card-title"><i data-lucide="car"></i> Fleet Register</div>
             <div class="card-actions">
               <span class="badge b-slate"><span id="veh-stat-total">—</span> vehicles</span>
               <span class="badge b-red"><span id="veh-stat-due">—</span> due/overdue</span>
@@ -874,15 +874,15 @@
 
           <!-- Right side -->
           <div class="flex-gap" style="flex-shrink:0;">
-            <button class="btn btn-green btn-sm" onclick="openAddSubscription()">➕ Add Subscription</button>
-            <button class="btn btn-ghost btn-sm" onclick="exportUnifiedSubscriptions()">📥 Export</button>
+            <button class="btn btn-green btn-sm" onclick="openAddSubscription()"><i data-lucide="plus"></i> Add Subscription</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportUnifiedSubscriptions()"><i data-lucide="download"></i> Export</button>
           </div>
         </div>
 
         <!-- TABLE CARD -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">🔗 All Subscriptions</div>
+            <div class="card-title"><i data-lucide="calendar-clock"></i> All Subscriptions</div>
             <div class="card-actions">
               <span class="badge b-slate"><span id="uni-stat-total">—</span> total</span>
               <span class="badge b-green"><span id="uni-stat-active">—</span> active</span>
@@ -2015,7 +2015,7 @@
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-assign')">Cancel</button>
         <button class="btn btn-amber" id="assign-remove-btn" style="display:none"
-          onclick="removeAssignedUser(currentLpId)">↩️ Remove Current User</button>
+          onclick="removeAssignedUser(currentLpId)"><i data-lucide="user-minus"></i> Remove Current User</button>
         <button class="btn btn-green" onclick="doAssign()">Assign</button>
       </div>
     </div>
@@ -2106,8 +2106,8 @@
 
       <!-- ✅ NA notice (shown when NA selected) -->
       <div id="con-na-notice" style="display:none;background:var(--slate-50);border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px">
-        <div style="font-size:12.5px;color:var(--slate-600)">
-          📌 <strong>No Expiration</strong> — This contract does not expire. It will not appear in expiry alerts.
+        <div style="font-size:12.5px;color:var(--slate-600);display:flex;align-items:center;gap:6px">
+          <i data-lucide="infinity"></i> <strong>No Expiration</strong> — This contract does not expire. It will not appear in expiry alerts.
         </div>
       </div>
 
@@ -2818,7 +2818,7 @@
         <button class="btn btn-outline"
           style="justify-content:flex-start;padding:14px 18px;text-align:left"
           onclick="selectSubType('M365')">
-          <span style="font-size:18px;margin-right:10px">💼</span>
+          <i data-lucide="app-window" style="margin-right:10px"></i>
           <div>
             <div style="font-weight:700">M365 License</div>
             <div style="font-size:11.5px;color:var(--slate-400);margin-top:2px">
@@ -2829,7 +2829,7 @@
         <button class="btn btn-outline"
           style="justify-content:flex-start;padding:14px 18px;text-align:left"
           onclick="selectSubType('Globe')">
-          <span style="font-size:18px;margin-right:10px">📱</span>
+          <i data-lucide="smartphone" style="margin-right:10px"></i>
           <div>
             <div style="font-weight:700">Globe Mobile Plan</div>
             <div style="font-size:11.5px;color:var(--slate-400);margin-top:2px">
@@ -2840,7 +2840,7 @@
         <button class="btn btn-outline"
           style="justify-content:flex-start;padding:14px 18px;text-align:left"
           onclick="selectSubType('Other')">
-          <span style="font-size:18px;margin-right:10px">🔐</span>
+          <i data-lucide="cloud" style="margin-right:10px"></i>
           <div>
             <div style="font-weight:700">Other Subscription</div>
             <div style="font-size:11.5px;color:var(--slate-400);margin-top:2px">

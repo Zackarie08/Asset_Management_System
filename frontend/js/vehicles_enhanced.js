@@ -204,10 +204,10 @@ async function renderVehicles() {
     const ws     = worstPlanStatus(plans, km);
 
     const maintBadge =
-      v.status === 'UNDER_MAINTENANCE' ? `<span class="badge b-amber">Under Maint.</span>` :
-      ws === 'overdue'                  ? `<span class="badge b-red">Overdue</span>` :
-      ws === 'due_soon'                 ? `<span class="badge b-amber">Due Soon</span>` :
-      plans.length > 0                  ? `<span class="badge b-green">On Track</span>` :
+      v.status === 'UNDER_MAINTENANCE' ? `<span class="badge b-amber"><i data-lucide="wrench"></i> Under Maint.</span>` :
+      ws === 'overdue'                  ? `<span class="badge b-red"><i data-lucide="triangle-alert"></i> Overdue</span>` :
+      ws === 'due_soon'                 ? `<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Due Soon</span>` :
+      plans.length > 0                  ? `<span class="badge b-green"><i data-lucide="check-circle"></i> On Track</span>` :
                                           `<span class="badge b-slate">No Plans</span>`;
 
     // Next due label
@@ -238,6 +238,8 @@ async function renderVehicles() {
 
   _setVehStat('veh-ct', `${total} vehicles`);
   renderVehPagination(total);
+
+  if (window.lucide) lucide.createIcons();
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -292,7 +294,7 @@ async function dpVehicle(id) {
   const kmUsed  = km - (v.last_maintenance_km || 0);
   const pct     = Math.min(100, Math.round((kmUsed / threshold) * 100));
 
-  setDPHeader('🚗', '#eff6ff', v.vehicle_name, `${v.type} · ${v.plate_number}`);
+  setDPHeader('car', '#eff6ff', v.vehicle_name, `${v.type} · ${v.plate_number}`);
 
   /* ── Maintenance Plans HTML ── */
   const plansHTML = _buildPlansHTML(plans, km, id);
@@ -316,7 +318,7 @@ async function dpVehicle(id) {
   const html = `
     <!-- Vehicle Info -->
     <div class="dp-section">
-      <div class="dp-section-hd">🚗 Vehicle Info</div>
+      <div class="dp-section-hd"><i data-lucide="car"></i> Vehicle Info</div>
       <div class="dp-grid">
         ${dpField('Plate Number', v.plate_number)}
         ${dpField('Type', v.type)}
@@ -337,7 +339,7 @@ async function dpVehicle(id) {
     <!-- Maintenance History -->
     <div class="dp-section">
       <div class="dp-section-hd" onclick="toggleVehMaintHistory(${id})">
-        🔧 Maintenance History ${vehShowMaintHistory ? "▲" : "▼"}
+        <i data-lucide="wrench"></i> Maintenance History ${vehShowMaintHistory ? "▲" : "▼"}
       </div>
       ${vehShowMaintHistory ? maintHTML : ""}
     </div>
@@ -348,25 +350,25 @@ async function dpVehicle(id) {
     <!-- Actions -->
     ${isAdminUser() ? `
       <div class="dp-section">
-        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
         ${v.status !== 'UNDER_MAINTENANCE' ? `
           <button class="btn btn-outline btn-sm" onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
-            📊 Update Odometer
+            <i data-lucide="gauge"></i> Update Odometer
           </button>
           ` : `
             <button class="btn btn-green btn-sm"
               onclick="completeMaintenance(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
-              ✅ Complete Maintenance
+              <i data-lucide="check-circle"></i> Complete Maintenance
             </button>
           `}
           <button class="btn btn-outline btn-sm"
             onclick="editVehicle(${v.vehicle_id})">
-            ✏️ Edit
+            <i data-lucide="pencil"></i> Edit
           </button>
           <button class="btn btn-red btn-sm"
             onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')">
-            🗑️ Delete
+            <i data-lucide="trash-2"></i> Delete
           </button>
         </div>
       </div>
@@ -375,6 +377,8 @@ async function dpVehicle(id) {
 
   document.getElementById('dp-body').innerHTML = html;
   document.getElementById('dp-footer').style.display = 'none';
+
+  if (window.lucide) lucide.createIcons();
 
   // Load attachments panel
   attachmentPanel('vehicles', id, `veh-att-${id}`);
@@ -391,13 +395,13 @@ function toggleVehMaintHistory(id) {
 function _buildPlansHTML(plans, currentKm, vehicleId) {
   if (!plans.length) {
     return `
-      <div class="dp-section-hd">⚙️ Maintenance Plans</div>
+      <div class="dp-section-hd"><i data-lucide="settings"></i> Maintenance Plans</div>
       <div style="color:var(--slate-400);font-size:12px;padding:8px 0">
         No maintenance plans set up yet.
       </div>
       ${isAdminUser() ? `
         <div class="dp-action-row" style="margin-top:8px">
-          <button class="btn btn-outline btn-sm" onclick="openAddPlan(${vehicleId})">➕ Add Plan</button>
+          <button class="btn btn-outline btn-sm" onclick="openAddPlan(${vehicleId})"><i data-lucide="plus"></i> Add Plan</button>
         </div>` : ''}`;
   }
 
@@ -405,8 +409,8 @@ function _buildPlansHTML(plans, currentKm, vehicleId) {
 
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="dp-section-hd" style="margin-bottom:0">⚙️ Maintenance Plans</div>
-      ${isAdminUser() ? `<button class="btn btn-outline btn-xs" onclick="openAddPlan(${vehicleId})">➕ Add</button>` : ''}
+      <div class="dp-section-hd" style="margin-bottom:0"><i data-lucide="settings"></i> Maintenance Plans</div>
+      ${isAdminUser() ? `<button class="btn btn-outline btn-xs" onclick="openAddPlan(${vehicleId})"><i data-lucide="plus"></i> Add</button>` : ''}
     </div>
     ${planCards}`;
 }
@@ -427,10 +431,10 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
     const barColor  = remaining <= 0 ? '#ef4444' : remaining <= 500 ? '#f59e0b' : '#22c55e';
 
     statusBadge = remaining <= 0
-      ? `<span class="badge b-red">⚠️ Overdue (${Math.abs(remaining).toLocaleString()} km over)</span>`
+      ? `<span class="badge b-red"><i data-lucide="triangle-alert"></i> Overdue (${Math.abs(remaining).toLocaleString()} km over)</span>`
       : remaining <= 500
-        ? `<span class="badge b-amber">⚠️ Due Soon (${remaining.toLocaleString()} km)</span>`
-        : `<span class="badge b-green">✅ OK (${remaining.toLocaleString()} km left)</span>`;
+        ? `<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Due Soon (${remaining.toLocaleString()} km)</span>`
+        : `<span class="badge b-green"><i data-lucide="check-circle"></i> OK (${remaining.toLocaleString()} km left)</span>`;
 
     visualHTML = `
       <div style="margin:8px 0">
@@ -449,18 +453,24 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
 
   } else if (isTime) {
     const s = plan.status_computed || 'unknown';
-    const labelMap  = { overdue: '⚠️ Overdue', due_soon: '⚠️ Due Soon', ok: '✅ OK', pending: '⏳ Not Yet Done', unknown: '—' };
+    const labelMap  = {
+      overdue:  '<i data-lucide="triangle-alert"></i> Overdue',
+      due_soon: '<i data-lucide="triangle-alert"></i> Due Soon',
+      ok:       '<i data-lucide="check-circle"></i> OK',
+      pending:  '<i data-lucide="clock"></i> Not Yet Done',
+      unknown:  '—',
+    };
     const classMap  = { overdue: 'b-red', due_soon: 'b-amber', ok: 'b-green', pending: 'b-slate', unknown: 'b-slate' };
     statusBadge = `<span class="badge ${classMap[s] || 'b-slate'}">${labelMap[s] || s}</span>`;
 
     const daysLeft = _daysUntil(plan.next_due_date);
     let dueLabel = plan.next_due_date
       ? (daysLeft <= 0
-          ? `⚠️ Was due ${plan.next_due_date}`
+          ? `<i data-lucide="triangle-alert"></i> Was due ${plan.next_due_date}`
           : daysLeft <= 30
-            ? `⚠️ Due in ${daysLeft} days (${plan.next_due_date})`
-            : `🗓 Due: ${plan.next_due_date}`)
-      : '⏳ Not yet performed';
+            ? `<i data-lucide="triangle-alert"></i> Due in ${daysLeft} days (${plan.next_due_date})`
+            : `<i data-lucide="calendar"></i> Due: ${plan.next_due_date}`)
+      : '<i data-lucide="clock"></i> Not yet performed';
 
     const intervalLabel = plan.interval_value
       ? `Every ${plan.interval_value} ${plan.interval_unit}(s)`
@@ -489,15 +499,15 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-xs btn-green"
             onclick="openRecordMaint(${vehicleId},'${_escVeh(plan.name)}',${plan.maint_type_id})">
-            ✅ Perform
+            <i data-lucide="check"></i> Perform
           </button>
           <button class="btn btn-xs btn-outline"
             onclick="openEditPlan(${plan.maint_type_id},${vehicleId})">
-            ✏️
+            <i data-lucide="pencil"></i>
           </button>
           <button class="btn btn-xs btn-red"
             onclick="deletePlan(${plan.maint_type_id},${vehicleId})">
-            🗑️
+            <i data-lucide="trash-2"></i>
           </button>
         </div>` : ''}
     </div>`;
