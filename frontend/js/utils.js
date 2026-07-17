@@ -1,3 +1,124 @@
+const ADMIN_NAV = [
+  { id: "dashboard",     icon: "layout-dashboard", label: "Dashboard"           },
+  { id: "inventory",     icon: "box",              label: "Inventory Management", badge: "inv" },
+  { id: "orders",        icon: "shopping-cart",    label: "Purchase Orders",     badge: "po"  },
+  { id: "furniture",     icon: "armchair",         label: "Office Furniture"     },
+  { id: "itsupplies",    icon: "plug",             label: "IT Supplies",         badge: "it"  },
+  { id: "laptops",       icon: "laptop",           label: "Laptops"              },
+  { id: "vehicles",      icon: "car",              label: "Vehicle Management"   },
+  { id: "contracts",     icon: "file-text",        label: "Contracts"            },
+  { id: "subscriptions", icon: "calendar-clock",   label: "Subscriptions",       admin: true  },
+  { id: "insurance",     icon: "shield",           label: "Insurance",           admin: true  },
+  { id: "finance",       icon: "folder",           label: "Finance Documents",   admin: true  },
+  { id: "logs",          icon: "scroll-text",      label: "System Logs",         admin: true  },
+  { id: "users",         icon: "users",            label: "Users",               admin: true  },
+];
+
+// Pages accessible to non-admin roles
+const EMP_NAV = [
+  "dashboard","inventory","orders","furniture",
+  "itsupplies","laptops","vehicles","contracts"
+];
+
+/* ── PAGE METADATA (breadcrumb) ─────────────────────────── */
+const PAGE_META = {
+  dashboard:     { title: "Dashboard",            parent: "Asset Management System" },
+  inventory:     { title: "Inventory Management", parent: "Asset Management System" },
+  orders:        { title: "Purchase Orders",      parent: "Asset Management System" },
+  furniture:     { title: "Office Furniture",     parent: "Asset Management System" },
+  itsupplies:    { title: "IT Supplies",          parent: "Asset Management System" },
+  laptops:       { title: "Laptop Management",    parent: "Asset Management System" },
+  vehicles:      { title: "Vehicle Management",   parent: "Asset Management System" },
+  contracts:     { title: "Contracts",            parent: "Asset Management System" },
+  subscriptions: { title: "Subscriptions",        parent: "Asset Management System" },
+  insurance:     { title: "Insurance",            parent: "Asset Management System" },
+  finance:       { title: "Finance Documents",    parent: "Asset Management System" },
+  logs:          { title: "System Logs",          parent: "Asset Management System" },
+  users:         { title: "Users",                parent: "Asset Management System" },
+};
+
+/* ── EDIT STATE (was accidental global) ─────────────────── */
+// ✅ FIX: declare with let so it doesn't pollute the global scope implicitly
+let editState = { id: null, type: null };
+let dpOpen = false;
+let dpSelectedRow = null;
+let dpCurrentType = null;
+let dpCurrentId   = null;
+
+/* ── DP RENDERER MAP ────────────────────────────────────── */
+// Used inside openDP() — maps type strings to handler functions.
+// Note: globe/m365/subscriptions remain so that clicking unified
+// table rows still opens the correct type-specific detail panel.
+// ✅ FIX: store the FUNCTION NAME (string), not the function reference.
+// Storing the reference directly (dpFurniture, dpContract, etc.) freezes
+// whatever those names point to at the exact moment this script runs —
+// which breaks the moment a module's dp*() function lives in a file
+// loaded AFTER main.js (as with the furniture/itsupplies/laptop/contracts/
+// finance/user modules now that they've been split out). Looking the
+// function up by name INSIDE openDP() instead means resolution happens
+// at click-time, when every script has already loaded — so load order
+// stops mattering entirely, and this never needs "re-pointing" again.
+const DP_RENDERERS = {
+  inventory:     'dpInventory',
+  furniture:     'dpFurniture',
+  order:         'dpOrder',
+  itsupplies:    'dpITSupplies',
+  laptop:        'dpLaptop',
+  vehicle:       'dpVehicle',
+  contracts:     'dpContract',
+  subscriptions: 'dpSubscriptions',
+  globe:         'dpGlobe',
+  m365:          'dpM365',
+  insurance:     'dpInsurance',
+  finance:       'dpFinance',
+  log:           'dpLog',
+  user:          'dpUser',
+};
+
+
+function openDP(type, id, row) {
+  if (dpSelectedRow) dpSelectedRow.classList.remove("selected");
+  dpSelectedRow = row;
+  dpCurrentType = type;
+  dpCurrentId   = id;
+  if (row) row.classList.add("selected");
+
+  document.getElementById("detail-panel").classList.add("open");
+  document.getElementById("app-body").classList.add("panel-open");
+  dpOpen = true;
+
+  const renderer = DP_RENDERERS[type];
+  if (renderer) {
+    renderer(id);
+  } else {
+    console.warn(`No DP renderer registered for type: "${type}"`);
+  }
+
+  // ✅ NEW (Part 1): viewing the record acknowledges its notification(s).
+  markNotificationSeen(type, id);
+}
+
+
+
+function closeDP() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('app-body').classList.remove('panel-open');
+  if (dpSelectedRow) { dpSelectedRow.classList.remove('selected'); dpSelectedRow = null; }
+  dpOpen = false; dpCurrentType = null; dpCurrentId = null;
+}
+
+function setDPHeader(icon, iconBg, title, sub) {
+  const el = document.getElementById('dp-icon');
+  el.innerHTML = `<i data-lucide="${icon}"></i>`;
+  el.style.background = iconBg;
+  document.getElementById('dp-title').textContent    = title;
+  document.getElementById('dp-subtitle').textContent = sub;
+  if (window.lucide) lucide.createIcons();
+}
+
+
+
+
 function todayStr() { return new Date().toISOString().slice(0,10); }
 
 // ✅ NEW: shared human-readable date formatter used across the Dashboard,
@@ -211,4 +332,23 @@ function renderPaginationControls(containerId, total, perPage, currentPage, onPa
   wrap.appendChild(next);
 
   container.appendChild(wrap);
+}
+
+function addLog(action, module, desc, ref = '—', performedBy = null) {
+  if (!currentUser) return;
+
+  fetch(`${API_URL}/api/logs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: currentUser.user_id,
+      action_type: action,
+      module: module,
+      description: desc,
+      reference_type: ref,
+      performed_by: performedBy // ✅ NEW (Part 2) — null unless explicitly passed
+    })
+  }).catch(err => console.error("Log error:", err));
 }

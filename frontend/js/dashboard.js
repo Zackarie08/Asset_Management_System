@@ -1,30 +1,30 @@
-/* ============================================================
-   vehicle_dashboard_alert_patch.js — Part 5
-   ============================================================
-   ROOT CAUSE: refreshDashboard()'s "PANEL 4 — VEHICLE ALERTS" only
-   ever checked the vehicle record's own legacy fields
-   (v.maintenance_threshold / v.last_maintenance_km / v.odometer) —
-   it never fetched each vehicle's actual maintenance PLANS
-   (vehicle_maintenance_types, via GET /api/vehicle-plans/:vehicle_id),
-   which is where time-based (Monthly/Yearly) plans — and per-plan
-   odometer plans — actually live. So a plan sitting at "Overdue" or
-   "Due Soon" in the Vehicle module's own detail panel never surfaced
-   on the Dashboard at all.
 
-   FIX: this is a full re-implementation of refreshDashboard(),
-   IDENTICAL to laptop_dashboard_patches.js's version except for
-   PANEL 4, which now also fetches each vehicle's plans (via the
-   already-loaded fetchPlansForVehicle()/planOdoStatus()/
-   planTimeStatus() helpers from vehicles_enhanced.js) and adds an
-   alert row per plan that is due_soon or overdue — for BOTH
-   odometer-based and time-based plans.
+/* ──────────────────────────────────────────────────────────────
+   DASHBOARD REFRESH
+────────────────────────────────────────────────────────────── */
+/* ── Safe fetch helper ─────────────────────────────────────── */
+async function safeFetch(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
 
-   Load AFTER laptop_dashboard_patches.js (last-loaded wins, same
-   pattern as every other patch file in this project) and AFTER
-   vehicles_enhanced.js (for fetchPlansForVehicle/planOdoStatus/
-   planTimeStatus).
-   ============================================================ */
+/* ── Date helpers ──────────────────────────────────────────── */
+function daysFromNow(dateStr) {
+  if (!dateStr) return null;
+  const diff = new Date(dateStr) - new Date();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
 
+
+/* ══════════════════════════════════════════════════════════════
+   MAIN DASHBOARD REFRESH
+══════════════════════════════════════════════════════════════ */
 async function refreshDashboard() {
 
   document.getElementById('dash-date').textContent =
@@ -32,8 +32,10 @@ async function refreshDashboard() {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 
-  const [inventory, orders, laptops, vehicles, contracts, logs, globe, m365, contractRequests] =
-    await Promise.all([
+  const [
+    inventory, orders, laptops, vehicles, contracts, logs, globe, m365, contractRequests,
+    wineReqs, invBorrows, itBorrows, itSuppliesList, // ✅ NEW
+  ] = await Promise.all([
       safeFetch(`${API_URL}/api/inventory`),
       safeFetch(`${API_URL}/api/po`),
       safeFetch(`${API_URL}/api/laptops`),
@@ -43,6 +45,10 @@ async function refreshDashboard() {
       safeFetch(`${API_URL}/api/globe`),
       safeFetch(`${API_URL}/api/m365`),
       safeFetch(`${API_URL}/api/contracts/requests`),
+      safeFetch(`${API_URL}/api/wine-requests`),                    // ✅ NEW — all PENDING wine requests
+      safeFetch(`${API_URL}/api/borrow-return/open/inventory`),      // ✅ NEW — borrowed event supplies
+      safeFetch(`${API_URL}/api/borrow-return/open/itsupplies`),     // ✅ NEW — borrowed IT supplies
+      safeFetch(`${API_URL}/api/it-supplies`),                       // ✅ NEW — for asset-name lookup
     ]);
 
   const today = new Date();
@@ -57,18 +63,46 @@ async function refreshDashboard() {
   _setText('dc-total',    totalInv);
   _setText('dc-total-d',  `${totalInv} tracked items`);
   _setText('dc-low',      lowStock.length);
-  _setText('dc-low-d',    lowStock.length ? `${lowStock.length} item${lowStock.length > 1 ? 's' : ''} need restocking` : 'All stocks OK');
+  _setText('dc-low-d',    lowStock.length ? `${lowStock.length} item${lowStock.length > 1 ? 's' : ''} need restocking` : 'All stocks are Good');
   _setText('dc-laptops',   activeLaptops.length);
   _setText('dc-laptops-d', `${activeLaptops.length} of ${laptops.length} active`);
   _setText('dc-orders',   pendingOrders.length);
   _setText('dc-orders-d', pendingOrders.length ? `${pendingOrders.length} pending` : 'No pending orders');
 
-  /* ── PANEL 1 — LOW STOCK (unchanged) ──────── */
-  _setText('dash-low-ct', `${lowStock.length} items`);
-  if (lowStock.length === 0) {
-    _setHTML('dash-low-list', _emptyMsg('All inventory levels are OK'));
+  /* ── PANEL 1 — LOW STOCK ✅ NOW ALSO: PENDING WINE REQUESTS +
+     BORROWED EVENT/IT SUPPLIES ─────────────────────────────────── */
+  const itMap = {};
+  itSuppliesList.forEach(it => { itMap[it.it_supplies_id] = it.asset_name; });
+  const invMap = {};
+  inventory.forEach(i => { invMap[i.inventory_gen_id] = i.item_name; });
+
+  const requestRows = [
+    ...wineReqs.map(r => ({
+      dotCls: 'amber',
+      name: r.item_name || invMap[r.inventory_gen_id] || 'Wine item',
+      meta: `🍷 Wine · Requested by ${_esc(r.requested_name)} · ${r.quantity} unit(s)`,
+      badgeLabel: 'Pending', badgeCls: 'b-amber',
+    })),
+    ...invBorrows.filter(b => b.status === 'BORROWED').map(b => ({
+      dotCls: 'blue',
+      name: invMap[b.record_id] || `Item #${b.record_id}`,
+      meta: `📤 Event Supplies · Borrowed by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
+      badgeLabel: 'Borrowed', badgeCls: 'b-blue',
+    })),
+    ...itBorrows.filter(b => b.status === 'BORROWED').map(b => ({
+      dotCls: 'blue',
+      name: itMap[b.record_id] || `Item #${b.record_id}`,
+      meta: `📤 IT Supplies · Borrowed by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
+      badgeLabel: 'Borrowed', badgeCls: 'b-blue',
+    })),
+  ];
+
+  _setText('dash-low-ct', `${lowStock.length} low stock · ${requestRows.length} requests`);
+
+  if (lowStock.length === 0 && requestRows.length === 0) {
+    _setHTML('dash-low-list', _emptyMsg('All inventory levels are Good — no pending requests'));
   } else {
-    const rows = lowStock.map(i => {
+    const lowRowsHTML = lowStock.map(i => {
       const critical = i.current_quantity === 0;
       return `
         <div class="panel-row">
@@ -80,7 +114,18 @@ async function refreshDashboard() {
           ${badge(critical ? 'Critical' : 'Low Stock', critical ? 'b-red' : 'b-amber')}
         </div>`;
     }).join('');
-    _setHTML('dash-low-list', rows);
+
+    const requestRowsHTML = requestRows.map(r => `
+      <div class="panel-row">
+        <div class="pr-dot ${r.dotCls}"></div>
+        <div style="flex:1">
+          <div class="pr-name">${_esc(r.name)}</div>
+          <div class="pr-meta">${r.meta}</div>
+        </div>
+        ${badge(r.badgeLabel, r.badgeCls)}
+      </div>`).join('');
+
+    _setHTML('dash-low-list', lowRowsHTML + requestRowsHTML);
   }
 
   /* ── PANEL 2 — PENDING / DELAYED ORDERS (unchanged) ── */
@@ -177,15 +222,7 @@ async function refreshDashboard() {
     _setHTML('dash-maint-list', html);
   }
 
-  /* ── PANEL 4 — VEHICLE ALERTS ✅ FIXED (Part 5) ─────────────
-     Now covers BOTH:
-       (a) the legacy vehicle-record threshold (unchanged, kept for
-           vehicles that don't use the newer plans system), AND
-       (b) each vehicle's actual maintenance PLANS — odometer-based
-           AND time-based (Monthly/Yearly) — which is where "Due
-           Soon"/"Overdue" is actually computed but was never
-           queried by the dashboard before.
-  ────────────────────────────────────────────────────────────── */
+  /* ── PANEL 4 — VEHICLE ALERTS (unchanged — Part 5 fix preserved) ── */
   const isFirstWorkingDay = (() => {
     const d = now.getDay();
     const day = now.getDate();
@@ -200,14 +237,12 @@ async function refreshDashboard() {
       return;
     }
 
-    // (a) legacy threshold on the vehicle record itself
     const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
     const threshold = v.maintenance_threshold || 1000;
     if (kmUsed >= threshold) {
       vehicleAlerts.push({ v, reason: `${kmUsed} km since last service`, cls: 'red' });
     }
 
-    // ✅ NEW (Part 5): (b) per-plan odometer + time-based alerts
     let plans = [];
     try {
       plans = await fetchPlansForVehicle(v.vehicle_id);
@@ -340,3 +375,69 @@ async function refreshDashboard() {
     }
   }
 }
+
+/* ── Private helpers (internal to dashboard only) ────────── */
+function _setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function _setHTML(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+function _emptyMsg(msg) {
+  return `<div style="padding:16px;text-align:center;color:var(--slate-400);font-size:12.5px">${msg}</div>`;
+}
+function _esc(str) {
+  if (!str) return '—';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   IMPROVEMENT: Dashboard — click items to navigate + open DP
+   Replace _emptyMsg panels' panel-row onClick stubs with
+   this helper. Call navigateAndOpen() from dashboard rows.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/**
+ * Navigate to a page, then open the detail panel for a record.
+ * @param {string} page     - page id (e.g. "inventory", "contracts")
+ * @param {string} dpType   - DP type key (e.g. "inventory", "contracts")
+ * @param {number} recordId - the record's primary key
+ */
+function navigateAndOpen(page, dpType, recordId) {
+  // 1. Navigate to the page
+  const navEl = document.getElementById("nav-" + page);
+  navigate(page, navEl);
+
+  // 2. After a short paint delay, open the DP
+  // We need the table row to mark as selected — find it by ID match
+  setTimeout(() => {
+    // Try to find the matching row in the rendered table
+    const allRows = document.querySelectorAll(`#page-${page} .tr-clickable`);
+    let targetRow = null;
+
+    // Most tables render the PK in the first cell or as data-id
+    allRows.forEach(row => {
+      const firstCell = row.querySelector("td");
+      if (firstCell && String(firstCell.textContent).trim() === String(recordId)) {
+        targetRow = row;
+      }
+    });
+
+    openDP(dpType, recordId, targetRow);
+  }, 250); // 250ms gives the page time to render
+}
+
+let currentItemStock = 0;
+
+
+
+
+
+

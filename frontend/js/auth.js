@@ -1,31 +1,9 @@
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+let currentUser = null; // { name, role, initials }
+let _currentContract = null;
+let currentPage = 'dashboard';
 
-  fetch(`${API_URL}/api/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ email, password })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.user) {
-      // ✅ Save user (simulate session)
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // ✅ Redirect based on role
-      if (data.user.role === "admin") {
-        window.location.href = "pages/dashboard.html";
-      } else {
-        window.location.href = "pages/dashboard.html";
-      }
-
-    } else {
-      document.getElementById("error").innerText = "Login failed";
-    }
-  });
+function isAdminUser() {
+  return currentUser.role === "admin" || currentUser.role === "super_admin";
 }
 
 
@@ -81,24 +59,13 @@ let _loggingOut = false;
 let _tabCloseLogged = false;
 
 function doLogout() {
-  if (currentUser) {
-    const payload = JSON.stringify({
-      user_id: currentUser.user_id,
-      action_type: "LOGOUT",
-      module: "USER",
-      description: `User ${currentUser.name} logged out`,
-      reference_type: currentUser.user_id
-    });
-
-    navigator.sendBeacon(
-      `${API_URL}/api/logs`,
-      new Blob([payload], { type: "application/json" })
-    );
-  }
-  _loggingOut = true;     // prevents the beforeunload/pagehide handler from double-logging
-  _tabCloseLogged = true; // extra guard against a duplicate LOGOUT entry
+  _loggingOut = true;
+  _tabCloseLogged = true;
+  const logPromise = _sendLogoutLog(`User ${currentUser?.name} logged out`);
   sessionStorage.removeItem("user");
-  location.reload();
+  // ✅ give the network layer a beat to actually dispatch before reload
+  Promise.race([logPromise, new Promise(r => setTimeout(r, 250))])
+    .finally(() => location.reload());
 }
 
 // ✅ NEW: logs LOGOUT when the tab is closed or the session ends
@@ -108,23 +75,11 @@ function doLogout() {
 function _logTabClose() {
   if (!currentUser || _loggingOut || _tabCloseLogged) return;
   _tabCloseLogged = true;
-
-  const payload = JSON.stringify({
-    user_id: currentUser.user_id,
-    action_type: "LOGOUT",
-    module: "USER",
-    description: `User ${currentUser.name} closed the tab / session ended`,
-    reference_type: currentUser.user_id
-  });
-
-  navigator.sendBeacon(
-    `${API_URL}/api/logs`,
-    new Blob([payload], { type: "application/json" })
-  );
+  _sendLogoutLog(`User ${currentUser.name} closed the tab / session ended`);
 }
 
 window.addEventListener("beforeunload", _logTabClose);
-window.addEventListener("pagehide", _logTabClose); // fallback for mobile Safari
+window.addEventListener("pagehide", _logTabClose);
 
 /* ────────────────────────────────────────────────────────────
    TOPBAR USER MENU
@@ -184,4 +139,58 @@ function updateUserUI() {
 function _setTxtSafe(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = val;
+}
+
+function autoLogin() {
+  const savedUser = sessionStorage.getItem("user");
+  if (!savedUser) return;
+
+  const user = JSON.parse(savedUser);
+
+  currentUser = {
+    user_id: user.user_id,
+    name: user.name,
+    role: user.role,
+    email: user.email,             // ✅ FIX: was missing
+    department: user.department,   // ✅ also preserve for consistency
+    initials: user.name.substring(0, 2).toUpperCase()
+  };
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  buildSidebar();
+  initAllModules();
+
+  const savedPage = sessionStorage.getItem("currentPage");
+  if (savedPage) navigate(savedPage);
+
+  if (typeof updateUserUI === "function") updateUserUI();
+}
+
+function _sendLogoutLog(description) {
+  if (!currentUser) return Promise.resolve();
+
+  const payload = JSON.stringify({
+    user_id: currentUser.user_id,
+    action_type: "LOGOUT",
+    module: "USER",
+    description,
+    reference_type: "MANUAL",       // ✅ was currentUser.user_id (numeric) — now a consistent string
+    performed_by: currentUser.name,
+  });
+
+  // ✅ Fire BOTH unconditionally instead of beacon-then-fallback-on-failure.
+  // sendBeacon returning true doesn't guarantee delivery, so we no longer
+  // gate the fetch fallback behind it.
+  try {
+    navigator.sendBeacon(`${API_URL}/api/logs`, new Blob([payload], { type: "application/json" }));
+  } catch (e) { /* ignore */ }
+
+  return fetch(`${API_URL}/api/logs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload,
+    keepalive: true,
+  }).catch(() => {});
 }

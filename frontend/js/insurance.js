@@ -54,10 +54,10 @@ async function loadInsuranceUsers() {
 /* ── COVERAGE TYPE TOGGLE ───────────────────────────────── */
 function toggleCoverageType() {
   const type = document.getElementById('ins-f-coverage').value;
-  const empSection = document.getElementById('ins-emp-section');
-  if (empSection) {
-    empSection.style.display = type === 'SPECIFIC' ? 'block' : 'none';
-  }
+  const empSection    = document.getElementById('ins-emp-section');
+  const targetSection = document.getElementById('ins-target-section');
+  if (empSection)    empSection.style.display    = type === 'SPECIFIC' ? 'block' : 'none';
+  if (targetSection) targetSection.style.display = type === 'CUSTOM'   ? 'block' : 'none';
 }
 
 /* ── BUILD EMPLOYEE CHECKBOX LIST ───────────────────────── */
@@ -70,20 +70,33 @@ function buildEmployeeCheckboxes(selectedIds = []) {
     return;
   }
 
-  container.innerHTML = _allInsuranceUsers.map(u => `
-    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13px;border-bottom:1px solid var(--slate-100)">
-      <input type="checkbox" value="${u.user_id}"
-        ${selectedIds.includes(u.user_id) ? 'checked' : ''}
+  const allSelected = _allInsuranceUsers.length > 0 &&
+    _allInsuranceUsers.every(u => selectedIds.includes(u.user_id));
+
+  container.innerHTML = `
+    <label style="display:flex;align-items:center;gap:8px;padding:4px 0 10px;cursor:pointer;font-size:12.5px;font-weight:700;border-bottom:1.5px solid var(--slate-200);margin-bottom:6px">
+      <input type="checkbox" id="ins-emp-select-all" ${allSelected ? 'checked' : ''}
+        onchange="toggleAllInsuranceEmployees(this.checked)"
         style="width:14px;height:14px;cursor:pointer;accent-color:var(--blue-600)"/>
-      <span style="font-weight:600">${u.name}</span>
-      ${u.department ? `<span style="color:var(--slate-400);font-size:11px;margin-left:auto">${u.department}</span>` : ''}
+      <span>Select All Employees (${_allInsuranceUsers.length})</span>
     </label>
-  `).join('');
+    ${_allInsuranceUsers.map(u => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13px;border-bottom:1px solid var(--slate-100)">
+        <input type="checkbox" class="ins-emp-checkbox" value="${u.user_id}"
+          ${selectedIds.includes(u.user_id) ? 'checked' : ''}
+          onchange="_syncInsSelectAllState()"
+          style="width:14px;height:14px;cursor:pointer;accent-color:var(--blue-600)"/>
+        <span style="font-weight:600">${u.name}</span>
+        ${u.department ? `<span style="color:var(--slate-400);font-size:11px;margin-left:auto">${u.department}</span>` : ''}
+      </label>
+    `).join('')}
+  `;
 }
+
 
 /* ── GET SELECTED EMPLOYEE IDS ──────────────────────────── */
 function getSelectedEmployeeIds() {
-  const checkboxes = document.querySelectorAll('#ins-emp-list input[type="checkbox"]:checked');
+  const checkboxes = document.querySelectorAll('#ins-emp-list .ins-emp-checkbox:checked');
   return Array.from(checkboxes).map(cb => parseInt(cb.value));
 }
 
@@ -141,10 +154,7 @@ function _renderInsTable() {
   } else {
     paginated.forEach(ins => {
       const { badge: expiryBadge } = _computeInsuranceStatus(ins);
-
-      const coverageBadge = ins.coverage_type === 'SPECIFIC'
-        ? `<span class="badge b-blue">Specific</span>`
-        : `<span class="badge b-slate">General</span>`;
+      const coverageBadge = _insCoverageBadge(ins.coverage_type); // ✅ FIX: was inline SPECIFIC-only ternary
 
       const tr = document.createElement("tr");
       tr.className = "tr-clickable";
@@ -165,6 +175,7 @@ function _renderInsTable() {
   if (ctEl) ctEl.textContent = total + " records";
   _renderInsPagination(total);
 }
+
 
 async function renderInsurance() {
   try {
@@ -187,7 +198,7 @@ async function dpInsurance(id) {
 
     const today    = new Date();
     const expiry   = ins.expiry_date ? new Date(ins.expiry_date) : null;
-    const daysLeft = expiry ? Math.ceil((expiry - today) / (1000 * 60 * 60 * 24)) : null;
+    const daysLeft = expiry ? Math.ceil((expiry - today) / 86400000) : null;
 
     let statusBadgeHtml = "";
     if (daysLeft === null)    statusBadgeHtml = `<span class="badge b-slate">No expiry set</span>`;
@@ -197,14 +208,13 @@ async function dpInsurance(id) {
 
     setDPHeader("🛡️", "#f0fdf4", ins.employee_name, "Insurance Record");
 
-    // Coverage section
     const isSpecific = ins.coverage_type === 'SPECIFIC';
+    const isCustom    = ins.coverage_type === 'CUSTOM';
     const employees  = ins.assigned_employees || [];
 
     let coverageHTML = '';
     if (isSpecific) {
-      if (employees.length > 0) {
-        coverageHTML = `
+      coverageHTML = employees.length ? `
           <div class="dp-section">
             <div class="dp-section-hd">👥 Assigned Employees (${employees.length})</div>
             <div style="display:flex;flex-direction:column;gap:6px">
@@ -215,17 +225,21 @@ async function dpInsurance(id) {
                     <div style="font-size:13px;font-weight:600">${e.name}</div>
                     ${e.department ? `<div style="font-size:11px;color:var(--slate-400)">${e.department}</div>` : ''}
                   </div>
-                </div>
-              `).join('')}
+                </div>`).join('')}
             </div>
-          </div>`;
-      } else {
-        coverageHTML = `
+          </div>` : `
           <div class="dp-section">
             <div class="dp-section-hd">👥 Assigned Employees</div>
             <div style="color:var(--slate-400);font-size:12px">No employees assigned yet.</div>
           </div>`;
-      }
+    } else if (isCustom) {
+      coverageHTML = `
+        <div class="dp-section">
+          <div class="dp-section-hd">🎯 Coverage Scope</div>
+          <div class="dp-grid">
+            ${dpFieldFull('Custom Target', ins.coverage_target || '—')}
+          </div>
+        </div>`;
     } else {
       coverageHTML = `
         <div class="dp-section">
@@ -237,11 +251,14 @@ async function dpInsurance(id) {
         </div>`;
     }
 
+    const coverageBadgeCls = isSpecific ? 'b-blue' : isCustom ? 'b-purple' : 'b-slate';
+    const coverageBadgeLbl = isSpecific ? 'Specific' : isCustom ? 'Custom' : 'General';
+
     const html = `
       <div class="dp-status-row">
         ${statusBadgeHtml}
         <span class="dp-status-label">Policy status</span>
-        <span style="margin-left:auto"><span class="badge ${isSpecific ? 'b-blue' : 'b-slate'}">${isSpecific ? 'Specific' : 'General'} Coverage</span></span>
+        <span style="margin-left:auto"><span class="badge ${coverageBadgeCls}">${coverageBadgeLbl} Coverage</span></span>
       </div>
       <div class="dp-section">
         <div class="dp-section-hd">📋 Policy Details</div>
@@ -254,24 +271,21 @@ async function dpInsurance(id) {
         </div>
       </div>
       ${coverageHTML}
-      ${ins.remarks ? `
-        <div class="dp-section">
-          <div class="dp-section-hd">📝 Remarks</div>
-          <div class="dp-grid">${dpFieldFull("Notes", ins.remarks)}</div>
-        </div>` : ""}
+      ${ins.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull("Notes", ins.remarks)}</div></div>` : ""}
       <div class="dp-section" id="dp-att-ins-${id}"></div>
-      ${isAdminUser() ? `
-        <div class="dp-section">
-          <div class="dp-section-hd">⚡ Actions</div>
-          <div class="dp-action-row">
+      <div class="dp-section">
+        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-action-row">
+          ${isAdminUser() ? `
             <button class="btn btn-primary btn-sm" onclick="editInsurance(${ins.insurance_id})">✏️ Edit</button>
             <button class="btn btn-red btn-sm"     onclick="deleteInsurancePrompt(${ins.insurance_id})">🗑️ Delete</button>
-          </div>
-        </div>` : ""}`;
+          ` : ''}
+          ${itemHistoryButton('insurance', ins.insurance_id, ins.employee_name)}
+        </div>
+      </div>`;
 
     document.getElementById("dp-body").innerHTML = html;
     document.getElementById("dp-footer").style.display = "none";
-
     attachmentPanel("insurance", id, `dp-att-ins-${id}`);
   } catch (err) {
     console.error("dpInsurance error:", err);
@@ -288,49 +302,51 @@ async function saveInsurance() {
   const expiry_date   = document.getElementById("ins-f-expiry").value || null;
   const remarks       = document.getElementById("ins-f-remarks").value;
   const coverage_type = document.getElementById("ins-f-coverage").value || 'GENERAL';
+  const coverage_target = document.getElementById("ins-f-target")?.value.trim() || '';
 
   if (!employee_name || !provider) {
     showToast("Policy name and provider are required", "t-error");
     return;
   }
 
-  // Get selected employees
   const employee_ids = coverage_type === 'SPECIFIC' ? getSelectedEmployeeIds() : [];
 
   if (coverage_type === 'SPECIFIC' && employee_ids.length === 0) {
     showToast("Select at least one employee for specific coverage", "t-error");
     return;
   }
+  if (coverage_type === 'CUSTOM' && !coverage_target) {
+    showToast("Enter a Coverage Target for custom coverage", "t-error");
+    return;
+  }
 
-  const payload = { employee_name, provider, policy_number, start_date, expiry_date, remarks, coverage_type, employee_ids };
-  const url     = insEditId ? `${API_URL}/api/insurance/${insEditId}` : `${API_URL}/api/insurance`;
-  const method  = insEditId ? "PUT" : "POST";
+  const payload = {
+    employee_name, provider, policy_number, start_date, expiry_date, remarks,
+    coverage_type, employee_ids, coverage_target,
+    user_id: currentUser.user_id,
+    performed_by: currentUser.name,
+  };
+  const url    = insEditId ? `${API_URL}/api/insurance/${insEditId}` : `${API_URL}/api/insurance`;
+  const method = insEditId ? "PUT" : "POST";
 
-  fetch(url, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  // ✅ FIX: parse the backend's JSON error body instead of throwing a
-  // generic "Save failed" — the old code masked real causes (e.g. a
-  // 500 from the employee-link insert) behind one generic toast.
-  .then(res => {
-    if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || "Save failed"); });
-    return res.json();
-  })
-  .then(() => {
-    showToast(insEditId ? "Record updated" : "Record added", "t-success");
-    addLog(insEditId ? "UPDATE" : "CREATE", "INSURANCE",
-      `${insEditId ? "Updated" : "Added"} insurance: ${employee_name}`, insEditId || null);
-    insEditId = null;
-    closeM("m-ins-add");
-    renderInsurance();
-    if (dpOpen && dpCurrentType === "insurance") dpInsurance(dpCurrentId);
-  })
-  .catch(err => {
-    console.error(err);
-    showToast(err.message || "Error saving record", "t-error");
-  });
+  fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+    .then(res => {
+      if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || "Save failed"); });
+      return res.json();
+    })
+    .then(() => {
+      showToast(insEditId ? "Record updated" : "Record added", "t-success");
+      addLog(insEditId ? "UPDATE" : "CREATE", "INSURANCE",
+        `${insEditId ? "Updated" : "Added"} insurance: ${employee_name}`, insEditId || null);
+      insEditId = null;
+      closeM("m-ins-add");
+      renderInsurance();
+      if (dpOpen && dpCurrentType === "insurance") dpInsurance(dpCurrentId);
+    })
+    .catch(err => {
+      console.error(err);
+      showToast(err.message || "Error saving record", "t-error");
+    });
 }
 
 /* ── EDIT ───────────────────────────────────────────────── */
@@ -341,9 +357,6 @@ async function editInsurance(id) {
     if (!ins) return;
 
     insEditId = id;
-
-    // ✅ FIX: close the detail panel before opening the edit modal,
-    // matching the pattern used elsewhere (vehicles, laptops, etc.)
     closeDP();
 
     document.getElementById("ins-f-name").value     = ins.employee_name  || "";
@@ -351,15 +364,13 @@ async function editInsurance(id) {
     document.getElementById("ins-f-policy").value   = ins.policy_number  || "";
     document.getElementById("ins-f-remarks").value  = ins.remarks        || "";
     document.getElementById("ins-f-coverage").value = ins.coverage_type  || "GENERAL";
-    document.getElementById("ins-f-start").value    = ins.start_date
-      ? new Date(ins.start_date).toISOString().slice(0,10) : "";
-    document.getElementById("ins-f-expiry").value   = ins.expiry_date
-      ? new Date(ins.expiry_date).toISOString().slice(0,10) : "";
+    const targetEl = document.getElementById("ins-f-target");
+    if (targetEl) targetEl.value = ins.coverage_target || "";
+    document.getElementById("ins-f-start").value    = ins.start_date  ? new Date(ins.start_date).toISOString().slice(0,10)  : "";
+    document.getElementById("ins-f-expiry").value   = ins.expiry_date ? new Date(ins.expiry_date).toISOString().slice(0,10) : "";
 
-    // Show/hide employee section
     toggleCoverageType();
 
-    // Build checkboxes with pre-selected employees
     const selectedIds = (ins.assigned_employees || []).map(e => e.user_id);
     await loadInsuranceUsers();
     buildEmployeeCheckboxes(selectedIds);
@@ -370,6 +381,7 @@ async function editInsurance(id) {
     showToast("Failed to load record for editing", "t-error");
   }
 }
+
 
 /* ── DELETE ─────────────────────────────────────────────── */
 let deleteInsId    = null;
@@ -402,6 +414,12 @@ function confirmDeleteInsurance() {
     });
 }
 
+/* ── ✅ FIX 1: List table — coverage column now recognizes CUSTOM ── */
+function _insCoverageBadge(coverageType) {
+  if (coverageType === 'SPECIFIC') return `<span class="badge b-blue">Specific</span>`;
+  if (coverageType === 'CUSTOM')   return `<span class="badge b-purple">Custom</span>`;
+  return `<span class="badge b-slate">General</span>`;
+}
 
 /* ── OPEN ADD ───────────────────────────────────────────── */
 async function openAddInsurance() {
@@ -411,3 +429,26 @@ async function openAddInsurance() {
   toggleCoverageType();
   openM("m-ins-add");
 }
+
+function toggleAllInsuranceEmployees(checked) {
+  document.querySelectorAll('#ins-emp-list .ins-emp-checkbox').forEach(cb => { cb.checked = checked; });
+}
+
+function _syncInsSelectAllState() {
+  const all = document.querySelectorAll('#ins-emp-list .ins-emp-checkbox');
+  const checkedCount = document.querySelectorAll('#ins-emp-list .ins-emp-checkbox:checked').length;
+  const selectAll = document.getElementById('ins-emp-select-all');
+  if (selectAll) selectAll.checked = all.length > 0 && checkedCount === all.length;
+}
+
+function toggleInsEmpCollapse() {
+  const wrap  = document.getElementById('ins-emp-list-wrap');
+  const arrow = document.getElementById('ins-emp-collapse-arrow');
+  if (!wrap) return;
+  const collapsed = wrap.style.display === 'none';
+  wrap.style.display = collapsed ? 'block' : 'none';
+  if (arrow) arrow.textContent = collapsed ? '▼ Hide' : '▲ Show';
+}
+
+if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.insurance = dpInsurance;
+

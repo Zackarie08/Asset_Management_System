@@ -11,36 +11,7 @@
 //    refreshPageActions() — those were already correct.
 // ============================================================
 
-function buildSidebar() {
-  const nav = document.getElementById("sb-nav");
-  nav.innerHTML = "";
-  let items;
 
-  if (currentUser.role === "super_admin") {
-    items = ADMIN_NAV;
-  } else {
-    items = ADMIN_NAV
-      .filter(n => n.id !== "users")
-      .filter(n => EMP_NAV.includes(n.id) || currentUser.role === "admin");
-  }
-
-  items.forEach(item => {
-    const div = document.createElement("div");
-    div.className = "nav-item" + (item.id === "dashboard" ? " active" : "");
-    div.id        = "nav-" + item.id;
-    div.title     = item.label; // native tooltip while collapsed
-    div.onclick   = () => navigate(item.id, div);
-
-    let extras = "";
-    if (item.badge) extras  = `<span class="nav-badge" id="nb-${item.badge}" style="display:none">0</span>`;
-    if (item.admin) extras += `<span class="nav-admin-tag">Admin</span>`;
-
-    div.innerHTML = `<i class="nav-icon" data-lucide="${item.icon}"></i><span class="nav-label">${item.label}</span>${extras}`;
-    nav.appendChild(div);
-  });
-
-  if (window.lucide) lucide.createIcons();
-}
 
 function navigate(page, navEl) {
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
@@ -157,3 +128,95 @@ function refreshPageActions(page) {
 
   if (actions[page]) actions[page]();
 }
+
+const NOTIFICATION_MODULES = ['contracts', 'vehicle', 'insurance', 'm365', 'globe', 'subscriptions'];
+
+async function refreshNotifications() {
+  if (!currentUser) return;
+  try {
+    const res  = await fetch(`${API_URL}/api/notifications/${currentUser.user_id}`);
+    const data = await res.json();
+    _renderNotificationBadge(data.count || 0);
+  } catch (err) {
+    console.error('refreshNotifications error:', err);
+  }
+}
+
+function buildSidebar() {
+  const nav = document.getElementById("sb-nav");
+  nav.innerHTML = "";
+  let items;
+
+  if (currentUser.role === "super_admin") {
+    items = ADMIN_NAV;
+  } else {
+    items = ADMIN_NAV
+      .filter(n => n.id !== "users")
+      .filter(n => EMP_NAV.includes(n.id) || currentUser.role === "admin");
+  }
+
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "nav-item" + (item.id === "dashboard" ? " active" : "");
+    div.id        = "nav-" + item.id;
+    div.title     = item.label;
+    div.onclick   = () => navigate(item.id, div);
+
+    let extras = "";
+    if (item.badge) extras  = `<span class="nav-badge" id="nb-${item.badge}" style="display:none">0</span>`;
+    if (item.admin) extras += `<span class="nav-admin-tag">Admin</span>`;
+
+    if (item.id === "dashboard") {
+      div.innerHTML = `
+        <span class="nav-icon-wrap">
+          <i class="nav-icon" data-lucide="${item.icon}"></i>
+          <span class="nav-notif-dot" id="nb-dash-dot" style="display:none"></span>
+        </span>
+        <span class="nav-label">${item.label}</span>
+        <span class="nav-notif-count" id="nb-dash-count" style="display:none">0</span>
+        ${extras}`;
+    } else {
+      div.innerHTML = `<i class="nav-icon" data-lucide="${item.icon}"></i><span class="nav-label">${item.label}</span>${extras}`;
+    }
+
+    nav.appendChild(div);
+  });
+
+  if (window.lucide) lucide.createIcons();
+
+  refreshNotifications();
+}
+
+
+function _renderNotificationBadge(count) {
+  const navItem = document.getElementById('nav-dashboard');
+  const dot     = document.getElementById('nb-dash-dot');
+  const label   = document.getElementById('nb-dash-count');
+  if (!navItem || !dot || !label) return;
+
+  if (count > 0) {
+    navItem.classList.add('has-notif');
+    dot.style.display   = 'block';
+    label.style.display = 'inline-flex';
+    label.textContent   = count > 99 ? '99+' : count;
+  } else {
+    navItem.classList.remove('has-notif');
+    dot.style.display   = 'none';
+    label.style.display = 'none';
+  }
+}
+
+function markNotificationSeen(module, recordId) {
+  if (!NOTIFICATION_MODULES.includes(module)) return;
+  if (!currentUser) return;
+  fetch(`${API_URL}/api/notifications/seen`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: currentUser.user_id, module, record_id: recordId }),
+  }).then(refreshNotifications).catch(() => {});
+}
+
+setInterval(() => {
+  if (document.hidden) return;
+  refreshNotifications();
+}, 60 * 1000);

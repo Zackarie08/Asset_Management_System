@@ -279,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
    DETAIL PANEL — dpVehicle()
 ───────────────────────────────────────────────────────── */
 async function dpVehicle(id) {
-  // Fetch fresh data
   const [vRes, maintRes] = await Promise.all([
     fetch(`${API_URL}/api/vehicle`).then(r => r.json()),
     fetch(`${API_URL}/api/vehicle/maintenance/${id}`).then(r => r.json()).catch(() => []),
@@ -290,16 +289,11 @@ async function dpVehicle(id) {
 
   const plans   = await fetchPlansForVehicle(id);
   const km      = v.odometer || 0;
-  const threshold = v.maintenance_threshold || 1000;
-  const kmUsed  = km - (v.last_maintenance_km || 0);
-  const pct     = Math.min(100, Math.round((kmUsed / threshold) * 100));
 
-  setDPHeader('car', '#eff6ff', v.vehicle_name, `${v.type} · ${v.plate_number}`);
+  setDPHeader('🚗', '#eff6ff', v.vehicle_name, `${v.type} · ${v.plate_number}`);
 
-  /* ── Maintenance Plans HTML ── */
   const plansHTML = _buildPlansHTML(plans, km, id);
 
-  /* ── Maintenance History HTML ── */
   let maintHTML = maintRes.length
     ? maintRes.map(m => `
         <div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px">
@@ -316,9 +310,8 @@ async function dpVehicle(id) {
     : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No maintenance history yet.</div>`;
 
   const html = `
-    <!-- Vehicle Info -->
     <div class="dp-section">
-      <div class="dp-section-hd"><i data-lucide="car"></i> Vehicle Info</div>
+      <div class="dp-section-hd">🚗 Vehicle Info</div>
       <div class="dp-grid">
         ${dpField('Plate Number', v.plate_number)}
         ${dpField('Type', v.type)}
@@ -331,56 +324,38 @@ async function dpVehicle(id) {
       </div>
     </div>
 
-    <!-- Maintenance Plans -->
     <div class="dp-section" id="veh-plans-container-${id}">
       ${plansHTML}
     </div>
 
-    <!-- Maintenance History -->
     <div class="dp-section">
       <div class="dp-section-hd" onclick="toggleVehMaintHistory(${id})">
-        <i data-lucide="wrench"></i> Maintenance History ${vehShowMaintHistory ? "▲" : "▼"}
+        🔧 Maintenance History ${vehShowMaintHistory ? "▲" : "▼"}
       </div>
       ${vehShowMaintHistory ? maintHTML : ""}
     </div>
 
-    <!-- Attachments -->
     <div class="dp-section" id="veh-att-${id}"></div>
 
-    <!-- Actions -->
-    ${isAdminUser() ? `
-      <div class="dp-section">
-        <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
-        <div class="dp-action-row">
-        ${v.status !== 'UNDER_MAINTENANCE' ? `
-          <button class="btn btn-outline btn-sm" onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
-            <i data-lucide="gauge"></i> Update Odometer
-          </button>
-          ` : `
-            <button class="btn btn-green btn-sm"
-              onclick="completeMaintenance(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">
-              <i data-lucide="check-circle"></i> Complete Maintenance
-            </button>
-          `}
-          <button class="btn btn-outline btn-sm"
-            onclick="editVehicle(${v.vehicle_id})">
-            <i data-lucide="pencil"></i> Edit
-          </button>
-          <button class="btn btn-red btn-sm"
-            onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')">
-            <i data-lucide="trash-2"></i> Delete
-          </button>
-        </div>
+    <div class="dp-section">
+      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-action-row">
+        ${isAdminUser() && v.status !== 'UNDER_MAINTENANCE' ? `
+          <button class="btn btn-outline btn-sm" onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">📊 Update Odometer</button>
+        ` : ''}
+        ${isAdminUser() && v.status === 'UNDER_MAINTENANCE' ? `
+          <button class="btn btn-green btn-sm" onclick="completeMaintenance(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">✅ Complete Maintenance</button>
+        ` : ''}
+        ${isAdminUser() ? `<button class="btn btn-outline btn-sm" onclick="editVehicle(${v.vehicle_id})">✏️ Edit</button>` : ''}
+        ${itemHistoryButton('vehicle', v.vehicle_id, v.vehicle_name)}
+        ${isAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')">🗑️ Delete</button>` : ''}
       </div>
-    ` : ''}
+    </div>
   `;
 
   document.getElementById('dp-body').innerHTML = html;
   document.getElementById('dp-footer').style.display = 'none';
 
-  if (window.lucide) lucide.createIcons();
-
-  // Load attachments panel
   attachmentPanel('vehicles', id, `veh-att-${id}`);
 }
 
@@ -431,10 +406,10 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
     const barColor  = remaining <= 0 ? '#ef4444' : remaining <= 500 ? '#f59e0b' : '#22c55e';
 
     statusBadge = remaining <= 0
-      ? `<span class="badge b-red"><i data-lucide="triangle-alert"></i> Overdue (${Math.abs(remaining).toLocaleString()} km over)</span>`
+      ? `<span class="badge b-red">⚠️ Overdue (${Math.abs(remaining).toLocaleString()} km over)</span>`
       : remaining <= 500
-        ? `<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Due Soon (${remaining.toLocaleString()} km)</span>`
-        : `<span class="badge b-green"><i data-lucide="check-circle"></i> OK (${remaining.toLocaleString()} km left)</span>`;
+        ? `<span class="badge b-amber">⚠️ Due Soon (${remaining.toLocaleString()} km)</span>`
+        : `<span class="badge b-green">✅ OK (${remaining.toLocaleString()} km left)</span>`;
 
     visualHTML = `
       <div style="margin:8px 0">
@@ -453,33 +428,26 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
 
   } else if (isTime) {
     const s = plan.status_computed || 'unknown';
-    const labelMap  = {
-      overdue:  '<i data-lucide="triangle-alert"></i> Overdue',
-      due_soon: '<i data-lucide="triangle-alert"></i> Due Soon',
-      ok:       '<i data-lucide="check-circle"></i> OK',
-      pending:  '<i data-lucide="clock"></i> Not Yet Done',
-      unknown:  '—',
-    };
+    const labelMap  = { overdue: '⚠️ Overdue', due_soon: '⚠️ Due Soon', ok: '✅ OK', pending: '⏳ Not Yet Done', unknown: '—' };
     const classMap  = { overdue: 'b-red', due_soon: 'b-amber', ok: 'b-green', pending: 'b-slate', unknown: 'b-slate' };
     statusBadge = `<span class="badge ${classMap[s] || 'b-slate'}">${labelMap[s] || s}</span>`;
 
     const daysLeft = _daysUntil(plan.next_due_date);
     let dueLabel = plan.next_due_date
       ? (daysLeft <= 0
-          ? `<i data-lucide="triangle-alert"></i> Was due ${plan.next_due_date}`
+          ? `⚠️ Was due ${plan.next_due_date}`
           : daysLeft <= 30
-            ? `<i data-lucide="triangle-alert"></i> Due in ${daysLeft} days (${plan.next_due_date})`
-            : `<i data-lucide="calendar"></i> Due: ${plan.next_due_date}`)
-      : '<i data-lucide="clock"></i> Not yet performed';
+            ? `⚠️ Due in ${daysLeft} days (${plan.next_due_date})`
+            : `🗓 Due: ${plan.next_due_date}`)
+      : '⏳ Not yet performed';
 
-    const intervalLabel = plan.interval_value
-      ? `Every ${plan.interval_value} ${plan.interval_unit}(s)`
-      : '—';
+    // ✅ FIX: clean "Every month" / "Every year" (no "Every 1 month(s)")
+    const intervalLabel = plan.interval_unit === 'year' ? 'Every year' : 'Every month';
 
     visualHTML = `
       <div style="margin:8px 0;font-size:12px;color:var(--slate-600)">
         <div style="margin-bottom:3px">${dueLabel}</div>
-        <div style="color:var(--slate-400)">${intervalLabel} · Last: ${
+        <div style="color:var(--slate-400)">${intervalLabel} · Last performed: ${
           plan.last_performed_date
             ? new Date(plan.last_performed_date).toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'})
             : 'Never'
@@ -499,19 +467,20 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-xs btn-green"
             onclick="openRecordMaint(${vehicleId},'${_escVeh(plan.name)}',${plan.maint_type_id})">
-            <i data-lucide="check"></i> Perform
+            ✅ Perform
           </button>
           <button class="btn btn-xs btn-outline"
             onclick="openEditPlan(${plan.maint_type_id},${vehicleId})">
-            <i data-lucide="pencil"></i>
+            ✏️
           </button>
           <button class="btn btn-xs btn-red"
             onclick="deletePlan(${plan.maint_type_id},${vehicleId})">
-            <i data-lucide="trash-2"></i>
+            🗑️
           </button>
         </div>` : ''}
     </div>`;
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    ✅ FIX — RESTORED: VEHICLE RECORD CRUD
@@ -542,22 +511,16 @@ function saveVehicle() {
   }
 
   const payload = {
-    vehicle_name,
-    plate_number,
-    type,
-    purchase_date,
-    status: 'ACTIVE',
-    price,
-    remarks,
-    odometer,
-    last_maintenance_km: 0,
-    maintenance_threshold: 1000,
+    vehicle_name, plate_number, type, purchase_date,
+    status: 'ACTIVE', price, remarks, odometer,
+    last_maintenance_km: 0, maintenance_threshold: 1000,
+    user_id: currentUser.user_id,
+    performed_by: currentUser.name,
   };
 
   const url    = vehEditId ? `${API_URL}/api/vehicle/${vehEditId}` : `${API_URL}/api/vehicle`;
   const method = vehEditId ? 'PUT' : 'POST';
 
-  // PUT requires all fields — merge with existing record when editing
   const doSave = () => fetch(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
@@ -576,7 +539,6 @@ function saveVehicle() {
   };
 
   if (vehEditId) {
-    // Preserve fields not present in the add form (last_maintenance_km, maintenance_threshold, status)
     fetchVehicles().then(list => {
       const existing = list.find(v => v.vehicle_id === vehEditId);
       if (existing) {
@@ -665,7 +627,7 @@ function saveOdoUpdate() {
   fetch(`${API_URL}/api/vehicle/update-odo/${_odoVehicleId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ odometer }),
+    body: JSON.stringify({ odometer, user_id: currentUser.user_id, performed_by: currentUser.name }),
   })
   .then(res => { if (!res.ok) throw new Error('Update failed'); })
   .then(() => {
@@ -683,7 +645,7 @@ function saveOdoUpdate() {
 // button, shown when v.status === 'UNDER_MAINTENANCE'
 function completeMaintenance(id, currentKm, plate) {
   const odometer = prompt(`Complete maintenance for ${plate}.\n\nConfirm current odometer (km):`, currentKm);
-  if (odometer === null) return; // cancelled
+  if (odometer === null) return;
 
   const parsedOdo = parseInt(odometer);
   if (isNaN(parsedOdo) || parsedOdo < 0) {
@@ -694,7 +656,7 @@ function completeMaintenance(id, currentKm, plate) {
   fetch(`${API_URL}/api/vehicle/complete-maint/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ odometer: parsedOdo }),
+    body: JSON.stringify({ odometer: parsedOdo, user_id: currentUser.user_id, performed_by: currentUser.name }),
   })
   .then(res => { if (!res.ok) throw new Error('Failed'); })
   .then(() => {
@@ -705,6 +667,7 @@ function completeMaintenance(id, currentKm, plate) {
   })
   .catch(() => showToast('Error completing maintenance', 't-error'));
 }
+
 
 /* ── EXPORT ────────────────────────────────────────────────
    (unchanged from v2, kept here for completeness)
@@ -757,14 +720,15 @@ async function openEditPlan(maintTypeId, vehicleId) {
       document.getElementById('plan-f-km').value      = plan.threshold_km        || '';
       document.getElementById('plan-f-last-km').value = plan.last_maintenance_km || '';
     } else {
-      document.getElementById('plan-f-interval').value  = plan.interval_value    || '';
-      document.getElementById('plan-f-unit').value      = plan.interval_unit     || 'month';
+      // ✅ FIX: no interval-count input to populate anymore
+      document.getElementById('plan-f-unit').value      = plan.interval_unit === 'year' ? 'year' : 'month';
       document.getElementById('plan-f-last-date').value = plan.last_performed_date
         ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
     }
     openM('m-plan-add');
   } catch { showToast('Failed to load plan', 't-error'); }
 }
+
 
 function _setBasisUI(basis) {
   const odoSection  = document.getElementById('plan-odo-section');
@@ -774,12 +738,13 @@ function _setBasisUI(basis) {
 }
 
 function _resetPlanForm() {
-  ['plan-f-name','plan-f-km','plan-f-last-km','plan-f-interval','plan-f-last-date'].forEach(id => {
+  ['plan-f-name','plan-f-km','plan-f-last-km','plan-f-last-date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
   const basisEl = document.getElementById('plan-f-basis');
   if (basisEl) basisEl.value = 'odometer';
+  // ✅ FIX: no more interval-count field — only a Monthly/Yearly choice
   const unitEl = document.getElementById('plan-f-unit');
   if (unitEl) unitEl.value = 'month';
 }
@@ -789,7 +754,11 @@ function savePlan() {
   const basis = document.getElementById('plan-f-basis').value;
   if (!name) { showToast('Plan name is required', 't-error'); return; }
 
-  const payload = { vehicle_id: planVehicleId, name, basis };
+  const payload = {
+    vehicle_id: planVehicleId, name, basis,
+    user_id: currentUser.user_id,
+    performed_by: currentUser.name,
+  };
 
   if (basis === 'odometer') {
     const km     = parseInt(document.getElementById('plan-f-km').value);
@@ -798,11 +767,9 @@ function savePlan() {
     payload.threshold_km        = km;
     payload.last_maintenance_km = lastKm;
   } else {
-    const interval = parseInt(document.getElementById('plan-f-interval').value);
+    // ✅ FIX: Monthly/Yearly only — no interval count sent
     const unit     = document.getElementById('plan-f-unit').value;
     const lastDate = document.getElementById('plan-f-last-date').value;
-    if (!interval || interval <= 0) { showToast('Interval is required', 't-error'); return; }
-    payload.interval_value      = interval;
     payload.interval_unit       = unit;
     payload.last_performed_date = lastDate || null;
   }
@@ -815,7 +782,6 @@ function savePlan() {
     .then(() => {
       showToast(planEditId ? 'Plan updated' : 'Plan added', 't-success');
       addLog(planEditId ? 'UPDATE' : 'CREATE', 'VEHICLE', `${planEditId ? 'Updated' : 'Added'} maintenance plan: ${name}`, planVehicleId);
-      // Invalidate cached plans
       delete _allVehPlans[planVehicleId];
       planEditId = null;
       closeM('m-plan-add');
@@ -970,9 +936,10 @@ async function submitMaintenanceChecklist() {
   if (needsOdo && !odometer) { showToast('Odometer reading is required for KM-based items', 't-error'); return; }
 
   try {
-    // ✅ FIX: mark vehicle status as UNDER_MAINTENANCE first
     const statusRes = await fetch(`${API_URL}/api/vehicle/start-maint/${_checklistVehicleId}`, {
       method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.user_id, performed_by: currentUser.name }),
     });
     if (!statusRes.ok) throw new Error('Failed to update vehicle status');
 
@@ -997,7 +964,7 @@ async function submitMaintenanceChecklist() {
       't-success'
     );
     addLog('UPDATE', 'VEHICLE',
-      `Put vehicle #${_checklistVehicleId} under maintenance${checked.length ? ` (${checked.length} item(s))` : ''}`,
+      `Put vehicle under maintenance${checked.length ? ` (${checked.length} item(s))` : ''}`,
       _checklistVehicleId);
     delete _allVehPlans[_checklistVehicleId];
     closeM('m-maint-checklist');
@@ -1020,6 +987,8 @@ function checkMonthlyOdoReminder() {
     showToast("📊 Monthly Odometer Update Required", "t-warning");
   }
 }
+
+if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.vehicle = dpVehicle;
 
 // ✅ FIX: removed redundant `window.renderVehicles = renderVehicles;`
 // renderVehicles is already declared as a top-level function, which
