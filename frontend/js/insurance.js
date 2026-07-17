@@ -372,10 +372,15 @@ async function editInsurance(id) {
 }
 
 /* ── DELETE ─────────────────────────────────────────────── */
-let deleteInsId = null;
+let deleteInsId    = null;
+let deleteInsLabel = '';
 
 function deleteInsurancePrompt(id) {
   deleteInsId = id;
+  const rec = _allInsurance.find(i => i.insurance_id === id);
+  deleteInsLabel = rec ? `${rec.employee_name} · ${rec.provider}` : `Record #${id}`;
+  const labelEl = document.getElementById('ins-del-label');
+  if (labelEl) labelEl.textContent = deleteInsLabel;
   openM("m-confirm-ins-del");
 }
 
@@ -386,7 +391,7 @@ function confirmDeleteInsurance() {
     })
     .then(() => {
       showToast("Record deleted", "t-warning");
-      addLog("DELETE", "INSURANCE", `Deleted insurance record #${deleteInsId}`, deleteInsId);
+      addLog("DELETE", "INSURANCE", `Deleted insurance record: ${deleteInsLabel}`, deleteInsId);
       closeM("m-confirm-ins-del");
       closeDP();
       renderInsurance();
@@ -396,6 +401,7 @@ function confirmDeleteInsurance() {
       showToast(err.message || "Error deleting record", "t-error");
     });
 }
+
 
 /* ── OPEN ADD ───────────────────────────────────────────── */
 async function openAddInsurance() {

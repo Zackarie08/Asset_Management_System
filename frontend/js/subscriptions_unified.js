@@ -400,20 +400,6 @@ async function loadM365Users() {
   users.forEach(u => { m365UserMap[u.name] = u.user_id; });
 }
 
-let deleteM365Id = null;
-function deleteM365Prompt(id) { deleteM365Id = id; openM('m-confirm-m365-del'); }
-function confirmDeleteM365() {
-  fetch(`${API_URL}/api/m365/${deleteM365Id}`, { method: 'DELETE' })
-    .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
-    .then(() => {
-      showToast('License deleted', 't-warning');
-      addLog('DELETE', 'M365 LICENSE', `Deleted M365 license #${deleteM365Id}`, null);
-      closeM('m-confirm-m365-del');
-      closeDP();
-      renderM365();
-    })
-    .catch(err => showToast(err.message || 'Delete failed', 't-error'));
-}
 
 /* ──────────────────────────────────────────────────────────
    GLOBE MOBILE PLANS
@@ -575,20 +561,6 @@ async function editGlobe(id) {
   } catch { showToast('Failed to load plan for editing', 't-error'); }
 }
 
-let deleteGlobeId = null;
-function deleteGlobePrompt(id) { deleteGlobeId = id; openM('m-confirm-globe-del'); }
-function confirmDeleteGlobe() {
-  fetch(`${API_URL}/api/globe/${deleteGlobeId}`, { method: 'DELETE' })
-    .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
-    .then(() => {
-      showToast('Plan deleted', 't-warning');
-      addLog('DELETE', 'GLOBE PLAN', `Deleted Globe plan #${deleteGlobeId}`, null);
-      closeM('m-confirm-globe-del');
-      closeDP();
-      renderGlobe();
-    })
-    .catch(err => showToast(err.message || 'Delete failed', 't-error'));
-}
 
 async function loadGlobeUsers() {
   const res   = await fetch(`${API_URL}/api/auth/users`);
@@ -740,20 +712,6 @@ async function editSubscription(id) {
   } catch { showToast('Failed to load subscription for editing', 't-error'); }
 }
 
-let deleteSubId = null;
-function deleteSubPrompt(id) { deleteSubId = id; openM('m-confirm-sub-del'); }
-function confirmDeleteSubscription() {
-  fetch(`${API_URL}/api/subscriptions/${deleteSubId}`, { method: 'DELETE' })
-    .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
-    .then(() => {
-      showToast('Subscription deleted', 't-warning');
-      addLog('DELETE', 'SUBSCRIPTION', `Deleted subscription #${deleteSubId}`, null);
-      closeM('m-confirm-sub-del');
-      closeDP();
-      renderSubscriptions();
-    })
-    .catch(err => showToast(err.message || 'Delete failed', 't-error'));
-}
 
 /* ──────────────────────────────────────────────────────────
    ATTACHMENT SYSTEM  (v2 — collapsible, drag & drop, 10MB limit)
@@ -940,4 +898,103 @@ function exportUnifiedSubscriptions() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('Exported successfully', 't-success');
+}
+
+
+/* ══════════════════ M365 ══════════════════ */
+
+let deleteM365Id    = null;
+let deleteM365Label = '';
+
+async function deleteM365Prompt(id) {
+  deleteM365Id = id;
+  deleteM365Label = `License #${id}`; // fallback while fetching
+  try {
+    const m = await fetchOne('m365', id);
+    deleteM365Label = m?.assigned_email || `License #${id}`;
+  } catch (err) {
+    console.error('deleteM365Prompt fetch error:', err);
+  }
+  const labelEl = document.getElementById('m365-del-label');
+  if (labelEl) labelEl.textContent = deleteM365Label;
+  openM('m-confirm-m365-del');
+}
+
+function confirmDeleteM365() {
+  fetch(`${API_URL}/api/m365/${deleteM365Id}`, { method: 'DELETE' })
+    .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
+    .then(() => {
+      showToast('License deleted', 't-warning');
+      addLog('DELETE', 'M365 LICENSE', `Deleted M365 license: ${deleteM365Label}`, deleteM365Id);
+      closeM('m-confirm-m365-del');
+      closeDP();
+      renderM365();
+    })
+    .catch(err => showToast(err.message || 'Delete failed', 't-error'));
+}
+
+/* ══════════════════ GLOBE ══════════════════ */
+
+let deleteGlobeId    = null;
+let deleteGlobeLabel = '';
+
+async function deleteGlobePrompt(id) {
+  deleteGlobeId = id;
+  deleteGlobeLabel = `Plan #${id}`; // fallback while fetching
+  try {
+    const g = await fetchOne('globe', id);
+    deleteGlobeLabel = g?.employee_name
+      ? `${g.employee_name} (${g.mobile_number || 'no number'})`
+      : (g?.mobile_number || `Plan #${id}`);
+  } catch (err) {
+    console.error('deleteGlobePrompt fetch error:', err);
+  }
+  const labelEl = document.getElementById('globe-del-label');
+  if (labelEl) labelEl.textContent = deleteGlobeLabel;
+  openM('m-confirm-globe-del');
+}
+
+function confirmDeleteGlobe() {
+  fetch(`${API_URL}/api/globe/${deleteGlobeId}`, { method: 'DELETE' })
+    .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
+    .then(() => {
+      showToast('Plan deleted', 't-warning');
+      addLog('DELETE', 'GLOBE PLAN', `Deleted Globe plan: ${deleteGlobeLabel}`, deleteGlobeId);
+      closeM('m-confirm-globe-del');
+      closeDP();
+      renderGlobe();
+    })
+    .catch(err => showToast(err.message || 'Delete failed', 't-error'));
+}
+
+/* ══════════════════ OTHER SUBSCRIPTIONS ══════════════════ */
+
+let deleteSubId    = null;
+let deleteSubLabel = '';
+
+async function deleteSubPrompt(id) {
+  deleteSubId = id;
+  deleteSubLabel = `Subscription #${id}`; // fallback while fetching
+  try {
+    const s = await fetchOne('subscriptions', id);
+    deleteSubLabel = s?.subscription_name || `Subscription #${id}`;
+  } catch (err) {
+    console.error('deleteSubPrompt fetch error:', err);
+  }
+  const labelEl = document.getElementById('sub-del-label');
+  if (labelEl) labelEl.textContent = deleteSubLabel;
+  openM('m-confirm-sub-del');
+}
+
+function confirmDeleteSubscription() {
+  fetch(`${API_URL}/api/subscriptions/${deleteSubId}`, { method: 'DELETE' })
+    .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
+    .then(() => {
+      showToast('Subscription deleted', 't-warning');
+      addLog('DELETE', 'SUBSCRIPTION', `Deleted subscription: ${deleteSubLabel}`, deleteSubId);
+      closeM('m-confirm-sub-del');
+      closeDP();
+      renderSubscriptions();
+    })
+    .catch(err => showToast(err.message || 'Delete failed', 't-error'));
 }

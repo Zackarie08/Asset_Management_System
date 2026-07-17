@@ -1368,10 +1368,17 @@ function saveMaintenance() {
   });
 }
 
-let deleteLaptopId = null;
+   
+let deleteLaptopId    = null;
+let deleteLaptopLabel = '';
 
 function deleteLaptop(id) {
   deleteLaptopId = id;
+  deleteLaptopLabel = (cachedLp && cachedLp.laptop_id === id)
+    ? `${cachedLp.asset_number} (SN: ${cachedLp.serial_number})`
+    : `Laptop #${id}`;
+  const labelEl = document.getElementById('lp-del-label');
+  if (labelEl) labelEl.textContent = deleteLaptopLabel;
   openM("m-confirm-lp-del");
 }
 
@@ -1381,14 +1388,15 @@ function confirmDeleteLaptop() {
   })
   .then(() => {
     showToast("Laptop Deleted", "t-warning");
-
-    addLog("DELETE", "LAPTOP", "Deleted laptop", currentUser.name);
+    addLog("DELETE", "LAPTOP", `Deleted laptop: ${deleteLaptopLabel}`, deleteLaptopId);
 
     closeM("m-confirm-lp-del");
     closeDP();
     renderLaptops();
-  });
+  })
+  .catch(() => showToast("Error deleting laptop", "t-error"));
 }
+
 
 async function loadLocationsDropdown() {
   const res = await fetch(`${API_URL}/api/location`);

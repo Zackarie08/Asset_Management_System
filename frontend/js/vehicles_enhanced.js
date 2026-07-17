@@ -815,17 +815,53 @@ function savePlan() {
     .catch(err => showToast(err.message || 'Failed to save plan', 't-error'));
 }
 
-async function deletePlan(maintTypeId, vehicleId) {
-  if (!confirm('Delete this maintenance plan?')) return;
+let _deletePlanId        = null;
+let _deletePlanVehicleId = null;
+let _deletePlanLabel     = '';
+let _deletePlanVehLabel  = '';
+
+function deletePlan(maintTypeId, vehicleId) {
+  const plans = _allVehPlans[vehicleId] || [];
+  const plan  = plans.find(p => p.maint_type_id === maintTypeId);
+  const veh   = (_allVehicles || []).find(v => v.vehicle_id === vehicleId);
+
+  _deletePlanId        = maintTypeId;
+  _deletePlanVehicleId = vehicleId;
+  _deletePlanLabel      = plan?.name || `Plan #${maintTypeId}`;
+  _deletePlanVehLabel   = veh?.vehicle_name || `Vehicle #${vehicleId}`;
+
+  const summaryEl = document.getElementById('plan-del-summary');
+  if (summaryEl) {
+    summaryEl.textContent = `${_deletePlanLabel} — ${_deletePlanVehLabel}`;
+  }
+
+  openM('m-confirm-plan-del');
+}
+
+async function confirmDeletePlan() {
   try {
-    const res = await fetch(`${API_URL}/api/vehicle-plans/${maintTypeId}`, { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/api/vehicle-plans/${_deletePlanId}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Delete failed');
+
     showToast('Plan deleted', 't-warning');
-    addLog('DELETE', 'VEHICLE', `Deleted maintenance plan #${maintTypeId}`, vehicleId);
-    delete _allVehPlans[vehicleId];
+
+    // ✅ FIX: uses the captured plan name + vehicle name instead of raw ids
+    addLog(
+      'DELETE',
+      'VEHICLE',
+      `Deleted maintenance plan "${_deletePlanLabel}" from ${_deletePlanVehLabel}`,
+      _deletePlanVehicleId
+    );
+
+    delete _allVehPlans[_deletePlanVehicleId];
+    closeM('m-confirm-plan-del');
     renderVehicles();
-    if (dpOpen && dpCurrentType === 'vehicle' && dpCurrentId === vehicleId) dpVehicle(vehicleId);
-  } catch { showToast('Failed to delete plan', 't-error'); }
+    if (dpOpen && dpCurrentType === 'vehicle' && dpCurrentId === _deletePlanVehicleId) {
+      dpVehicle(_deletePlanVehicleId);
+    }
+  } catch {
+    showToast('Failed to delete plan', 't-error');
+  }
 }
 
 /* ─────────────────────────────────────────────────────────
