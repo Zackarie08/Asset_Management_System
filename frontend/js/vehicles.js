@@ -290,7 +290,7 @@ async function dpVehicle(id) {
   const plans   = await fetchPlansForVehicle(id);
   const km      = v.odometer || 0;
 
-  setDPHeader('🚗', '#eff6ff', v.vehicle_name, `${v.type} · ${v.plate_number}`);
+  setDPHeader('car', '#eff6ff', v.vehicle_name, `${v.type} · ${v.plate_number}`);
 
   const plansHTML = _buildPlansHTML(plans, km, id);
 
@@ -302,16 +302,16 @@ async function dpVehicle(id) {
             <span class="badge b-slate" style="font-family:var(--mono);font-size:10px">${m.maintenance_date || '—'}</span>
           </div>
           <div style="display:flex;gap:16px;font-size:11.5px;color:var(--slate-500)">
-            <span>📏 ${m.odometer ? m.odometer.toLocaleString() + ' km' : '—'}</span>
-            <span>💰 ${m.maintenance_cost ? '₱' + Number(m.maintenance_cost).toLocaleString() : '—'}</span>
+            <span><i data-lucide="gauge"></i> ${m.odometer ? m.odometer.toLocaleString() + ' km' : '—'}</span>
+            <span><i data-lucide="banknote"></i> ${m.maintenance_cost ? '₱' + Number(m.maintenance_cost).toLocaleString() : '—'}</span>
           </div>
-          ${m.remarks ? `<div style="font-size:12px;color:var(--slate-600);margin-top:4px">📝 ${_escVeh(m.remarks)}</div>` : ''}
+          ${m.remarks ? `<div style="font-size:12px;color:var(--slate-600);margin-top:4px"><i data-lucide="sticky-note"></i> ${_escVeh(m.remarks)}</div>` : ''}
         </div>`).join('')
     : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No maintenance history yet.</div>`;
 
   const html = `
     <div class="dp-section">
-      <div class="dp-section-hd">🚗 Vehicle Info</div>
+      <div class="dp-section-hd"><i data-lucide="car"></i> Vehicle Info</div>
       <div class="dp-grid">
         ${dpField('Plate Number', v.plate_number)}
         ${dpField('Type', v.type)}
@@ -330,7 +330,7 @@ async function dpVehicle(id) {
 
     <div class="dp-section">
       <div class="dp-section-hd" onclick="toggleVehMaintHistory(${id})">
-        🔧 Maintenance History ${vehShowMaintHistory ? "▲" : "▼"}
+        <i data-lucide="wrench"></i> Maintenance History ${vehShowMaintHistory ? "▲" : "▼"}
       </div>
       ${vehShowMaintHistory ? maintHTML : ""}
     </div>
@@ -338,23 +338,25 @@ async function dpVehicle(id) {
     <div class="dp-section" id="veh-att-${id}"></div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
         ${isAdminUser() && v.status !== 'UNDER_MAINTENANCE' ? `
-          <button class="btn btn-outline btn-sm" onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">📊 Update Odometer</button>
+          <button class="btn btn-outline btn-sm" onclick="openUpdateOdo(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')"><i data-lucide="gauge"></i> Update Odometer</button>
         ` : ''}
         ${isAdminUser() && v.status === 'UNDER_MAINTENANCE' ? `
-          <button class="btn btn-green btn-sm" onclick="completeMaintenance(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')">✅ Complete Maintenance</button>
+          <button class="btn btn-green btn-sm" onclick="completeMaintenance(${v.vehicle_id}, ${km}, '${_escVeh(v.plate_number)}')"><i data-lucide="check-circle"></i> Complete Maintenance</button>
         ` : ''}
-        ${isAdminUser() ? `<button class="btn btn-outline btn-sm" onclick="editVehicle(${v.vehicle_id})">✏️ Edit</button>` : ''}
+        ${isAdminUser() ? `<button class="btn btn-outline btn-sm" onclick="editVehicle(${v.vehicle_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('vehicle', v.vehicle_id, v.vehicle_name)}
-        ${isAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')">🗑️ Delete</button>` : ''}
+        ${isAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
   `;
 
   document.getElementById('dp-body').innerHTML = html;
   document.getElementById('dp-footer').style.display = 'none';
+
+  if (window.lucide) lucide.createIcons();
 
   attachmentPanel('vehicles', id, `veh-att-${id}`);
 }
@@ -406,10 +408,10 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
     const barColor  = remaining <= 0 ? '#ef4444' : remaining <= 500 ? '#f59e0b' : '#22c55e';
 
     statusBadge = remaining <= 0
-      ? `<span class="badge b-red">⚠️ Overdue (${Math.abs(remaining).toLocaleString()} km over)</span>`
+      ? `<span class="badge b-red"><i data-lucide="triangle-alert"></i> Overdue (${Math.abs(remaining).toLocaleString()} km over)</span>`
       : remaining <= 500
-        ? `<span class="badge b-amber">⚠️ Due Soon (${remaining.toLocaleString()} km)</span>`
-        : `<span class="badge b-green">✅ OK (${remaining.toLocaleString()} km left)</span>`;
+        ? `<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Due Soon (${remaining.toLocaleString()} km)</span>`
+        : `<span class="badge b-green"><i data-lucide="check-circle"></i> OK (${remaining.toLocaleString()} km left)</span>`;
 
     visualHTML = `
       <div style="margin:8px 0">
@@ -428,18 +430,24 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
 
   } else if (isTime) {
     const s = plan.status_computed || 'unknown';
-    const labelMap  = { overdue: '⚠️ Overdue', due_soon: '⚠️ Due Soon', ok: '✅ OK', pending: '⏳ Not Yet Done', unknown: '—' };
+    const labelMap  = {
+      overdue:  '<i data-lucide="triangle-alert"></i> Overdue',
+      due_soon: '<i data-lucide="triangle-alert"></i> Due Soon',
+      ok:       '<i data-lucide="check-circle"></i> OK',
+      pending:  '<i data-lucide="clock"></i> Not Yet Done',
+      unknown:  '—',
+    };
     const classMap  = { overdue: 'b-red', due_soon: 'b-amber', ok: 'b-green', pending: 'b-slate', unknown: 'b-slate' };
     statusBadge = `<span class="badge ${classMap[s] || 'b-slate'}">${labelMap[s] || s}</span>`;
 
     const daysLeft = _daysUntil(plan.next_due_date);
     let dueLabel = plan.next_due_date
       ? (daysLeft <= 0
-          ? `⚠️ Was due ${plan.next_due_date}`
+          ? `<i data-lucide="triangle-alert"></i> Was due ${plan.next_due_date}`
           : daysLeft <= 30
-            ? `⚠️ Due in ${daysLeft} days (${plan.next_due_date})`
-            : `🗓 Due: ${plan.next_due_date}`)
-      : '⏳ Not yet performed';
+            ? `<i data-lucide="triangle-alert"></i> Due in ${daysLeft} days (${plan.next_due_date})`
+            : `<i data-lucide="calendar"></i> Due: ${plan.next_due_date}`)
+      : '<i data-lucide="clock"></i> Not yet performed';
 
     // ✅ FIX: clean "Every month" / "Every year" (no "Every 1 month(s)")
     const intervalLabel = plan.interval_unit === 'year' ? 'Every year' : 'Every month';
@@ -467,15 +475,15 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
         <div style="display:flex;gap:6px;margin-top:8px">
           <button class="btn btn-xs btn-green"
             onclick="openRecordMaint(${vehicleId},'${_escVeh(plan.name)}',${plan.maint_type_id})">
-            ✅ Perform
+            <i data-lucide="check"></i> Perform
           </button>
           <button class="btn btn-xs btn-outline"
             onclick="openEditPlan(${plan.maint_type_id},${vehicleId})">
-            ✏️
+            <i data-lucide="pencil"></i>
           </button>
           <button class="btn btn-xs btn-red"
             onclick="deletePlan(${plan.maint_type_id},${vehicleId})">
-            🗑️
+            <i data-lucide="trash-2"></i>
           </button>
         </div>` : ''}
     </div>`;
@@ -612,7 +620,8 @@ function openUpdateOdo(id, currentKm, plate) {
   const label = document.getElementById('uo-km');
   if (label) label.value = currentKm || 0;
   const title = document.querySelector('#m-update-odo .modal-title');
-  if (title) title.textContent = `📊 Update Odometer — ${plate}`;
+  if (title) title.innerHTML = `<i data-lucide="gauge"></i> Update Odometer — ${plate}`;
+  if (window.lucide) lucide.createIcons();
   openM('m-update-odo');
 }
 
@@ -980,11 +989,10 @@ function checkMonthlyOdoReminder() {
   const day = today.getDate();
   const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
 
-  // ✅ first working day logic
   const isWorkingDay = dayOfWeek !== 0 && dayOfWeek !== 6;
 
   if (day <= 3 && isWorkingDay) {
-    showToast("📊 Monthly Odometer Update Required", "t-warning");
+    showToast('<i data-lucide="gauge"></i> Monthly Odometer Update Required', "t-warning");
   }
 }
 

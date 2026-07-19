@@ -239,14 +239,14 @@ function dpUser(id) {
     intern:      'b-blue',
   }[u.role] || 'b-slate';
 
-  setDPHeader('👤', '#eff6ff', u.name, u.role);
+  setDPHeader('user', '#eff6ff', u.name, u.role);
 
   const isSuper     = u.role === 'super_admin';
   const canModify   = isAdminUser() && !isSuper;
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">👤 User Details</div>
+      <div class="dp-section-hd"><i data-lucide="user"></i> User Details</div>
       <div class="dp-grid">
         ${dpField('Name',       u.name)}
         ${dpField('Email',      u.email)}
@@ -256,18 +256,20 @@ function dpUser(id) {
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        ${isAdminUser() && canModify ? `<button class="btn btn-primary btn-sm" onclick="editUser(${u.user_id})">✏️ Edit</button>` : ''}
-        ${isAdminUser() ? `<button class="btn btn-outline btn-sm" onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')">🔑 Reset Password</button>` : ''}
+        ${isAdminUser() && canModify ? `<button class="btn btn-primary btn-sm" onclick="editUser(${u.user_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
+        ${isAdminUser() ? `<button class="btn btn-outline btn-sm" onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')"><i data-lucide="key-round"></i> Reset Password</button>` : ''}
         ${itemHistoryButton('users', u.user_id, u.name)}
-        ${isAdminUser() && canModify ? `<button class="btn btn-red btn-sm" onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')">🗑️ Delete</button>` : ''}
+        ${isAdminUser() && canModify ? `<button class="btn btn-red btn-sm" onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
         ${isAdminUser() && !canModify ? `<span class="td-muted" style="margin-left:6px">Edit/Delete disabled for Super Admin</span>` : ''}
       </div>
     </div>
   `;
 
   document.getElementById('dp-footer').style.display = 'none';
+
+  if (window.lucide) lucide.createIcons();
 }
 
 if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.user = dpUser;

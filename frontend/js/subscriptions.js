@@ -279,14 +279,16 @@ async function renderM365() {
           <td>${fmtCost(m.monthly_cost ?? m.license_cost)}</td>
           <td>${statusBadge(status)}</td>
           <td><div class="flex-gap">
-            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editM365(${m.license_id})">✏️</button>
-            <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteM365Prompt(${m.license_id})">🗑️</button>
+            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editM365(${m.license_id})"><i data-lucide="pencil"></i></button>
+            <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteM365Prompt(${m.license_id})"><i data-lucide="trash-2"></i></button>
           </div></td>`;
         tr.addEventListener('click', () => openDP('m365', m.license_id, tr));
         tbody.appendChild(tr);
       });
       _setTxt('m365-exp-ct', `${noLicenseCount} no license`);
       _setTxt('m365-ct',     `${data.length} licenses`);
+
+      if (window.lucide) lucide.createIcons();
     }
     renderSubscriptionsUnified();
   } catch (err) {
@@ -299,11 +301,11 @@ async function dpM365(id) {
   try {
     const m      = await fetchOne('m365', id);
     const status = m.computed_status;
-    setDPHeader('💼', '#f0f9ff', m.assigned_email || '—', 'M365 License');
+    setDPHeader('app-window', '#f0f9ff', m.assigned_email || '—', 'M365 License');
     const html = `
       <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">License status</span></div>
       <div class="dp-section">
-        <div class="dp-section-hd">📧 License Info</div>
+        <div class="dp-section-hd"><i data-lucide="mail"></i> License Info</div>
         <div class="dp-grid">
           ${dpField('Assigned Email', m.assigned_email || '—')}
           ${dpField('Assigned User',  m.assigned_user_name || 'Unassigned')}
@@ -312,27 +314,30 @@ async function dpM365(id) {
         </div>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">📅 Renewal (Yearly)</div>
+        <div class="dp-section-hd"><i data-lucide="calendar"></i> Renewal (Yearly)</div>
         <div class="dp-grid">
           ${dpField('Renewal Date', fmtDate(m.renewal_date))}
           ${dpField('Next Renewal', fmtDate(m.next_renewal_date))}
-          ${m.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber">⚠️ Renewal window (within 3 days)</span>') : ''}
+          ${m.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
-      ${m.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', m.remarks)}</div></div>` : ''}
+      ${m.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', m.remarks)}</div></div>` : ''}
       <div class="dp-section" id="dp-att-m365-${id}"></div>
       <div class="dp-section">
-        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
           ${isAdminUser() ? `
-            <button class="btn btn-primary btn-sm" onclick="editM365(${m.license_id})">✏️ Edit</button>
-            <button class="btn btn-red btn-sm"     onclick="deleteM365Prompt(${m.license_id})">🗑️ Delete</button>
+            <button class="btn btn-primary btn-sm" onclick="editM365(${m.license_id})"><i data-lucide="pencil"></i> Edit</button>
+            <button class="btn btn-red btn-sm"     onclick="deleteM365Prompt(${m.license_id})"><i data-lucide="trash-2"></i> Delete</button>
           ` : ''}
           ${itemHistoryButton('m365', m.license_id, m.assigned_email)}
         </div>
       </div>`;
     document.getElementById('dp-body').innerHTML = html;
     document.getElementById('dp-footer').style.display = 'none';
+
+    if (window.lucide) lucide.createIcons();
+
     attachmentPanel('m365', id, `dp-att-m365-${id}`);
   } catch (err) { showToast('Failed to load license', 't-error'); }
 }
@@ -432,14 +437,16 @@ async function renderGlobe() {
           <td>${fmtDate(g.renewal_date)}</td>
           <td>${statusBadge(status)}</td>
           <td><div class="flex-gap">
-            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editGlobe(${g.plan_id})">✏️</button>
-            <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteGlobePrompt(${g.plan_id})">🗑️</button>
+            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editGlobe(${g.plan_id})"><i data-lucide="pencil"></i></button>
+            <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteGlobePrompt(${g.plan_id})"><i data-lucide="trash-2"></i></button>
           </div></td>`;
         tr.addEventListener('click', () => openDP('globe', g.plan_id, tr));
         tbody.appendChild(tr);
       });
       _setTxt('globe-renew-ct', `${renewSoon} renewing soon`);
       _setTxt('globe-ct',       `${data.length} plans`);
+
+      if (window.lucide) lucide.createIcons();
     }
     renderSubscriptionsUnified();
   } catch (err) { console.error('renderGlobe:', err); showToast('Failed to load Globe plans', 't-error'); }
@@ -449,11 +456,11 @@ async function dpGlobe(id) {
   try {
     const g      = await fetchOne('globe', id);
     const status = g.computed_status;
-    setDPHeader('📱', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Plan');
+setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Plan');
     const html = `
       <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">Plan status</span></div>
       <div class="dp-section">
-        <div class="dp-section-hd">👤 Subscriber</div>
+        <div class="dp-section-hd"><i data-lucide="user"></i> Subscriber</div>
         <div class="dp-grid">
           ${dpField('Employee',   g.employee_name  || '—')}
           ${dpField('Mobile No.', g.mobile_number  || '—')}
@@ -461,7 +468,7 @@ async function dpGlobe(id) {
         </div>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">📱 Plan Details</div>
+        <div class="dp-section-hd"><i data-lucide="smartphone"></i> Plan Details</div>
         <div class="dp-grid">
           ${dpField('Plan Name',    g.plan_name      || '—')}
           ${dpField('Monthly Cost', fmtCost(g.monthly_cost))}
@@ -469,11 +476,11 @@ async function dpGlobe(id) {
           ${dpField('Credit Limit', fmtCost(g.credit_limit))}
           ${dpField('Renewal Date', fmtDate(g.renewal_date))}
           ${dpField('Next Renewal', fmtDate(g.next_renewal_date))}
-          ${g.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber">⚠️ Renewal window (within 3 days)</span>') : ''}
+          ${g.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">🎁 Plan Inclusions</div>
+        <div class="dp-section-hd"><i data-lucide="gift"></i> Plan Inclusions</div>
         <div class="dp-grid">
           ${dpField('Unli All-Net Calls', g.unli_allnet_calls ? '<span class="badge b-green">Included</span>' : '<span class="badge b-slate">Not Included</span>')}
           ${dpField('Unli Text', g.unli_text ? '<span class="badge b-green">Included</span>' : '<span class="badge b-slate">Not Included</span>')}
@@ -481,18 +488,21 @@ async function dpGlobe(id) {
           ${dpFieldFull('Freebie', g.freebie || null)}
         </div>
       </div>
-      ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}
+      ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}
       <div class="dp-section" id="dp-att-globe-${id}"></div>
       <div class="dp-section">
-        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
-          <button class="btn btn-primary btn-sm" onclick="editGlobe(${g.plan_id})">✏️ Edit</button>
-          <button class="btn btn-red btn-sm"     onclick="deleteGlobePrompt(${g.plan_id})">🗑️ Delete</button>
+          <button class="btn btn-primary btn-sm" onclick="editGlobe(${g.plan_id})"><i data-lucide="pencil"></i> Edit</button>
+          <button class="btn btn-red btn-sm"     onclick="deleteGlobePrompt(${g.plan_id})"><i data-lucide="trash-2"></i> Delete</button>
           ${itemHistoryButton('globe', g.plan_id, g.employee_name || g.plan_name)}
         </div>
       </div>`;
     document.getElementById('dp-body').innerHTML = html;
     document.getElementById('dp-footer').style.display = 'none';
+
+    if (window.lucide) lucide.createIcons();
+
     attachmentPanel('globe', id, `dp-att-globe-${id}`);
   } catch (err) { showToast('Failed to load Globe plan', 't-error'); }
 }
@@ -613,12 +623,15 @@ async function renderSubscriptions() {
           <td>${fmtDate(s.renewal_date)}</td>
           <td>${statusBadge(status)}</td>
           <td><div class="flex-gap">
-            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editSubscription(${s.subscription_id})">✏️</button>
-            <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteSubPrompt(${s.subscription_id})">🗑️</button>
+            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editSubscription(${s.subscription_id})"><i data-lucide="pencil"></i></button>
+            <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteSubPrompt(${s.subscription_id})"><i data-lucide="trash-2"></i></button>
           </div></td>`;
         tr.addEventListener('click', () => openDP('subscriptions', s.subscription_id, tr));
         tbody.appendChild(tr);
       });
+
+      // ✅ NEW: renders the Edit/Delete icons injected into table rows above
+      if (window.lucide) lucide.createIcons();
     }
     renderSubscriptionsUnified();
   } catch (err) { console.error('renderSubscriptions:', err); showToast('Failed to load subscriptions', 't-error'); }

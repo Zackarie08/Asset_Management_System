@@ -206,7 +206,7 @@ async function dpInsurance(id) {
     else if (daysLeft <= 30) statusBadgeHtml = `<span class="badge b-amber">Expires in ${daysLeft} days</span>`;
     else                     statusBadgeHtml = `<span class="badge b-green">Active</span>`;
 
-    setDPHeader("🛡️", "#f0fdf4", ins.employee_name, "Insurance Record");
+    setDPHeader("shield", "#f0fdf4", ins.employee_name, "Insurance Record");
 
     const isSpecific = ins.coverage_type === 'SPECIFIC';
     const isCustom    = ins.coverage_type === 'CUSTOM';
@@ -216,11 +216,11 @@ async function dpInsurance(id) {
     if (isSpecific) {
       coverageHTML = employees.length ? `
           <div class="dp-section">
-            <div class="dp-section-hd">👥 Assigned Employees (${employees.length})</div>
+            <div class="dp-section-hd"><i data-lucide="users"></i> Assigned Employees (${employees.length})</div>
             <div style="display:flex;flex-direction:column;gap:6px">
               ${employees.map(e => `
                 <div style="display:flex;align-items:center;gap:8px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:8px 10px">
-                  <span style="font-size:16px">👤</span>
+                  <i data-lucide="user" style="width:16px;height:16px"></i>
                   <div>
                     <div style="font-size:13px;font-weight:600">${e.name}</div>
                     ${e.department ? `<div style="font-size:11px;color:var(--slate-400)">${e.department}</div>` : ''}
@@ -229,13 +229,13 @@ async function dpInsurance(id) {
             </div>
           </div>` : `
           <div class="dp-section">
-            <div class="dp-section-hd">👥 Assigned Employees</div>
+            <div class="dp-section-hd"><i data-lucide="users"></i> Assigned Employees</div>
             <div style="color:var(--slate-400);font-size:12px">No employees assigned yet.</div>
           </div>`;
     } else if (isCustom) {
       coverageHTML = `
         <div class="dp-section">
-          <div class="dp-section-hd">🎯 Coverage Scope</div>
+          <div class="dp-section-hd"><i data-lucide="target"></i> Coverage Scope</div>
           <div class="dp-grid">
             ${dpFieldFull('Custom Target', ins.coverage_target || '—')}
           </div>
@@ -243,9 +243,9 @@ async function dpInsurance(id) {
     } else {
       coverageHTML = `
         <div class="dp-section">
-          <div class="dp-section-hd">👥 Coverage</div>
+          <div class="dp-section-hd"><i data-lucide="users-round"></i> Coverage</div>
           <div style="display:flex;align-items:center;gap:8px;background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);padding:10px 12px">
-            <span style="font-size:18px">🌐</span>
+            <i data-lucide="users-round" style="width:18px;height:18px;color:#166534"></i>
             <span style="font-size:13px;font-weight:600;color:#166534">Applies to all employees</span>
           </div>
         </div>`;
@@ -261,7 +261,7 @@ async function dpInsurance(id) {
         <span style="margin-left:auto"><span class="badge ${coverageBadgeCls}">${coverageBadgeLbl} Coverage</span></span>
       </div>
       <div class="dp-section">
-        <div class="dp-section-hd">📋 Policy Details</div>
+        <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Policy Details</div>
         <div class="dp-grid">
           ${dpField("Policy Name",   ins.employee_name)}
           ${dpField("Provider",      ins.provider || "—")}
@@ -271,14 +271,14 @@ async function dpInsurance(id) {
         </div>
       </div>
       ${coverageHTML}
-      ${ins.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull("Notes", ins.remarks)}</div></div>` : ""}
+      ${ins.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull("Notes", ins.remarks)}</div></div>` : ""}
       <div class="dp-section" id="dp-att-ins-${id}"></div>
       <div class="dp-section">
-        <div class="dp-section-hd">⚡ Actions</div>
+        <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
           ${isAdminUser() ? `
-            <button class="btn btn-primary btn-sm" onclick="editInsurance(${ins.insurance_id})">✏️ Edit</button>
-            <button class="btn btn-red btn-sm"     onclick="deleteInsurancePrompt(${ins.insurance_id})">🗑️ Delete</button>
+            <button class="btn btn-primary btn-sm" onclick="editInsurance(${ins.insurance_id})"><i data-lucide="pencil"></i> Edit</button>
+            <button class="btn btn-red btn-sm"     onclick="deleteInsurancePrompt(${ins.insurance_id})"><i data-lucide="trash-2"></i> Delete</button>
           ` : ''}
           ${itemHistoryButton('insurance', ins.insurance_id, ins.employee_name)}
         </div>
@@ -286,6 +286,9 @@ async function dpInsurance(id) {
 
     document.getElementById("dp-body").innerHTML = html;
     document.getElementById("dp-footer").style.display = "none";
+
+    if (window.lucide) lucide.createIcons();
+
     attachmentPanel("insurance", id, `dp-att-ins-${id}`);
   } catch (err) {
     console.error("dpInsurance error:", err);

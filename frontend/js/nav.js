@@ -116,8 +116,11 @@ function refreshPageActions(page) {
     },
     insurance:  () => {
       const el = document.getElementById("ins-actions");
-      if (el) el.innerHTML = isAdmin
-        ? `<button class="btn btn-green btn-sm" onclick="openAddInsurance()">➕ Add Insurance</button>` : "";
+      if (el) {
+        el.innerHTML = isAdmin
+          ? `<button class="btn btn-green btn-sm" onclick="openAddInsurance()"><i data-lucide="plus"></i> Add Insurance</button>` : "";
+        if (window.lucide) lucide.createIcons();
+      }
     },
     finance:    () => {
       const el = document.getElementById("fin-actions");

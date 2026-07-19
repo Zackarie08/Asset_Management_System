@@ -116,7 +116,7 @@ async function dpITSupplies(id) {
     Damaged:   'b-red'
   }[it.status] || 'b-slate';
 
-  setDPHeader('🖨️', '#eef2ff', it.asset_name, 'IT Supply');
+  setDPHeader('plug', '#eef2ff', it.asset_name, 'IT Supply');
 
   let openBorrows = [];
   try {
@@ -133,18 +133,18 @@ async function dpITSupplies(id) {
         <li class="mh-item">
           <div class="mh-dot ${b.status === 'BORROWED' ? 'repair' : 'good'}"></div>
           <div style="flex:1">
-            <div class="mh-cond info">${b.status === 'BORROWED' ? '📤 Borrowed' : '📥 Returned'} — ${b.quantity} unit(s)</div>
+            <div class="mh-cond info">${b.status === 'BORROWED' ? '<i data-lucide="package-minus"></i> Borrowed' : '<i data-lucide="package-check"></i> Returned'} — ${b.quantity} unit(s)</div>
             <div class="mh-date">${b.borrowed_by_name} · ${formatDateHuman(b.borrow_date)}</div>
-            ${b.borrow_remarks ? `<div class="mh-remarks">📝 ${b.borrow_remarks}</div>` : ''}
-            ${b.status === 'RETURNED' ? `<div class="mh-remarks">↩️ Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
+            ${b.borrow_remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${b.borrow_remarks}</div>` : ''}
+            ${b.status === 'RETURNED' ? `<div class="mh-remarks"><i data-lucide="corner-up-left"></i> Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
           </div>
-          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${it.asset_name.replace(/'/g,"\\'")}')">✅ Mark Returned</button>` : ''}
+          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="check"></i> Mark Returned</button>` : ''}
         </li>`).join('')}
     </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">💻 Asset Details</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Asset Details</div>
       <div class="dp-grid">
         ${dpFieldFull('Asset Name', `<strong>${it.asset_name}</strong>`)}
         ${dpField('Serial / Model', it.serial_number || '—', 'mono')}
@@ -160,25 +160,27 @@ async function dpITSupplies(id) {
       </div>
     </div>
 
-    ${it.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', it.remarks)}</div></div>` : ''}
+    ${it.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', it.remarks)}</div></div>` : ''}
 
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        ${isAdmin ? `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${it.it_supplies_id},'${it.asset_name.replace(/'/g,"\\'")}','itsupplies',${it.quantity})">📤 Borrow</button>` : ''}
-        ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})">✏️ Edit</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${it.it_supplies_id},'${it.asset_name.replace(/'/g,"\\'")}','itsupplies',${it.quantity})"><i data-lucide="package-minus"></i> Borrow</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('itsupplies', it.it_supplies_id, it.asset_name)}
-        ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')">🗑️ Delete</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">📤 Borrow / Return ${currentlyOut.length ? `<span class="badge b-amber" style="margin-left:6px">${currentlyOut.length} out</span>` : ''}</div>
+      <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return ${currentlyOut.length ? `<span class="badge b-amber" style="margin-left:6px">${currentlyOut.length} out</span>` : ''}</div>
       ${listHTML}
     </div>
   `;
 
   document.getElementById('dp-footer').style.display = 'none';
+
+  if (window.lucide) lucide.createIcons();
 }
 
 
@@ -324,7 +326,7 @@ async function _renderITTable() {
 
       // ✅ NEW: borrowed indicator badge
       const requestBadge = borrowedIds.has(it.it_supplies_id)
-        ? '<span class="badge b-blue" style="margin-left:4px">📤 Borrowed</span>'
+        ? '<span class="badge b-blue" style="margin-left:4px"><i data-lucide="package-minus"></i> Borrowed</span>'
         : '';
 
       const tr = document.createElement('tr');
@@ -344,6 +346,8 @@ async function _renderITTable() {
 
   document.getElementById('it-total-ct').textContent = `${total} items`;
   _renderITPagination(total);
+
+  if (window.lucide) lucide.createIcons();
 }
 
 

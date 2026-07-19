@@ -208,7 +208,7 @@ async function dpFinance(id) {
   const f = data.find(x => x.finance_id === id);
   if (!f) return;
 
-  setDPHeader('📁', '#eff6ff', f.category, "Folder #" + f.folder_number);
+setDPHeader('folder', '#eff6ff', f.category, "Folder #" + f.folder_number);
 
   const start = String(f.range_start).padStart(4,'0');
   const end   = String(f.range_end).padStart(4,'0');
@@ -216,7 +216,7 @@ async function dpFinance(id) {
 
   const html = `
     <div class="dp-section">
-      <div class="dp-section-hd">📋 Details</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Details</div>
       <div class="dp-grid">
         ${dpField("Year", f.year)}
         ${dpField("Folder #", f.folder_number)}
@@ -228,25 +228,27 @@ async function dpFinance(id) {
           `<span class="badge ${f.location === 'STORAGE' ? 'b-green' : 'b-blue'}">${f.location}</span>
           <button class="btn btn-xs btn-outline"
             onclick="event.stopPropagation(); toggleFinanceLocation(${f.finance_id})">
-            🔄 Move
+            <i data-lucide="arrow-left-right"></i> Move
           </button>`
         )}
       </div>
     </div>
 
-    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
+    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
 
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-primary btn-sm" onclick="editFinance(${f.finance_id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteFinance(${f.finance_id})">🗑️ Delete</button>
+        <button class="btn btn-primary btn-sm" onclick="editFinance(${f.finance_id})"><i data-lucide="pencil"></i> Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteFinance(${f.finance_id})"><i data-lucide="trash-2"></i> Delete</button>
         ${itemHistoryButton('finance', f.finance_id, `${f.category} · Folder #${f.folder_number}`)}
       </div>
     </div>
   `;
 
   document.getElementById("dp-body").innerHTML = html;
+
+  if (window.lucide) lucide.createIcons();
 }
 
 let editFinanceId = null;
@@ -330,7 +332,8 @@ function toggleFinanceLocation(id) {
       document.getElementById('fin-move-summary').innerHTML =
         `Moving <strong>${_esc(f.category)}</strong> (Folder #${_esc(f.folder_number)})<br/>
          <span class="badge ${f.location === 'STORAGE' ? 'b-green' : 'b-blue'}">${f.location}</span>
-         → <span class="badge ${nextLoc === 'STORAGE' ? 'b-green' : 'b-blue'}">${nextLoc}</span>`;
+         <i data-lucide="arrow-right"></i>
+         <span class="badge ${nextLoc === 'STORAGE' ? 'b-green' : 'b-blue'}">${nextLoc}</span>`;
 
       document.getElementById('fin-move-by').value = '';
       selectState['fin-move-by'] = false;
@@ -338,6 +341,8 @@ function toggleFinanceLocation(id) {
 
       openM('m-fin-move');
       _loadFinMoveUsers();
+
+      if (window.lucide) lucide.createIcons();
     });
 }
 

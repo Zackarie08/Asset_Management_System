@@ -183,7 +183,7 @@ async function dpContract(id) {
 
   _currentContract = c;
 
-  setDPHeader("📄", "#eef2ff", c.other_party, c.description);
+  setDPHeader("file-text", "#eef2ff", c.other_party, c.description);
 
   let validity = '—';
   if (c.validity_type === 'NA') {
@@ -211,9 +211,9 @@ async function dpContract(id) {
 
   const statusBadge = _contractStatusLabel(c);
 
-  const html = `
+const html = `
     <div class="dp-section">
-      <div class="dp-section-hd">📋 Details</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Details</div>
       <div class="dp-grid">
         ${dpField("Date",          formatDateHuman(c.contract_date))}
         ${dpField("Other Party",   c.other_party)}
@@ -225,13 +225,16 @@ async function dpContract(id) {
       </div>
     </div>
 
-    ${c.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', c.remarks)}</div></div>` : ''}
+    ${c.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', c.remarks)}</div></div>` : ''}
     <div id="contract-actions"></div>
     <div class="dp-section">
       <div class="dp-action-row">${itemHistoryButton('contracts', c.contract_id, c.other_party)}</div>
     </div>`;
 
   document.getElementById("dp-body").innerHTML = html;
+
+  if (window.lucide) lucide.createIcons();
+
   renderContractActions(c);
 }
 
@@ -307,7 +310,7 @@ async function renderContractActions(c) {
       const meta = _crMeta(latestReq.status);
       statusPillHTML = `
         <div class="dp-status-row">
-          <span class="badge ${meta.cls}">${meta.icon} ${meta.label}</span>
+          <span class="badge ${meta.cls}"><i data-lucide="${meta.icon}"></i> ${meta.label}</span>
           <span class="dp-status-label">Current request status · ${_esc(latestReq.requested_name)}</span>
         </div>`;
     } else {
@@ -321,7 +324,7 @@ async function renderContractActions(c) {
     if (requests.length) {
       timelineHTML = `
         <div class="dp-section-hd" style="margin-top:12px;cursor:pointer" onclick="toggleContractRequestTimeline()">
-          📜 Request Timeline (${requests.length}) ${showContractRequestTimeline ? '▲ Hide' : '▼ Show'}
+          <i data-lucide="history"></i> Request Timeline (${requests.length}) ${showContractRequestTimeline ? '▲ Hide' : '▼ Show'}
         </div>
         ${showContractRequestTimeline ? `
         <ul class="mh-list">
@@ -337,7 +340,7 @@ async function renderContractActions(c) {
               <li class="mh-item">
                 <div class="mh-dot ${r.status === 'APPROVED' ? 'good' : r.status === 'REJECTED' ? 'repair' : 'good'}"></div>
                 <div>
-                  <div class="mh-cond info">${meta.icon} ${meta.label} — ${_esc(who)}</div>
+                  <div class="mh-cond info"><i data-lucide="${meta.icon}"></i> ${meta.label} — ${_esc(who)}</div>
                   <div class="mh-date">${dateLabel}</div>
                   <div class="mh-remarks">Requested by ${_esc(r.requested_name)}</div>
                 </div>
@@ -349,29 +352,29 @@ async function renderContractActions(c) {
     // ── Action buttons (same logic as before, unaffected by the fix) ──
     if (!isAdmin) {
       if (!currentReq) {
-        buttons = `<button class="btn btn-primary btn-sm" onclick="requestContract(${c.contract_id})">📩 Request Contract</button>`;
+        buttons = `<button class="btn btn-primary btn-sm" onclick="requestContract(${c.contract_id})"><i data-lucide="send"></i> Request Contract</button>`;
       } else if (currentReq.requested_by !== currentUser.user_id) {
-        buttons = `<button class="btn btn-outline btn-sm" disabled>🔒 Requested by ${_esc(currentReq.requested_name)}</button>`;
+        buttons = `<button class="btn btn-outline btn-sm" disabled><i data-lucide="lock"></i> Requested by ${_esc(currentReq.requested_name)}</button>`;
       } else if (currentReq.status === "PENDING") {
-        buttons = `<button class="btn btn-red btn-sm" onclick="cancelRequest(${currentReq.request_id})">❌ Cancel Request</button>`;
+        buttons = `<button class="btn btn-red btn-sm" onclick="cancelRequest(${currentReq.request_id})"><i data-lucide="x-circle"></i> Cancel Request</button>`;
       } else if (currentReq.status === "APPROVED") {
-        buttons = `<span class="td-muted" style="font-size:12px">✅ You currently hold this contract</span>`;
+        buttons = `<span class="td-muted" style="font-size:12px"><i data-lucide="check-circle"></i> You currently hold this contract</span>`;
       }
     }
 
     if (isAdmin) {
       if (currentReq && currentReq.status === "PENDING") {
         buttons = isSuperAdmin
-          ? `<button class="btn btn-green btn-sm" onclick="approveRequest(${currentReq.request_id})">Approve</button>
-             <button class="btn btn-red btn-sm" onclick="denyRequest(${currentReq.request_id})">Deny</button>`
-          : `<span class="td-muted" style="font-size:12px">⏳ Pending — only a Super Admin can approve/deny</span>`;
+          ? `<button class="btn btn-green btn-sm" onclick="approveRequest(${currentReq.request_id})"><i data-lucide="check"></i> Approve</button>
+             <button class="btn btn-red btn-sm" onclick="denyRequest(${currentReq.request_id})"><i data-lucide="x"></i> Deny</button>`
+          : `<span class="td-muted" style="font-size:12px"><i data-lucide="clock"></i> Pending — only a Super Admin can approve/deny</span>`;
       }
       if (c.status === "WITH_EMPLOYEE" && currentReq) {
-        buttons += `<button class="btn btn-outline btn-sm" onclick="returnContract(${currentReq.request_id})">Mark as Returned</button>`;
+        buttons += `<button class="btn btn-outline btn-sm" onclick="returnContract(${currentReq.request_id})"><i data-lucide="rotate-ccw"></i> Mark as Returned</button>`;
       }
       buttons += `
-        <button class="btn btn-primary btn-sm" onclick="editContract(${c.contract_id})">✏️ Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteContract(${c.contract_id})">🗑️ Delete</button>`;
+        <button class="btn btn-primary btn-sm" onclick="editContract(${c.contract_id})"><i data-lucide="pencil"></i> Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteContract(${c.contract_id})"><i data-lucide="trash-2"></i> Delete</button>`;
     }
 
   } catch (err) {
@@ -381,13 +384,15 @@ async function renderContractActions(c) {
 
   el.innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       ${statusPillHTML}
       <div class="dp-action-row" style="margin-bottom:10px;">
         ${buttons || "<span class='dp-muted'>No actions available</span>"}
       </div>
       ${timelineHTML}
     </div>`;
+
+  if (window.lucide) lucide.createIcons();
 }
 
 async function editContract(id) {
@@ -397,7 +402,8 @@ async function editContract(id) {
 
   openM("m-add-con");
   const title = document.querySelector('#m-add-con .modal-title');
-  if (title) title.textContent = "📄 Edit Contract";
+  if (title) title.innerHTML = `<i data-lucide="file-text"></i> Edit Contract`;
+  if (window.lucide) lucide.createIcons();
 
   // ✅ FIX: no fetch dependency here — set values directly, no timeout needed
   document.getElementById("con-f-date").value  = formatDateForInput(c.contract_date);
@@ -418,7 +424,8 @@ async function editContract(id) {
 function openAddContract() {
   window.editContractId = null;
   const title = document.querySelector('#m-add-con .modal-title');
-  if (title) title.textContent = "📄 Add Contract";
+  if (title) title.innerHTML = `<i data-lucide="file-text"></i> Add Contract`;
+  if (window.lucide) lucide.createIcons();
   openM("m-add-con");
 }
 
@@ -568,11 +575,11 @@ async function refreshContractUI(id = null) {
  
 
 const CONTRACT_REQ_STATUS_META = {
-  PENDING:   { icon: '⏳', label: 'Pending',   cls: 'b-amber' },
-  APPROVED:  { icon: '✅', label: 'Approved',  cls: 'b-green' },
-  REJECTED:  { icon: '❌', label: 'Denied',    cls: 'b-red'   },
-  CANCELLED: { icon: '🚫', label: 'Cancelled', cls: 'b-slate' },
-  RETURNED:  { icon: '↩️', label: 'Returned',  cls: 'b-blue'  },
+  PENDING:   { icon: 'clock', label: 'Pending',   cls: 'b-amber' },
+  APPROVED:  { icon: 'check', label: 'Approved',  cls: 'b-green' },
+  REJECTED:  { icon: 'x', label: 'Denied',    cls: 'b-red'   },
+  CANCELLED: { icon: 'x-circle', label: 'Cancelled', cls: 'b-slate' },
+  RETURNED:  { icon: 'rotate-ccw', label: 'Returned',  cls: 'b-blue'  },
 };
 
 // ✅ NEW: request timeline is now collapsible (default collapsed — the
@@ -586,7 +593,7 @@ function toggleContractRequestTimeline() {
 }
 
 function _crMeta(status) {
-  return CONTRACT_REQ_STATUS_META[status] || { icon: '•', label: status || '—', cls: 'b-slate' };
+  return CONTRACT_REQ_STATUS_META[status] || { icon: 'circle', label: status || '—', cls: 'b-slate' };
 }
 
 

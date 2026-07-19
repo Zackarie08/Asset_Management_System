@@ -44,8 +44,8 @@ function _lpMaintenanceStatus(maintRecords) {
 }
 
 function _lpMaintenanceBadge(status) {
-  if (status === 'due')     return `<span class="badge b-amber">⚠️ Check Due</span>`;
-  if (status === 'checked') return `<span class="badge b-green">✅ Checked</span>`;
+  if (status === 'due')     return `<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Check Due</span>`;
+  if (status === 'checked') return `<span class="badge b-green"><i data-lucide="check-circle"></i> Checked</span>`;
   return '—';
 }
 
@@ -177,6 +177,8 @@ async function _renderLpTable() {
 
   document.getElementById('lp-ct').textContent = `${total} units`;
   _renderLpPagination(total);
+
+  if (window.lucide) lucide.createIcons();
 }
 
 async function _loadLpLocationsFilter() {
@@ -242,7 +244,7 @@ async function dpLaptop(id, useCache = false) {
   const isIntern = lp.user_role === "intern";
   const needsReplace = ageYears >= 3 && !isIntern;
 
-  setDPHeader('💻', '#f0fdf4', lp.asset_number, lp.serial_number);
+  setDPHeader('laptop', '#f0fdf4', lp.asset_number, lp.serial_number);
 
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -281,12 +283,12 @@ async function dpLaptop(id, useCache = false) {
 
   const html = `
     <div class="dp-section">
-      ${showMaintenanceAlert ? `<div class="dp-alert warning">⚠️ Technical Check required this month (June/December)</div>` : ""}
-      ${needsReplace ? `<div class="dp-alert danger">⚠️ Laptop is ${ageYears} years old — needs replacement</div>` : ""}
+      ${showMaintenanceAlert ? `<div class="dp-alert warning"><i data-lucide="triangle-alert"></i> Technical Check required this month (June/December)</div>` : ""}
+      ${needsReplace ? `<div class="dp-alert danger"><i data-lucide="triangle-alert"></i> Laptop is ${ageYears} years old — needs replacement</div>` : ""}
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">💻 Device Info</div>
+      <div class="dp-section-hd"><i data-lucide="laptop"></i> Device Info</div>
       <div class="dp-grid">
         ${dpField("Asset Number", lp.asset_number)}
         ${dpField("Serial Number", lp.serial_number || '-')}
@@ -301,7 +303,7 @@ async function dpLaptop(id, useCache = false) {
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">📅 Dates</div>
+      <div class="dp-section-hd"><i data-lucide="calendar"></i> Dates</div>
       <div class="dp-grid">
         ${dpField("Purchased", lp.date_of_purchase || '-')}
         ${dpField("Warranty", lp.warranty_end_date || '-')}
@@ -310,44 +312,47 @@ async function dpLaptop(id, useCache = false) {
 
     ${lp.remarks ? `
     <div class="dp-section">
-      <div class="dp-section-hd">📝 Remarks</div>
+      <div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div>
       <div class="dp-grid">${dpFieldFull('Notes', lp.remarks)}</div>
     </div>` : ''}
 
     <div class="dp-section">
-      <div class="dp-section-hd">👤 Assignment</div>
+      <div class="dp-section-hd"><i data-lucide="user"></i> Assignment</div>
       <div class="dp-grid">
         ${dpField("Assigned To", lp.user_name || "Unassigned")}
       </div>
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
         ${isAdminUser() ? `
-          <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})">👤 Assign User</button>
-          ${lp.current_user_id ? `<button class="btn btn-amber btn-sm" onclick="removeAssignedUser(${lp.laptop_id})">↩️ Remove Current User</button>` : ''}
-          <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})">🔧 Technical Check</button>
-          <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})">✏️ Edit</button>
+          <button class="btn btn-green btn-sm" onclick="openAssign(${lp.laptop_id})"><i data-lucide="user-plus"></i> Assign User</button>
+          ${lp.current_user_id ? `<button class="btn btn-amber btn-sm" onclick="removeAssignedUser(${lp.laptop_id})"><i data-lucide="user-minus"></i> Remove Current User</button>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="openMaint(${lp.laptop_id})"><i data-lucide="wrench"></i> Technical Check</button>
+          <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})"><i data-lucide="pencil"></i> Edit</button>
         ` : ''}
         ${itemHistoryButton('laptop', lp.laptop_id, `${lp.asset_number} · ${lp.serial_number}`)}
-        ${isAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})">🗑️ Delete</button>` : ''}
+        ${isAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd" onclick="toggleAssignHistory()">📜 Assignment History ${showAssignHistory ? "▲" : "▼"}</div>
+      <div class="dp-section-hd" onclick="toggleAssignHistory()"><i data-lucide="history"></i> Assignment History ${showAssignHistory ? "▲" : "▼"}</div>
       ${showAssignHistory ? histHTML : ""}
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd" onclick="toggleMaintHistory()">🔧 Technical Check History ${showMaintHistory ? "▲" : "▼"}</div>
+      <div class="dp-section-hd" onclick="toggleMaintHistory()"><i data-lucide="wrench"></i> Technical Check History ${showMaintHistory ? "▲" : "▼"}</div>
       ${showMaintHistory ? maintHTML : ""}
     </div>
   `;
 
   document.getElementById("dp-body").innerHTML = html;
+
+  if (window.lucide) lucide.createIcons();
 }
+
 function toggleMaintHistory() {
   showMaintHistory = !showMaintHistory;
   dpLaptop(cachedLp.laptop_id, true); 
@@ -429,7 +434,8 @@ async function editLaptop(id) {
   editLaptopId = id;
   openM("m-add-lp");
   const title = document.querySelector('#m-add-lp .modal-title');
-  if (title) title.textContent = "💻 Edit Laptop";
+  if (title) title.innerHTML = `<i data-lucide="laptop"></i> Edit Laptop`;
+  if (window.lucide) lucide.createIcons();
 
   // ✅ FIX: await the dropdown fetch instead of racing it with setTimeout —
   // the old code sometimes left "Location" blank on slower connections.
@@ -614,7 +620,8 @@ async function loadLocationsDropdown() {
 function openAddLaptop() {
   editLaptopId = null;
   const title = document.querySelector('#m-add-lp .modal-title');
-  if (title) title.textContent = "💻 Add Laptop";
+  if (title) title.innerHTML = `<i data-lucide="laptop"></i> Add Laptop`;
+  if (window.lucide) lucide.createIcons();
   openM("m-add-lp");
   loadLocationsDropdown();
 }
@@ -640,7 +647,7 @@ function getMaintenanceAlert() {
   const month = today.getMonth() + 1; // 1–12
 
   if (month === 6 || month === 12) {
-    return "⚠️ Scheduled Maintenance Month (June/December)";
+    return '<i data-lucide="triangle-alert"></i> Scheduled Maintenance Month (June/December)';
   }
 
   return null;

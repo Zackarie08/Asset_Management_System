@@ -269,11 +269,11 @@ async function dpFurniture(id) {
     'For Repair': 'b-red'
   }[f.condition] || 'b-slate';
 
-  setDPHeader('🪑', '#fffbeb', f.furniture_name, 'Office Furniture');
+  setDPHeader('armchair', '#fffbeb', f.furniture_name, 'Office Furniture');
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
-      <div class="dp-section-hd">📦 Asset Information</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Asset Information</div>
       <div class="dp-grid">
         ${dpFieldFull('Asset Name', `<strong>${f.furniture_name}</strong>`)}
         ${dpField('Quantity', f.quantity)}
@@ -287,14 +287,14 @@ async function dpFurniture(id) {
       </div>
     </div>
 
-    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
+    ${f.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', f.remarks)}</div></div>` : ''}
 
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
         ${isAdminUser() ? `
-          <button class="btn btn-primary btn-sm" onclick="editFur(${f.office_furniture_id})">✏️ Edit</button>
-          <button class="btn btn-red btn-sm" onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name.replace(/'/g,"\\'")}')">🗑️ Delete</button>
+          <button class="btn btn-primary btn-sm" onclick="editFur(${f.office_furniture_id})"><i data-lucide="pencil"></i> Edit</button>
+          <button class="btn btn-red btn-sm" onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>
         ` : ''}
         ${itemHistoryButton('furniture', f.office_furniture_id, f.furniture_name)}
       </div>
@@ -302,6 +302,8 @@ async function dpFurniture(id) {
   `;
 
   document.getElementById('dp-footer').style.display = 'none';
+
+  if (window.lucide) lucide.createIcons();
 }
 
 if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.furniture = dpFurniture;
