@@ -72,8 +72,11 @@ function refreshPageActions(page) {
   const actions = {
     inventory:  () => {
       const el = document.getElementById("inv-actions");
-      if (el) el.innerHTML = isAdmin
-        ? `<button class="btn btn-green btn-sm" onclick="openAddInventory()">➕ Add Item</button>` : "";
+      if (el) {
+        el.innerHTML = isAdmin
+          ? `<button class="btn btn-green btn-sm" onclick="openAddInventory()"><i data-lucide="plus"></i> Add Item</button>` : "";
+        if (window.lucide) lucide.createIcons();
+      }
     },
     furniture:  () => {
       const el = document.getElementById("fur-actions");
@@ -124,8 +127,10 @@ function refreshPageActions(page) {
     },
     finance:    () => {
       const el = document.getElementById("fin-actions");
-      if (el) el.innerHTML =
-        `<button class="btn btn-green btn-sm" onclick="openAddFinance()">➕ Add Folder</button>`;
+      if (el) {
+        el.innerHTML = `<button class="btn btn-green btn-sm" onclick="openAddFinance()"><i data-lucide="plus"></i> Add Folder</button>`;
+        if (window.lucide) lucide.createIcons();
+      }
     },
   };
 

@@ -747,12 +747,14 @@ async function attachmentPanel(module, recordId, containerId) {
     <div class="dp-section-hd att-toggle"
       onclick="toggleAttPanel('${containerId}')"
       style="cursor:pointer;display:flex;align-items:center;justify-content:space-between">
-      <span>📎 Attachments</span>
+      <span><i data-lucide="paperclip"></i> Attachments</span>
       <span id="att-arrow-${containerId}" style="font-size:12px">▼ Show</span>
     </div>
     <div id="att-body-${containerId}" style="display:none">
       <div style="color:var(--slate-400);font-size:12px;padding:8px 0">Loading…</div>
     </div>`;
+
+  if (window.lucide) lucide.createIcons();
 
   try {
     const res  = await fetch(`${API_URL}/api/attachments/${module}/${recordId}`);
@@ -780,13 +782,13 @@ function _renderAttBody(module, recordId, containerId, files) {
   const fileRows = files.length
     ? files.map(f => `
         <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--slate-100)">
-          <span style="font-size:18px;flex-shrink:0">${_attIcon(f.file_type)}</span>
+          <span style="flex-shrink:0">${_attIcon(f.file_type)}</span>
           <span style="flex:1;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
             title="${_esc(f.file_name)}">${_esc(f.file_name)}</span>
           ${f.file_size_kb ? `<span style="font-size:11px;color:var(--slate-400);white-space:nowrap">${f.file_size_kb} KB</span>` : ''}
-          <button class="btn btn-xs btn-outline" onclick="window.open('${f.file_url}','_blank')">⬇ Download</button>
+          <button class="btn btn-xs btn-outline" onclick="window.open('${f.file_url}','_blank')"><i data-lucide="download"></i> Download</button>
           <button class="btn btn-xs btn-red"
-            onclick="deleteAttachment(${f.attachment_id},'${module}',${recordId},'${containerId}')">✕</button>
+            onclick="deleteAttachment(${f.attachment_id},'${module}',${recordId},'${containerId}')"><i data-lucide="x"></i></button>
         </div>`).join('')
     : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No attachments yet.</div>`;
 
@@ -800,13 +802,15 @@ function _renderAttBody(module, recordId, containerId, files) {
       ondragleave="this.style.background=''"
       ondrop="_handleDrop(event,'${module}',${recordId},'${containerId}')"
       onclick="document.getElementById('${inputId}').click()">
-      <div style="font-size:22px;margin-bottom:4px">📎</div>
+      <div style="margin-bottom:4px"><i data-lucide="paperclip" style="width:22px;height:22px"></i></div>
       <div style="font-size:12px;color:var(--slate-400)">Drag & drop or <strong>click to upload</strong></div>
       <div style="font-size:11px;color:var(--slate-300);margin-top:3px">Max ${ATTACHMENT_MAX_MB}MB per file</div>
     </div>
     <input type="file" id="${inputId}" style="display:none"
       onchange="_uploadFromInput('${module}',${recordId},'${inputId}','${containerId}')"/>
     <div id="${listId}">${fileRows}</div>`;
+
+  if (window.lucide) lucide.createIcons();
 }
 
 async function _handleDrop(event, module, recordId, containerId) {
@@ -846,7 +850,7 @@ async function _processUpload(file, module, recordId, containerId) {
         }),
       });
       if (!res.ok) throw new Error('Upload failed');
-      showToast(`"${file.name}" uploaded ✅`, 't-success');
+      showToast(`"${file.name}" uploaded`, 't-success');
       // Refresh panel and keep it open
       await attachmentPanel(module, recordId, containerId);
       setTimeout(() => {
@@ -876,12 +880,13 @@ async function deleteAttachment(attachmentId, module, recordId, containerId) {
 }
 
 function _attIcon(mimeType) {
-  if (!mimeType) return '📄';
-  if (mimeType.startsWith('image/'))                            return '🖼️';
-  if (mimeType === 'application/pdf')                           return '📕';
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return '📊';
-  if (mimeType.includes('word'))                                return '📝';
-  return '📄';
+  const size = 'style="width:18px;height:18px"';
+  if (!mimeType) return `<i data-lucide="file" ${size}></i>`;
+  if (mimeType.startsWith('image/'))                                   return `<i data-lucide="image" ${size}></i>`;
+  if (mimeType === 'application/pdf')                                  return `<i data-lucide="file-text" ${size}></i>`;
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel'))  return `<i data-lucide="sheet" ${size}></i>`;
+  if (mimeType.includes('word'))                                       return `<i data-lucide="file-type" ${size}></i>`;
+  return `<i data-lucide="file" ${size}></i>`;
 }
 
 function _esc(str) {

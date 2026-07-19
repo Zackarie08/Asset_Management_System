@@ -238,21 +238,21 @@ async function dpInventory(id) {
   if (!item) return;
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
   const isLow = item.current_quantity <= item.reorder_level;
-  setDPHeader('📦', '#eff6ff', item.item_name, item.category);
+  setDPHeader('box', '#eff6ff', item.item_name, item.category);
 
   const maxCapacity = Math.max(item.reorder_level * 5, 1);
   const progress = Math.min(100, Math.round((item.current_quantity / maxCapacity) * 100));
   const barColor = isLow ? '#ff4d4f' : '#52c41a';
 
   let html = `
-    ${isLow ? `<div class="dp-alert warning">⚠️ <span class="dp-alert-text">Stock is below reorder level. Create a purchase order.</span></div>` : ''}
+    ${isLow ? `<div class="dp-alert warning"><i data-lucide="triangle-alert"></i> <span class="dp-alert-text">Stock is below reorder level. Create a purchase order.</span></div>` : ''}
     <div class="prog-bar-wrap">
       <div class="prog-bar-labels"><span>Stock Level</span><span>${item.current_quantity} / ${item.reorder_level*5} ${item.unit}</span></div>
       <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${progress}%;background:${barColor}"></div></div>
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd">📋 Item Details</div>
+      <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Item Details</div>
       <div class="dp-grid">
         ${dpFieldFull('Item Name', `<strong>${item.item_name}</strong>`)}
         ${dpField('Category', item.category)}
@@ -265,7 +265,7 @@ async function dpInventory(id) {
       </div>
     </div>
 
-    ${item.remarks ? `<div class="dp-section"><div class="dp-section-hd">📝 Remarks</div><div class="dp-grid">${dpFieldFull('Notes', item.remarks)}</div></div>` : ''}`;
+    ${item.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', item.remarks)}</div></div>` : ''}`;
 
   /* ── Category-specific action sets (unchanged from inventory_borrow_wine_patch.js) ── */
   if (item.category === 'Company Event Supplies') {
@@ -275,25 +275,27 @@ async function dpInventory(id) {
   } else if (isAdmin) {
     html += `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
-        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
-        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
+        <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})"><i data-lucide="minus"></i> Withdraw</button>
+        <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})"><i data-lucide="package-plus"></i> Create Order</button>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>
         ${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}
-        <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')">🗑️ Delete</button>
+        <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>`;
   } else {
     html += `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}</div>
     </div>`;
   }
 
   document.getElementById('dp-body').innerHTML = html;
   document.getElementById('dp-footer').style.display = 'none';
+
+  if (window.lucide) lucide.createIcons();
 }
 
 
@@ -332,7 +334,8 @@ window.openEditInv = async function(id) {
   invEditId = id;
   closeDP();
 
-  document.getElementById('m-add-inv-title').textContent = '✏️ Edit Inventory Item';
+  document.getElementById('m-add-inv-title').innerHTML = `<i data-lucide="pencil"></i> Edit Inventory Item`;
+  if (window.lucide) lucide.createIcons();
   document.getElementById('inv-f-name').value = item.item_name;
   document.getElementById('inv-f-cat').value = item.category;
   document.getElementById('inv-f-qty').value = item.current_quantity;
@@ -569,12 +572,11 @@ async function renderInventory() {
       openDP("inventory", item.inventory_gen_id, tr);
     });
 
-    // ✅ NEW: pending-request / borrowed indicator badge
     let requestBadge = '';
     if (wineItemIds.has(item.inventory_gen_id)) {
-      requestBadge = '<span class="badge b-amber" style="margin-left:4px">🍷 Pending Request</span>';
+      requestBadge = '<span class="badge b-amber" style="margin-left:4px"><i data-lucide="wine"></i> Pending Request</span>';
     } else if (borrowedIds.has(item.inventory_gen_id)) {
-      requestBadge = '<span class="badge b-blue" style="margin-left:4px">📤 Borrowed</span>';
+      requestBadge = '<span class="badge b-blue" style="margin-left:4px"><i data-lucide="package-minus"></i> Borrowed</span>';
     }
 
     tr.innerHTML = `
@@ -599,6 +601,8 @@ async function renderInventory() {
   document.getElementById("inv-total-ct").innerText = totalItems + " items";
 
   renderPagination(totalItems);
+
+  if (window.lucide) lucide.createIcons();
 }
 
 let _wineReqAvailable = 0;
@@ -621,7 +625,12 @@ async function _buildWineActionsHTML(item, isAdmin) {
   const timelineHTML = requests.length ? `
     <ul class="mh-list">
       ${requests.map(r => {
-        const meta = { PENDING: ['⏳ Pending', 'good'], APPROVED: ['✅ Approved', 'good'], DENIED: ['❌ Denied', 'repair'], CANCELLED: ['🚫 Cancelled', 'repair'] }[r.status] || [r.status, 'good'];
+        const meta = {
+          PENDING:   ['<i data-lucide="clock"></i> Pending', 'good'],
+          APPROVED:  ['<i data-lucide="check"></i> Approved', 'good'],
+          DENIED:    ['<i data-lucide="x"></i> Denied', 'repair'],
+          CANCELLED: ['<i data-lucide="x-circle"></i> Cancelled', 'repair'],
+        }[r.status] || [r.status, 'good'];
         const who = r.status === 'APPROVED' ? r.approved_by_name : r.status === 'DENIED' ? r.denied_by_name : r.requested_name;
         return `
         <li class="mh-item">
@@ -629,12 +638,12 @@ async function _buildWineActionsHTML(item, isAdmin) {
           <div>
             <div class="mh-cond info">${meta[0]} — ${r.quantity} unit(s)</div>
             <div class="mh-date">${formatDateHuman(r.request_date)} · Requested by ${r.requested_name}${who && who !== r.requested_name ? ` · by ${who}` : ''}</div>
-            ${r.remarks ? `<div class="mh-remarks">📝 ${r.remarks}</div>` : ''}
+            ${r.remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${r.remarks}</div>` : ''}
           </div>
           ${isAdmin && r.status === 'PENDING' ? `
             <div style="display:flex;gap:4px">
-              <button class="btn btn-xs btn-green" onclick="approveWineRequest(${r.request_id}, '${_escInv(item.item_name)}')">✅</button>
-              <button class="btn btn-xs btn-red" onclick="denyWineRequest(${r.request_id}, '${_escInv(item.item_name)}')">❌</button>
+              <button class="btn btn-xs btn-green" onclick="approveWineRequest(${r.request_id}, '${_escInv(item.item_name)}')"><i data-lucide="check"></i></button>
+              <button class="btn btn-xs btn-red" onclick="denyWineRequest(${r.request_id}, '${_escInv(item.item_name)}')"><i data-lucide="x"></i></button>
             </div>` : ''}
           ${!isAdmin && r.status === 'PENDING' && r.requested_by_id === currentUser.user_id ? `
             <button class="btn btn-xs btn-outline" onclick="cancelWineRequest(${r.request_id}, '${_escInv(item.item_name)}')">Cancel</button>` : ''}
@@ -645,26 +654,26 @@ async function _buildWineActionsHTML(item, isAdmin) {
   let actionButtons = '';
   if (!isAdmin) {
     actionButtons = myPending
-      ? `<span class="td-muted" style="font-size:12px">⏳ Your request for ${myPending.quantity} unit(s) is pending approval</span>`
-      : `<button class="btn btn-primary btn-sm" onclick="openWineRequest(${item.inventory_gen_id},'${_escInv(item.item_name)}',${trueAvailable})">🍷 Request Withdrawal</button>`;
+      ? `<span class="td-muted" style="font-size:12px"><i data-lucide="clock"></i> Your request for ${myPending.quantity} unit(s) is pending approval</span>`
+      : `<button class="btn btn-primary btn-sm" onclick="openWineRequest(${item.inventory_gen_id},'${_escInv(item.item_name)}',${trueAvailable})"><i data-lucide="wine"></i> Request Withdrawal</button>`;
   } else {
     actionButtons = `
-      <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw</button>
-      <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})">📦 Create Order</button>
-      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})">✏️ Edit</button>
-      <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')">🗑️ Delete</button>`;
+      <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})"><i data-lucide="minus"></i> Withdraw</button>
+      <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})"><i data-lucide="package-plus"></i> Create Order</button>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>
+      <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>`;
   }
 
   return `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
         ${actionButtons}
         ${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}
       </div>
     </div>
     <div class="dp-section">
-      <div class="dp-section-hd">🍷 Withdrawal Requests ${anyPending.length ? `<span class="badge b-amber" style="margin-left:6px">${anyPending.length} pending</span>` : ''}</div>
+      <div class="dp-section-hd"><i data-lucide="wine"></i> Withdrawal Requests ${anyPending.length ? `<span class="badge b-amber" style="margin-left:6px">${anyPending.length} pending</span>` : ''}</div>
       ${timelineHTML}
     </div>`;
 }
@@ -797,28 +806,28 @@ async function _buildEventSupplyActionsHTML(item, isAdmin) {
         <li class="mh-item">
           <div class="mh-dot ${b.status === 'BORROWED' ? 'repair' : 'good'}"></div>
           <div style="flex:1">
-            <div class="mh-cond info">${b.status === 'BORROWED' ? '📤 Borrowed' : '📥 Returned'} — ${b.quantity} unit(s)</div>
+            <div class="mh-cond info">${b.status === 'BORROWED' ? '<i data-lucide="package-minus"></i> Borrowed' : '<i data-lucide="package-check"></i> Returned'} — ${b.quantity} unit(s)</div>
             <div class="mh-date">${b.borrowed_by_name} · ${formatDateHuman(b.borrow_date)}</div>
-            ${b.borrow_remarks ? `<div class="mh-remarks">📝 ${b.borrow_remarks}</div>` : ''}
-            ${b.status === 'RETURNED' ? `<div class="mh-remarks">↩️ Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
+            ${b.borrow_remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${b.borrow_remarks}</div>` : ''}
+            ${b.status === 'RETURNED' ? `<div class="mh-remarks"><i data-lucide="corner-up-left"></i> Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
           </div>
-          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${_escInv(item.item_name)}')">✅ Mark Returned</button>` : ''}
+          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${_escInv(item.item_name)}')"><i data-lucide="check"></i> Mark Returned</button>` : ''}
         </li>`).join('')}
     </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
 
   return `
     <div class="dp-section">
-      <div class="dp-section-hd">⚡ Actions</div>
+      <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        ${isAdmin ? `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${item.inventory_gen_id},'${_escInv(item.item_name)}','inventory',${item.current_quantity})">📤 Borrow</button>` : ''}
-        ${isAdmin ? `<button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})">➖ Withdraw (Permanent)</button>` : ''}
-        ${isAdmin ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})">✏️ Edit</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${item.inventory_gen_id},'${_escInv(item.item_name)}','inventory',${item.current_quantity})"><i data-lucide="package-minus"></i> Borrow</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})"><i data-lucide="minus"></i> Withdraw (Permanent)</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}
-        ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')">🗑️ Delete</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
     <div class="dp-section">
-      <div class="dp-section-hd">📤 Borrow / Return ${currentlyOut.length ? `<span class="badge b-amber" style="margin-left:6px">${currentlyOut.length} out</span>` : ''}</div>
+      <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return ${currentlyOut.length ? `<span class="badge b-amber" style="margin-left:6px">${currentlyOut.length} out</span>` : ''}</div>
       ${listHTML}
     </div>`;
 }
