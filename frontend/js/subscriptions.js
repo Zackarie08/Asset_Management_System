@@ -306,7 +306,7 @@ async function dpM365(id) {
           ${dpField('Assigned Email', m.assigned_email || '—')}
           ${dpField('Assigned User',  m.assigned_user_name || 'Unassigned')}
           ${dpField('License Type',   m.license_type  || '—')}
-          ${dpField('Monthly Cost',   fmtCost(m.monthly_cost ?? m.license_cost))}
+          ${dpField('Cost',   fmtCost(m.monthly_cost ?? m.license_cost))}
         </div>
       </div>
       <div class="dp-section">
@@ -467,7 +467,7 @@ setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Pla
         <div class="dp-section-hd"><i data-lucide="smartphone"></i> Plan Details</div>
         <div class="dp-grid">
           ${dpField('Plan Name',    g.plan_name      || '—')}
-          ${dpField('Monthly Cost', fmtCost(g.monthly_cost))}
+          ${dpField('Cost', fmtCost(g.monthly_cost))}
           ${dpField('Data',         g.data_allocation|| '—')}
           ${dpField('Credit Limit', fmtCost(g.credit_limit))}
           ${dpField('Renewal Date', fmtDate(g.renewal_date))}
@@ -647,7 +647,7 @@ async function dpSubscriptions(id) {
           ${dpField('Category',    s.category          || '—')}
           ${dpField('Supplier',    s.supplier          || '—')}
           ${dpField('Assigned To', s.assigned_user_name || s.assigned_to || '—')}
-          ${dpField('Monthly Cost',fmtCost(s.monthly_cost))}
+          ${dpField('Cost',fmtCost(s.monthly_cost))}
           ${dpField('Billing',     s.billing_cycle     || '—')}
         </div>
       </div>
@@ -899,7 +899,7 @@ function exportUnifiedSubscriptions() {
   const rows = document.querySelectorAll('#uni-tbody tr');
   if (!rows.length) { showToast('No data to export', 't-error'); return; }
 
-  const headers = ['Source','Name','Assigned To','Supplier','Monthly Cost','Expiry','Status'];
+  const headers = ['Source','Name','Assigned To','Supplier','Cost','Expiry','Status'];
   const csvRows = [headers.join(',')];
   rows.forEach(tr => {
     const cells = [...tr.querySelectorAll('td')].map(td => `"${td.innerText.trim().replace(/"/g,'""')}"`);
