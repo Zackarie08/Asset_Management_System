@@ -3,9 +3,8 @@ let _currentContract = null;
 let currentPage = 'dashboard';
 
 function isAdminUser() {
-  return currentUser.role === "admin" || currentUser.role === "super_admin";
+  return !!currentUser && (currentUser.role === "admin" || currentUser.role === "super_admin");
 }
-
 
 function doLogin() {
   const email = document.getElementById("email").value;

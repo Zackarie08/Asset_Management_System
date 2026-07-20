@@ -231,7 +231,7 @@ function clearLogs() {
 }
 
 
-
+if (typeof DP_RENDERERS !== 'undefined') DP_RENDERERS.log = dpLog;
 
 
 

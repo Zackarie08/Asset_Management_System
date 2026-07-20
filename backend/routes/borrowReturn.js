@@ -19,25 +19,25 @@ const TABLE_MAP = {
   itsupplies: { table: "it_supplies",   idCol: "it_supplies_id",   qtyCol: "quantity",          nameCol: "asset_name" },
 };
 
-// GET /api/borrow-return/:module/:record_id — full borrow ledger for one item
-router.get("/:module/:record_id", async (req, res) => {
+// GET /api/borrow-return/open/:module — everything currently out, any item
+router.get("/open/:module", async (req, res) => {
   try {
-    const { module, record_id } = req.params;
+    const { module } = req.params;
     if (!TABLE_MAP[module]) return res.status(400).json({ error: "Invalid module" });
 
     const result = await pool.query(
-      `SELECT * FROM borrow_records WHERE module=$1 AND record_id=$2 ORDER BY borrow_date DESC, created_at DESC`,
-      [module, record_id]
+      `SELECT * FROM borrow_records WHERE module=$1 AND status='BORROWED' ORDER BY borrow_date ASC`,
+      [module]
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("BorrowReturn GET /:module/:record_id", err);
-    res.status(500).json({ error: "Failed to fetch borrow records" });
+    console.error("BorrowReturn GET /open/:module", err);
+    res.status(500).json({ error: "Failed to fetch open borrows" });
   }
 });
 
-// GET /api/borrow-return/open/:module — everything currently out, any item
-router.get("/open/:module", async (req, res) => {
+// GET /api/borrow-return/:module/:record_id — full borrow ledger for one item
+router.get("/:module/:record_id", async (req, res) => {
   try {
     const { module } = req.params;
     if (!TABLE_MAP[module]) return res.status(400).json({ error: "Invalid module" });

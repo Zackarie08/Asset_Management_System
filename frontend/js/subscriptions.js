@@ -54,10 +54,6 @@ function fmtCost(val) {
   return '₱' + Number(val).toLocaleString('en-PH', { minimumFractionDigits: 2 });
 }
 
-function isAdminUser() {
-  return currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin');
-}
-
 /* ──────────────────────────────────────────────────────────
    UNIFIED TABLE STATE
 ────────────────────────────────────────────────────────── */
