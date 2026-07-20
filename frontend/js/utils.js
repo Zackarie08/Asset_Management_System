@@ -207,14 +207,16 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 
 function togglePassword(inputId, icon) {
   const input = document.getElementById(inputId);
+  if (!input) return;
 
   if (input.type === "password") {
     input.type = "text";
-    icon.textContent = "🙈";
+    icon.setAttribute('data-lucide', 'eye-off');
   } else {
     input.type = "password";
-    icon.textContent = "👁️";
+    icon.setAttribute('data-lucide', 'eye');
   }
+  if (window.lucide) lucide.createIcons();
 }
 
 

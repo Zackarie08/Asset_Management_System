@@ -76,6 +76,70 @@
   --icon-active-bg: rgba(59, 130, 246, 0.15);
   --icon-size-sidebar: 20px;
   --icon-size-button: 16px;
+
+  --icon-size-title: 16px;   /* card titles, modal titles, pg-title */
+  --icon-size-section: 13px; /* dp-section-hd, history items */
+  --icon-size-inline: 13px;  /* buttons, action rows */
+  --icon-size-xs: 11px;      /* badges, pills, btn-xs */
+  --icon-size-alert: 16px;   /* dp-alert boxes */
+}
+
+/* ═══════════════════════════════════════════
+   LUCIDE ICON SIZING & ALIGNMENT (global)
+   ─────────────────────────────────────────
+   Root cause: Lucide SVGs render at a native 24x24 unless sized
+   explicitly. Only .nav-icon, .dp-icon, and .log-action-badge were
+   ever constrained — everywhere else (card titles, section headers,
+   buttons, alerts, modal titles, history list items) was silently
+   rendering oversized icons with no baseline alignment to the text
+   next to them. This block fixes both issues everywhere at once,
+   sized by ROLE rather than per-instance:
+     - title   → card/page/modal titles (larger, most prominent)
+     - section → dp-section-hd headers + history list items (smaller)
+     - inline  → buttons / action rows (smaller, matches button text)
+     - xs      → badges/pills (smallest)
+     - alert   → dp-alert warning/danger/info boxes
+═══════════════════════════════════════════ */
+[data-lucide] {
+  vertical-align: -3px; /* baseline-aligns icon with adjacent text */
+  flex-shrink: 0;
+}
+
+.card-title i,
+.pg-title i,
+.modal-title i {
+  width: var(--icon-size-title);
+  height: var(--icon-size-title);
+  margin-right: 2px;
+}
+
+.dp-section-hd i,
+.mh-cond i {
+  width: var(--icon-size-section);
+  height: var(--icon-size-section);
+  vertical-align: -2px;
+}
+
+.btn i {
+  width: var(--icon-size-inline);
+  height: var(--icon-size-inline);
+  vertical-align: -2px;
+}
+.btn-xs i {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+}
+
+.badge i {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  vertical-align: -1px;
+}
+
+.dp-alert i {
+  width: var(--icon-size-alert);
+  height: var(--icon-size-alert);
+  vertical-align: -3px;
 }
 
 /* ═══════════════════════════════════════════
@@ -726,10 +790,35 @@ tbody tr:last-child td { border-bottom: none; }
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.dp-icon i {
+.dp-icon i,
+.dp-icon svg.lucide {
   width: 18px; height: 18px;
   color: var(--slate-700);
 }
+
+/* ═══ GLOBAL ICON SIZE FIX ═══
+   Lucide renders every icon at a fixed 24x24 by default, ignoring the
+   font-size of whatever title/button/badge/section-header it sits next
+   to — this is why icons next to "Furniture Register", "IT Supply
+   Inventory", "Actions", "Edit", "Reset Password", "View Item History",
+   "Delete", etc. were all showing up oversized compared to their text.
+   Making icons inherit 1em brings them back in line with their
+   surrounding text automatically, everywhere, with no per-icon changes
+   needed. Anything that must stay a FIXED size instead of scaling with
+   text (sidebar nav icons, the colored dp header icon above) is
+   re-asserted right after with a more specific selector. */
+svg.lucide {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}
+
+.nav-icon.lucide {
+  width: var(--icon-size-sidebar);
+  height: var(--icon-size-sidebar);
+}
+
 .dp-title { font-size: 13.5px; font-weight: 800; color: var(--slate-800); letter-spacing: -0.3px; }
 .dp-subtitle { font-size: 11px; color: var(--slate-400); margin-top: 1px; }
 
@@ -942,8 +1031,16 @@ textarea.form-ctrl { resize: vertical; line-height: 1.5; }
    LOGS PAGE
 ═══════════════════════════════════════════ */
 .log-action-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10.5px; font-weight: 700; padding: 2px 8px;
   border-radius: var(--radius-pill);
+}
+.log-action-badge i {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
 }
 .la-create  { background: var(--green-100); color: #166534; }
 .la-update  { background: var(--blue-100); color: #1e40af; }
@@ -1048,3 +1145,11 @@ textarea.form-ctrl { resize: vertical; line-height: 1.5; }
 }
 .sidebar:hover .nav-notif-count,
 .sidebar:focus-within .nav-notif-count { opacity: 1; }
+
+/* ═══ SEARCH INPUT ICON (persistent, doesn't vanish on typing) ═══ */
+.search-input-wrap { position: relative; display: inline-block; }
+.search-input-wrap .search-input-icon {
+  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  width: 13px; height: 13px; color: var(--slate-400); pointer-events: none;
+}
+.search-input-wrap .form-ctrl { width: 100%; padding-left: 28px !important; }

@@ -13,7 +13,7 @@ let logDateTo        = '';
 let currentLogPage   = 1;
 
 const logsPerPage    = 20;
-const LOG_ICONS = { LOGIN:'🔐',LOGOUT:'🚪',CREATE:'✅',UPDATE:'✏️',DELETE:'🗑️',DELIVER:'📦',WITHDRAW:'➖',SYSTEM:'⚙️' };
+const LOG_ICONS = { LOGIN:'log-in', LOGOUT:'log-out', CREATE:'check', UPDATE:'pencil', DELETE:'trash-2', DELIVER:'package-check', WITHDRAW:'minus', REQUEST:'send', SYSTEM:'settings' };
 
 function applyLogFilters() {
   logFilterAction = document.getElementById('log-filter-action').value;
@@ -112,10 +112,11 @@ async function renderLogs() {
       paginated.forEach(log => {
         const tr = document.createElement('tr');
         tr.className = 'tr-clickable';
+        const actionIcon = LOG_ICONS[log.action_type] || 'settings';
         tr.innerHTML = `
           <td style="font-size:11px; font-family:var(--mono)">${new Date(log.date_time).toLocaleString()}</td>
           <td>${log.name || '—'}</td>
-          <td><span class="log-action-badge ${_logActionCls(log.action_type)}">${log.action_type}</span></td>
+          <td><span class="log-action-badge ${_logActionCls(log.action_type)}"><i data-lucide="${actionIcon}"></i> ${log.action_type}</span></td>
           <td><span class="badge b-slate b-none">${log.module}</span></td>
           <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px">${log.description || '—'}</td>
           <td>${log.performed_by || '—'}</td>
@@ -127,6 +128,9 @@ async function renderLogs() {
 
     document.getElementById('log-ct').textContent = `${total} entries`;
     _renderLogPagination(total);
+
+    // ✅ NEW: renders the action-badge icons injected into table rows above
+    if (window.lucide) lucide.createIcons();
 
   } catch (err) {
     console.error(err);
@@ -197,21 +201,22 @@ function dpLog(id) {
         DELIVER:'la-deliver', WITHDRAW:'la-withdraw', REQUEST:'la-request',
         LOGIN:'la-system', LOGOUT:'la-system'
       };
+      const actionIcon = LOG_ICONS[l.action_type] || 'settings';
 
       setDPHeader(
-        '📜', '#f8fafc',
+        'scroll-text', '#f8fafc',
         `Log #${l.log_id}`,
         l.module
       );
 
       document.getElementById('dp-body').innerHTML = `
         <div class="dp-section">
-          <div class="dp-section-hd">📜 Log Entry</div>
+          <div class="dp-section-hd"><i data-lucide="scroll-text"></i> Log Entry</div>
           <div class="dp-grid">
             ${dpField('Log ID',      `#${l.log_id}`,   'mono')}
             ${dpField('Timestamp',   new Date(l.date_time).toLocaleString(), 'mono')}
             ${dpField('User',        l.name || '—')}
-            ${dpField('Action',      `<span class="log-action-badge ${clsMap[l.action_type] || 'la-system'}">${l.action_type}</span>`)}
+            ${dpField('Action',      `<span class="log-action-badge ${clsMap[l.action_type] || 'la-system'}"><i data-lucide="${actionIcon}"></i> ${l.action_type}</span>`)}
             ${dpField('Module',      l.module)}
             ${dpField('Performed By',l.performed_by || '—')}
             ${dpFieldFull('Description', l.description || '—')}
@@ -219,6 +224,8 @@ function dpLog(id) {
         </div>`;
 
       document.getElementById('dp-footer').style.display = 'none';
+
+      if (window.lucide) lucide.createIcons();
     });
 }
 
@@ -425,5 +432,6 @@ setInterval(() => {
    LOGS
 ────────────────────────────────────────────────────────────── */
 window.onload = function () {
+  if (window.lucide) lucide.createIcons();
   autoLogin();
 };

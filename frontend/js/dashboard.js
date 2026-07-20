@@ -377,7 +377,10 @@ async function refreshDashboard() {
     // Retitle the panel in place — same panel, same modal target, just a
     // broader name now that it covers Insurance too.
     const adminTitleEl = adminPanel.querySelector('.panel-title');
-    if (adminTitleEl) adminTitleEl.textContent = '(ICON) Subscription & Insurance Alerts';
+    if (adminTitleEl) {
+      adminTitleEl.innerHTML = '<i data-lucide="lock"></i> Subscription & Insurance Alerts';
+      if (window.lucide) lucide.createIcons();
+    }
 
     const allAlerts = [
       ...globeAlerts.map(g => ({
