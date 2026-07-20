@@ -41,9 +41,8 @@ router.get("/", async (req, res) => {
         holder.name AS current_holder_name
       FROM contracts c
       LEFT JOIN LATERAL (
-        SELECT u.name
+        SELECT cr.requested_name AS name
         FROM contract_requests cr
-        JOIN users u ON cr.requested_by = u.user_id
         WHERE cr.contract_id = c.contract_id
           AND cr.status = 'APPROVED'
         ORDER BY cr.approved_date DESC NULLS LAST, cr.request_date DESC
@@ -54,10 +53,9 @@ router.get("/", async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error fetching contracts");
+    res.status(500).json({ error: "Error fetching contracts" });
   }
 });
-
 /* ── GET ALL CONTRACT REQUESTS ───────────────────────────────── */
 router.get("/requests", async (req, res) => {
   try {
@@ -66,16 +64,15 @@ router.get("/requests", async (req, res) => {
         cr.*,
         c.other_party,
         c.description,
-        COALESCE(cr.requested_name, u.name) AS requested_name
+        COALESCE(cr.requested_name, '(unknown — recorded before snapshot upgrade)') AS requested_name
       FROM contract_requests cr
       JOIN contracts c ON cr.contract_id = c.contract_id
-      LEFT JOIN users u ON cr.requested_by = u.user_id
       ORDER BY cr.request_date DESC
     `);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error fetching requests");
+    res.status(500).json({ error: "Error fetching requests" });
   }
 });
 
@@ -111,7 +108,7 @@ router.post("/", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error creating contract");
+    res.status(500).json({ error: "Error creating contract" });
   }
 });
 
@@ -150,7 +147,7 @@ router.post("/request", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error creating request");
+    res.status(500).json({ error: "Error creating request" });
   }
 });
 
@@ -199,7 +196,7 @@ router.put("/request/:id/approve", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error approving request");
+    res.status(500).json({ error: "Error approving request" });
   }
 });
 
@@ -207,7 +204,7 @@ router.put("/request/:id/approve", async (req, res) => {
 router.put("/request/:id/return", async (req, res) => {
   try {
     const { id }  = req.params;
-    const { user_id, performed_by } = req.body; // optional attribution
+    const { user_id, performed_by } = req.body; // attribution — now actually sent by the frontend
     const reqData = await db.query(
       "SELECT * FROM contract_requests WHERE request_id=$1", [id]
     );
@@ -215,7 +212,10 @@ router.put("/request/:id/return", async (req, res) => {
 
     const contract_id = reqData.rows[0].contract_id;
 
-    await db.query("UPDATE contract_requests SET status='RETURNED' WHERE request_id=$1", [id]);
+    await db.query(
+      "UPDATE contract_requests SET status='RETURNED', returned_by_name=$1, returned_date=NOW() WHERE request_id=$2",
+      [performed_by || reqData.rows[0].requested_name, id]
+    );
     await db.query("UPDATE contracts SET status='IN_STORAGE' WHERE contract_id=$1", [contract_id]);
 
     await logItemHistory({
@@ -230,7 +230,7 @@ router.put("/request/:id/return", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error returning contract");
+    res.status(500).json({ error: "Error returning contract" });
   }
 });
 
@@ -266,7 +266,7 @@ router.put("/request/:id/deny", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error denying request");
+    res.status(500).json({ error: "Error denying request" });
   }
 });
 
@@ -297,7 +297,7 @@ router.delete("/request/:id", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error cancelling request");
+    res.status(500).json({ error: "Error cancelling request" });
   }
 });
 
@@ -310,9 +310,8 @@ router.get("/:id", async (req, res) => {
         holder.name AS current_holder_name
       FROM contracts c
       LEFT JOIN LATERAL (
-        SELECT u.name
+        SELECT cr.requested_name AS name
         FROM contract_requests cr
-        JOIN users u ON cr.requested_by = u.user_id
         WHERE cr.contract_id = c.contract_id
           AND cr.status = 'APPROVED'
         ORDER BY cr.approved_date DESC NULLS LAST, cr.request_date DESC
@@ -324,7 +323,7 @@ router.get("/:id", async (req, res) => {
     res.json(result.rows[0] || null);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error fetching contract");
+    res.status(500).json({ error: "Error fetching contract" });
   }
 });
 
@@ -389,7 +388,7 @@ router.put("/:id", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error updating contract");
+    res.status(500).json({ error: "Error updating contract" });
   }
 });
 
@@ -409,7 +408,7 @@ router.delete("/:id", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error deleting contract");
+    res.status(500).json({ error: "Error deleting contract" });
   }
 });
 

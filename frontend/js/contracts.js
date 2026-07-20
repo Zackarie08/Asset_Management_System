@@ -495,12 +495,15 @@ function approveRequest(id) {
 }
 
 function returnContract(id) {
-  fetch(`${API_URL}/api/contracts/request/${id}/return`, { method: "PUT" })
+  fetch(`${API_URL}/api/contracts/request/${id}/return`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: currentUser.user_id,
+      performed_by: currentUser.name,
+    }),
+  })
     .then(res => {
-      // ✅ FIX (Change 5): check res.ok before claiming success, and use
-      // the shared refreshContractUI() helper instead of a bespoke
-      // renderContracts()+dpContract() pair, so this action refreshes the
-      // same way every other contract action does.
       if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
       showToast("Contract returned", "t-success");
       addLog("REQUEST", "CONTRACT",
