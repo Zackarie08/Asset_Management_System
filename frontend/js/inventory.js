@@ -821,6 +821,7 @@ async function _buildEventSupplyActionsHTML(item, isAdmin) {
       <div class="dp-action-row">
         ${isAdmin ? `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${item.inventory_gen_id},'${_escInv(item.item_name)}','inventory',${item.current_quantity})"><i data-lucide="package-minus"></i> Borrow</button>` : ''}
         ${isAdmin ? `<button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})"><i data-lucide="minus"></i> Withdraw (Permanent)</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})"><i data-lucide="package-plus"></i> Create Order</button>` : ''}
         ${isAdmin ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}
         ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}

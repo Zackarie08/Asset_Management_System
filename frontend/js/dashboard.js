@@ -34,7 +34,8 @@ async function refreshDashboard() {
 
   const [
     inventory, orders, laptops, vehicles, contracts, logs, globe, m365, contractRequests,
-    wineReqs, invBorrows, itBorrows, itSuppliesList, // ✅ NEW
+    wineReqs, invBorrows, itBorrows, itSuppliesList,
+    insuranceList, otherSubs, 
   ] = await Promise.all([
       safeFetch(`${API_URL}/api/inventory`),
       safeFetch(`${API_URL}/api/po`),
@@ -45,10 +46,12 @@ async function refreshDashboard() {
       safeFetch(`${API_URL}/api/globe`),
       safeFetch(`${API_URL}/api/m365`),
       safeFetch(`${API_URL}/api/contracts/requests`),
-      safeFetch(`${API_URL}/api/wine-requests`),                    // ✅ NEW — all PENDING wine requests
-      safeFetch(`${API_URL}/api/borrow-return/open/inventory`),      // ✅ NEW — borrowed event supplies
-      safeFetch(`${API_URL}/api/borrow-return/open/itsupplies`),     // ✅ NEW — borrowed IT supplies
-      safeFetch(`${API_URL}/api/it-supplies`),                       // ✅ NEW — for asset-name lookup
+      safeFetch(`${API_URL}/api/wine-requests`),
+      safeFetch(`${API_URL}/api/borrow-return/open/inventory`),
+      safeFetch(`${API_URL}/api/borrow-return/open/itsupplies`),
+      safeFetch(`${API_URL}/api/it-supplies`),
+      safeFetch(`${API_URL}/api/insurance`),                         // ✅ NEW
+      safeFetch(`${API_URL}/api/subscriptions`),                     // ✅ NEW — "Other" subscriptions
     ]);
 
   const today = new Date();
@@ -337,42 +340,85 @@ async function refreshDashboard() {
     _setHTML('dash-con-list', html);
   }
 
-  /* ── PANEL 6 — ADMIN: GLOBE + M365 (unchanged) ───── */
+/* ── PANEL 6 — ADMIN: SUBSCRIPTIONS + INSURANCE (Part 1 expansion) ──
+     Was Globe+M365 only ("Subscription Alerts"). Now also folds in
+     "Other" subscriptions and Insurance renewals/expirations into the
+     SAME existing panel + a "View All" modal — no separate Insurance
+     modal, no dashboard-wide modal. Also fixes a pre-existing bug where
+     M365 alerts read `m.expiry_date` (field doesn't exist on that model —
+     the correct field is `renewal_date`), which silently broke the
+     "Expires ..." label for every M365 row. */
   const adminPanel = document.getElementById('dash-admin-wrap');
   if (adminPanel) adminPanel.style.display = isAdminUser() ? '' : 'none';
 
   if (isAdminUser()) {
-    const globeAlerts = globe.filter(g => g.status !== 'Inactive' && g.renewal_alert_active);
-    const m365Alerts  = m365.filter(m => m.renewal_alert_active);
-    const totalSubs = globe.filter(g => g.status === 'Active').length + m365.filter(m => m.status === 'Active').length;
+    const globeAlerts    = globe.filter(g => g.status !== 'Inactive' && g.renewal_alert_active);
+    const m365Alerts     = m365.filter(m => m.renewal_alert_active);
+    const otherSubAlerts = otherSubs.filter(s => s.renewal_alert_active);
 
-    _setText('dash-admin-ct', `${globeAlerts.length + m365Alerts.length} alerts`);
-    _setText('dash-admin-subs', `${totalSubs} active subscriptions`);
+    // Same 30-day window used by backend/routes/notifications.js so the
+    // panel never disagrees with what's driving the sidebar red dot.
+    const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+    const insuranceAlerts = insuranceList.filter(i => {
+      if (!i.expiry_date) return false;
+      const days = Math.ceil((new Date(i.expiry_date) - today0) / 86400000);
+      return days <= 30;
+    });
 
-    const allSubAlerts = [
-      ...globeAlerts.map(g => ({ name: g.employee_name, detail: `Globe · ${g.plan_name || '—'} · Renews ${formatDateHuman(g.renewal_date)}`, daysLeft: daysFromNow(g.renewal_date) })),
-      ...m365Alerts.map(m => ({ name: m.assigned_email, detail: `M365 · ${m.license_type || '—'} · Expires ${formatDateHuman(m.expiry_date)}`, daysLeft: daysFromNow(m.expiry_date) })),
-    ];
+    const totalActiveSubs = globe.filter(g => g.status === 'Active').length
+      + m365.filter(m => m.status === 'Active').length
+      + otherSubs.filter(s => s.computed_status === 'Active').length;
 
-    if (allSubAlerts.length === 0) {
-      _setHTML('dash-admin-list', _emptyMsg('No subscription alerts'));
+    const totalAlerts = globeAlerts.length + m365Alerts.length + otherSubAlerts.length + insuranceAlerts.length;
+
+    _setText('dash-admin-ct', `${totalAlerts} alert${totalAlerts === 1 ? '' : 's'}`);
+    _setText('dash-admin-subs', `${totalActiveSubs} active subscriptions · ${insuranceList.length} policies`);
+
+    // Retitle the panel in place — same panel, same modal target, just a
+    // broader name now that it covers Insurance too.
+    const adminTitleEl = adminPanel.querySelector('.panel-title');
+    if (adminTitleEl) adminTitleEl.textContent = '(ICON) Subscription & Insurance Alerts';
+
+    const allAlerts = [
+      ...globeAlerts.map(g => ({
+        name: g.employee_name || g.plan_name || 'Globe Plan',
+        detail: `Globe · ${g.plan_name || '—'} · Renews ${formatDateHuman(g.renewal_date)}`,
+        daysLeft: daysFromNow(g.renewal_date),
+        page: 'subscriptions', dpType: 'globe', recordId: g.plan_id,
+      })),
+      ...m365Alerts.map(m => ({
+        name: m.assigned_email,
+        detail: `M365 · ${m.license_type || '—'} · Renews ${formatDateHuman(m.renewal_date)}`,
+        daysLeft: daysFromNow(m.renewal_date),
+        page: 'subscriptions', dpType: 'm365', recordId: m.license_id,
+      })),
+      ...otherSubAlerts.map(s => ({
+        name: s.subscription_name,
+        detail: `${s.category || 'Subscription'} · Renews ${formatDateHuman(s.renewal_date)}`,
+        daysLeft: daysFromNow(s.renewal_date),
+        page: 'subscriptions', dpType: 'subscriptions', recordId: s.subscription_id,
+      })),
+      ...insuranceAlerts.map(i => {
+        const dl = daysFromNow(i.expiry_date);
+        return {
+          name: i.employee_name,
+          detail: `Insurance · ${i.provider || '—'} · ${dl < 0 ? 'Expired' : 'Expires'} ${formatDateHuman(i.expiry_date)}`,
+          daysLeft: dl,
+          page: 'insurance', dpType: 'insurance', recordId: i.insurance_id,
+        };
+      }),
+    ].sort((a, b) => a.daysLeft - b.daysLeft); // most urgent first
+
+    _lastSubInsAlerts = allAlerts; // cached for the modal (see below)
+
+    if (allAlerts.length === 0) {
+      _setHTML('dash-admin-list', _emptyMsg('No subscription or insurance alerts'));
     } else {
-      const rows = allSubAlerts.map(a => {
-        const expired = a.daysLeft < 0;
-        const cls = expired ? 'red' : 'amber';
-        const label = expired ? 'Expired' : `${a.daysLeft}d left`;
-        return `
-          <div class="panel-row">
-            <div class="pr-dot ${cls}"></div>
-            <div style="flex:1">
-              <div class="pr-name">${_esc(a.name)}</div>
-              <div class="pr-meta">${_esc(a.detail)}</div>
-            </div>
-            ${badge(label, `b-${cls}`)}
-          </div>`;
-      }).join('');
-      _setHTML('dash-admin-list', rows);
+      // Keep the inline panel compact (max 6); full list lives in the modal.
+      _setHTML('dash-admin-list', allAlerts.slice(0, 6).map(_renderSubInsAlertRow).join(''));
     }
+
+    _ensureSubInsViewAllLink(adminPanel, allAlerts.length);
   }
 }
 
@@ -437,7 +483,71 @@ function navigateAndOpen(page, dpType, recordId) {
 let currentItemStock = 0;
 
 
+/* ══════════════════════════════════════════════════════════════
+   PART 1 — Subscription & Insurance Alerts modal
+   Extends the EXISTING dash-admin panel (formerly "Subscription
+   Alerts") to also cover Insurance. No new dashboard-wide modal,
+   no separate Insurance modal — one panel, one modal, combined data.
+   The modal markup is built via JS the first time it's needed, so
+   index.html does not need to be touched.
+══════════════════════════════════════════════════════════════ */
 
+let _lastSubInsAlerts = [];
+
+function _renderSubInsAlertRow(a) {
+  const expired = a.daysLeft < 0;
+  const cls   = expired ? 'red' : (a.daysLeft <= 3 ? 'amber' : 'blue');
+  const label = expired ? 'Expired' : `${a.daysLeft}d left`;
+  return `
+    <div class="panel-row" style="cursor:pointer" onclick="_openAlertItem('${a.page}','${a.dpType}',${a.recordId})">
+      <div class="pr-dot ${cls}"></div>
+      <div style="flex:1">
+        <div class="pr-name">${_esc(a.name)}</div>
+        <div class="pr-meta">${_esc(a.detail)}</div>
+      </div>
+      ${badge(label, `b-${cls === 'blue' ? 'blue' : cls}`)}
+    </div>`;
+}
+
+
+function _openAlertItem(page, dpType, recordId) {
+  closeM('m-sub-ins-alerts');
+  navigateAndOpen(page, dpType, recordId);
+  markNotificationSeen(dpType, recordId);
+}
+
+function _ensureSubInsModal() {
+  if (document.getElementById('m-sub-ins-alerts')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'm-sub-ins-alerts';
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-hd">
+        <div class="modal-title"><i data-lucide="bell"></i> Subscription & Insurance Alerts</div>
+        <div class="modal-close" onclick="closeM('m-sub-ins-alerts')">✕</div>
+      </div>
+      <div class="modal-body" id="sub-ins-modal-body"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) e.stopPropagation(); });
+}
+
+function openSubInsuranceAlertsModal() {
+  _ensureSubInsModal();
+  const body = document.getElementById('sub-ins-modal-body');
+
+  if (!_lastSubInsAlerts.length) {
+    body.innerHTML = _emptyMsg('No subscription or insurance alerts');
+  } else {
+    body.innerHTML = _lastSubInsAlerts.map(_renderSubInsAlertRow).join('');
+  }
+
+  openM('m-sub-ins-alerts');
+  if (window.lucide) lucide.createIcons();
+}
 
 
 

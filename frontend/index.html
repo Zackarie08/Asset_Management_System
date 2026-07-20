@@ -1314,7 +1314,7 @@
         <input class="form-ctrl" id="wd-qty" type="number" min="1" placeholder="e.g. 5"/>
       </div>
       <div class="form-grp">
-        <label>Performed by</label>
+        <label>Performed by *</label>
 
         <div class="search-select">
           <input id="wd-by" class="form-ctrl" placeholder="Type user name..." />
@@ -1356,7 +1356,7 @@
       </div>
       <div class="form-row">
         <div class="form-grp"><label>Quantity *</label><input class="form-ctrl" id="inv-f-qty" type="number" min="0" placeholder="0"/></div>
-        <div class="form-grp"><label>Unit</label>
+        <div class="form-grp"><label>Unit *</label>
           <select class="form-ctrl" id="inv-f-unit">
             <option>Piece</option>
             <option>Ream</option>
@@ -1380,9 +1380,9 @@
       </div>
 
       <div class="form-row">
-        <div class="form-grp"><label>Location</label><select class="form-ctrl" id="inv-f-loc"  placeholder="Storage location"></select></div>
+        <div class="form-grp"><label>Location *</label><select class="form-ctrl" id="inv-f-loc"  placeholder="Storage location"></select></div>
         <div class="form-grp">
-          <label>Performed by</label>
+          <label>Performed by *</label>
 
           <div class="search-select">
             <!-- ✅ INPUT (text type) -->
@@ -1423,7 +1423,7 @@
     <div class="modal-body">
       <div class="form-row">
         <div class="form-grp"><label>Item Name *</label><input class="form-ctrl" id="po-f-item" placeholder="Item to order" readonly/></div>
-        <div class="form-grp"><label>Category</label>
+        <div class="form-grp"><label>Category *</label>
           <select class="form-ctrl" id="po-f-cat" disabled>
             <option>Office Supplies</option>
             <option>Pantry Supplies</option>
@@ -1437,8 +1437,8 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-grp"><label>Quantity Ordered*</label><input class="form-ctrl" id="po-f-qty" type="number" min="1" placeholder="1"/></div>
-        <div class="form-grp"><label>Unit</label>
+        <div class="form-grp"><label>Quantity Ordered *</label><input class="form-ctrl" id="po-f-qty" type="number" min="1" placeholder="1"/></div>
+        <div class="form-grp"><label>Unit *</label>
           <select class="form-ctrl" id="po-f-unit" disabled>
             <option>Piece</option>
             <option>Ream</option>
@@ -1458,18 +1458,18 @@
       <div class="form-row">
 
       <div class="form-grp">
-        <label>Performed by</label>
+        <label>Performed by *</label>
 
         <div class="search-select">
           <input id="po-f-performed" class="form-ctrl" placeholder="Type user name..." />
           <div id="po-list" class="select-list"></div>
         </div>
       </div>
-        <div class="form-grp"><label>Unit Price (₱)</label><input class="form-ctrl" id="po-price" type="number" placeholder="0.00"/></div>
+        <div class="form-grp"><label>Unit Price (₱) *</label><input class="form-ctrl" id="po-price" type="number" placeholder="0.00"/></div>
       </div>
       <div class="form-row">
-        <div class="form-grp"><label>Order Date</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
-        <div class="form-grp"><label>Expected Delivery</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
+        <div class="form-grp"><label>Order Date *</label><input class="form-ctrl" id="po-f-date" type="date"/></div>
+        <div class="form-grp"><label>Expected Delivery *</label><input class="form-ctrl" id="po-f-eta" type="date"/></div>
       </div>
       <div class="form-row">
         <div class="form-grp"><label>Supplier</label><input class="form-ctrl" id="po-supplier" placeholder="Supplier Name"/></div>
@@ -1686,7 +1686,7 @@
           <select class="form-ctrl" id="fur-f-loc"></select>
         </div>
         <div class="form-grp">
-          <label>Condition</label>
+          <label>Condition *</label>
           <select class="form-ctrl" id="fur-f-condition">
             <option value="Good">Good</option>
             <option value="Damaged">Damaged</option>
@@ -1766,7 +1766,7 @@
         </div>
 
         <div class="form-grp">
-          <label>Serial / Model</label>
+          <label>Serial / Model *</label>
           <input class="form-ctrl" id="it-f-serial" maxlength="50" placeholder="Serial number or model"/>
         </div>
       </div>
@@ -1805,7 +1805,7 @@
         </div>
 
         <div class="form-grp">
-          <label>Status</label>
+          <label>Status *</label>
           <select id="it-f-status" class="form-ctrl">
             <option>Available</option>
             <option>In Use</option>
@@ -1878,12 +1878,12 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Asset Number</label>
+          <label>Asset Number *</label>
           <input class="form-ctrl" id="lp-f-asset" placeholder="LPT-YYYY-###" maxlength="100"/>
         </div>
 
         <div class="form-grp">
-          <label>Serial Number</label>
+          <label>Serial Number *</label>
           <input class="form-ctrl" id="lp-f-serial" placeholder="XYZ1234" maxlength="50"/>
         </div>
       </div>
@@ -1900,7 +1900,7 @@
         </div>
 
         <div class="form-grp">
-          <label>Category / Brand</label>
+          <label>Category / Brand *</label>
           <select class="form-ctrl" id="lp-f-brand">
             <option>Dell</option>
             <option>HP</option>
@@ -1916,7 +1916,7 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Location</label>
+          <label>Location *</label>
           <select class="form-ctrl" id="lp-f-location" ></select>
         </div>
 
@@ -1977,7 +1977,7 @@
       <div class="form-row">
         <div class="form-grp"><label>Check Date *</label><input class="form-ctrl" id="maint-date" type="date"/></div>
       </div>
-      <div class="form-grp"><label>Condition</label>
+      <div class="form-grp"><label>Condition *</label>
         <select class="form-ctrl" id="maint-cond">
           <option value="GOOD">GOOD — Fully functional</option>
           <option value="NEEDS REPAIR">NEEDS REPAIR — Issue found</option>
@@ -2079,7 +2079,7 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Validity Type</label>
+          <label>Validity Type *</label>
           <!-- ✅ Added NA option -->
           <select id="con-f-type" class="form-ctrl" onchange="toggleValidity()">
             <option value="YEAR">Year</option>
@@ -2177,7 +2177,7 @@
         </div>
 
         <div class="form-grp">
-          <label>Type</label>
+          <label>Type *</label>
           <select class="form-ctrl" id="veh-f-type">
             <option>Car</option>
             <option>Motorcycle</option>
@@ -2189,12 +2189,12 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Plate Number</label>
+          <label>Plate Number *</label>
           <input class="form-ctrl" id="veh-f-plate" maxlength="20" placeholder="e.g. ABC-123">
         </div>
 
         <div class="form-grp">
-          <label>Odometer (KM)</label>
+          <label>Odometer (KM) *</label>
           <input class="form-ctrl" id="veh-f-odometer" type="number" placeholder="e.g. 0">
         </div>
       </div>
@@ -2236,9 +2236,9 @@
       </div>
       <div class="form-row">
         <div class="form-grp"><label>Service Date *</label><input class="form-ctrl" id="vm-date" type="date"/></div>
-        <div class="form-grp"><label>Odometer (km)</label><input class="form-ctrl" id="vm-odo" type="number" placeholder="0"/></div>
+        <div class="form-grp"><label>Odometer (km) *</label><input class="form-ctrl" id="vm-odo" type="number" placeholder="0"/></div>
       </div>
-      <div class="form-grp"><label>Service Type</label>
+      <div class="form-grp"><label>Service Type *</label>
         <select class="form-ctrl" id="vm-type">
           <option>Oil Change</option><option>Tire Rotation</option><option>Brake Service</option>
           <option>Battery Replacement</option><option>General Checkup</option><option>Repair</option>
@@ -2264,7 +2264,7 @@
 
     <div class="modal-body">
       <div class="form-grp">
-        <label>New Odometer (KM)</label>
+        <label>New Odometer (KM) *</label>
         <input id="uo-km" type="number" class="form-ctrl">
       </div>
 
@@ -2334,7 +2334,7 @@
             <span class="form-note">How many km between services</span>
           </div>
           <div class="form-grp">
-            <label>Last Performed KM</label>
+            <label>Last Performed KM *</label>
             <input class="form-ctrl" id="plan-f-last-km" type="number" placeholder="e.g. 0"/>
             <span class="form-note">Sets the baseline for next due target</span>
           </div>
@@ -2389,11 +2389,11 @@
       </div>
       <div class="form-row">
         <div class="form-grp">
-          <label>Date Performed</label>
+          <label>Date Performed *</label>
           <input class="form-ctrl" id="rec-maint-date" type="date"/>
         </div>
         <div class="form-grp">
-          <label>Odometer at Service (km)</label>
+          <label>Odometer at Service (km) *</label>
           <input class="form-ctrl" id="rec-maint-odo" type="number" placeholder="e.g. 15900"/>
           <span class="form-note">Required for odometer-based plans</span>
         </div>
@@ -2427,8 +2427,8 @@
         <div id="maint-checklist-list" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:6px 12px"></div>
       </div>
       <div class="form-row">
-        <div class="form-grp"><label>Date</label><input class="form-ctrl" id="maint-checklist-date" type="date"/></div>
-        <div class="form-grp"><label>Odometer (km) — required for KM-based items</label><input class="form-ctrl" id="maint-checklist-odo" type="number"/></div>
+        <div class="form-grp"><label>Date *</label><input class="form-ctrl" id="maint-checklist-date" type="date"/></div>
+        <div class="form-grp"><label>Odometer (km) *</label><input class="form-ctrl" id="maint-checklist-odo" type="number"/></div>
       </div>
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="maint-checklist-remarks" rows="2" maxlength="255"></textarea></div>
       <div class="form-footer">
@@ -2520,7 +2520,7 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Monthly Cost (₱)</label>
+          <label>Cost (₱)</label>
           <input class="form-ctrl" id="m365-f-cost" type="number" min="0" placeholder="0.00"/>
         </div>
         <div class="form-grp">
@@ -2611,11 +2611,11 @@
 
 <div class="form-row">
         <div class="form-grp">
-          <label>Monthly Cost (₱)</label>
+          <label>Cost (₱)</label>
           <input class="form-ctrl" id="globe-f-cost" type="number" min="0" placeholder="0"/>
         </div>
         <div class="form-grp">
-          <label>Data Allocation</label>
+          <label>Data Allocation *</label>
           <input class="form-ctrl" id="globe-f-data" placeholder="e.g. 50 GB" maxlength="50"/>
         </div>
       </div>
@@ -2623,14 +2623,14 @@
       <!-- ✅ NEW: Plan Inclusions -->
       <div class="form-row">
         <div class="form-grp">
-          <label>Unli All-Net Calls</label>
+          <label>Unli All-Net Calls *</label>
           <select class="form-ctrl" id="globe-f-unli-calls">
             <option value="false">No</option>
             <option value="true">Yes</option>
           </select>
         </div>
         <div class="form-grp">
-          <label>Unli Text</label>
+          <label>Unli Text *</label>
           <select class="form-ctrl" id="globe-f-unli-text">
             <option value="false">No</option>
             <option value="true">Yes</option>
@@ -2651,11 +2651,11 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Credit Limit (₱)</label>
+          <label>Credit Limit (₱) *</label>
           <input class="form-ctrl" id="globe-f-credit" type="number" min="0" placeholder="0"/>
         </div>
         <div class="form-grp">
-          <label>Status</label>
+          <label>Status *</label>
           <select id="globe-f-status" class="form-ctrl">
             <option value="Active">Active</option>
             <option value="For Renewal">For Renewal</option>
@@ -2714,7 +2714,7 @@
         <div class="form-grp">
           <label>Category *</label>
           <select class="form-ctrl" id="sub-f-cat">
-            <option value="">Select category…</option>
+            <option value="">Select category *</option>
             <option>Software</option>
             <option>Security</option>
             <option>Communications</option>
@@ -2740,11 +2740,11 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Monthly Cost (₱)</label>
+          <label>Cost (₱)</label>
           <input class="form-ctrl" id="sub-f-cost" type="number" min="0" placeholder="0.00"/>
         </div>
         <div class="form-grp">
-          <label>Billing Cycle</label>
+          <label>Billing Cycle *</label>
           <select class="form-ctrl" id="sub-f-cycle">
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
@@ -2760,7 +2760,7 @@
           <span class="form-note">Leave blank for subscriptions with no recurring renewal.</span>
         </div>
         <div class="form-grp">
-          <label>Status</label>
+          <label>Status *</label>
           <select class="form-ctrl" id="sub-f-status">
             <option value="Active">Active</option>
             <option value="Expired">Expired</option>
@@ -2892,7 +2892,7 @@
       <!-- Row 2: Policy No + Coverage Type -->
       <div class="form-row">
         <div class="form-grp">
-          <label>Policy Number</label>
+          <label>Policy Number *</label>
           <input class="form-ctrl" id="ins-f-policy" placeholder="Policy / membership no." maxlength="100"/>
         </div>
         <div class="form-grp">
@@ -3150,7 +3150,7 @@
           </div>
         </div>
         <div class="form-grp">
-          <label>Department</label>
+          <label>Department *</label>
           <select class="form-ctrl" id="u-dept">
             <option value="">Select Department</option>
             <option>Management</option>
@@ -3165,7 +3165,7 @@
       </div>
 
       <div class="form-grp">
-        <label>Role</label>
+        <label>Role *</label>
         <select class="form-ctrl" id="u-role">
           <option value="admin">Admin</option>
           <option value="employee">Employee</option>
@@ -3349,12 +3349,10 @@
 </div>
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/nav.js"></script>
-
 <script src="js/item_history_panel.js"></script>
 <script src="js/inventory.js"></script>
 <script src="js/orders.js"></script>
