@@ -212,10 +212,7 @@ router.put("/request/:id/return", async (req, res) => {
 
     const contract_id = reqData.rows[0].contract_id;
 
-    await db.query(
-      "UPDATE contract_requests SET status='RETURNED', returned_by_name=$1, returned_date=NOW() WHERE request_id=$2",
-      [performed_by || reqData.rows[0].requested_name, id]
-    );
+    await db.query("UPDATE contract_requests SET status='RETURNED' WHERE request_id=$1", [id]);
     await db.query("UPDATE contracts SET status='IN_STORAGE' WHERE contract_id=$1", [contract_id]);
 
     await logItemHistory({
