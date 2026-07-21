@@ -305,8 +305,8 @@ async function dpLaptop(id, useCache = false) {
     <div class="dp-section">
       <div class="dp-section-hd"><i data-lucide="calendar"></i> Dates</div>
       <div class="dp-grid">
-        ${dpField("Purchased", lp.date_of_purchase || '-')}
-        ${dpField("Warranty", lp.warranty_end_date || '-')}
+        ${dpField("Purchased", formatDateHuman(lp.date_of_purchase) || '-')}
+        ${dpField("Warranty", formatDateHuman(lp.warranty_end_date) || '-')}
       </div>
     </div>
 
