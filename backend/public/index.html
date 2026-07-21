@@ -1290,7 +1290,7 @@
   <aside class="detail-panel" id="detail-panel">
     <div class="dp-topbar">
       <div class="dp-top-left">
-        <div class="dp-icon" id="dp-icon">📄</div>
+        <div class="dp-icon" id="dp-icon"><i data-lucide="file"></i></div>
         <div>
           <div class="dp-title" id="dp-title">Details</div>
           <div class="dp-subtitle" id="dp-subtitle">Select a record to view</div>
@@ -1336,7 +1336,7 @@
 <div class="modal-overlay" id="m-withdraw">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">➖ Withdraw Item</div>
+      <div class="modal-title"><i data-lucide="minus"></i> Withdraw Item</div>
       <button class="modal-close" onclick="closeM('m-withdraw')">✕</button>
     </div>
     <div class="modal-body">
@@ -1362,7 +1362,7 @@
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-withdraw')">Cancel</button>
-        <button class="btn btn-amber" onclick="doWithdraw()">➖ Withdraw</button>
+        <button class="btn btn-amber" onclick="doWithdraw()"><i data-lucide="minus"></i> Withdraw</button>
       </div>
     </div>
   </div>
@@ -1452,7 +1452,7 @@
 <div class="modal-overlay" id="m-add-po">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title" id="m-po-title">📦 Create Purchase Order</div>
+      <div class="modal-title" id="m-po-title"><i data-lucide="package"></i> Create Purchase Order</div>
       <button class="modal-close" onclick="closeM('m-add-po')">✕</button>
     </div>
     <div class="modal-body">
@@ -1513,7 +1513,7 @@
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="po-f-notes" rows="2" placeholder="Optional notes..." maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-po')">Cancel</button>
-        <button class="btn btn-green" onclick="savePO()">📦 Create Order</button>
+        <button class="btn btn-green" onclick="savePO()"><i data-lucide="package"></i> Create Order</button>
       </div>
     </div>
   </div>
@@ -1525,7 +1525,7 @@
     
     <!-- HEADER ✅ -->
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Inventory</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Inventory</div>
       <button onclick="closeM('m-confirm-inv-del')">✕</button>
     </div>
 
@@ -1539,7 +1539,7 @@
           Cancel
         </button>
         <button class="btn btn-red" onclick="confirmDeleteInventory()">
-          🗑️ Delete
+          <i data-lucide="trash-2"></i> Delete
         </button>
       </div>
     </div>
@@ -1553,7 +1553,7 @@
     
     <!-- HEADER -->
     <div class="modal-hd">
-      <div class="modal-title">📦 Receive Items</div>
+      <div class="modal-title"><i data-lucide="package-check"></i> Receive Items</div>
       <button class="modal-close" onclick="closeM('m-po-receive')">✕</button>
     </div>
 
@@ -1583,7 +1583,7 @@
       <!-- FOOTER -->
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-po-receive')">Cancel</button>
-        <button class="btn btn-green" onclick="submitReceive()">✅ Confirm Receive</button>
+        <button class="btn btn-green" onclick="submitReceive()"><i data-lucide="check"></i> Confirm Receive</button>
       </div>
 
     </div>
@@ -1594,7 +1594,7 @@
 <div class="modal-overlay" id="m-borrow-item">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">📤 Borrow Item</div>
+      <div class="modal-title"><i data-lucide="package-minus"></i> Borrow Item</div>
       <button class="modal-close" onclick="closeM('m-borrow-item')">✕</button>
     </div>
     <div class="modal-body">
@@ -1616,7 +1616,7 @@
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="borrow-remarks" rows="2" maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-borrow-item')">Cancel</button>
-        <button class="btn btn-amber" onclick="confirmBorrowItem()">📤 Confirm Borrow</button>
+        <button class="btn btn-amber" onclick="confirmBorrowItem()"><i data-lucide="package-minus"></i> Confirm Borrow</button>
       </div>
     </div>
   </div>
@@ -1626,7 +1626,7 @@
 <div class="modal-overlay" id="m-return-item">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">📥 Return Item</div>
+      <div class="modal-title"><i data-lucide="package-check"></i> Return Item</div>
       <button class="modal-close" onclick="closeM('m-return-item')">✕</button>
     </div>
     <div class="modal-body">
@@ -1641,7 +1641,7 @@
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="return-remarks" rows="2" maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-return-item')">Cancel</button>
-        <button class="btn btn-green" onclick="confirmReturnItem()">✅ Confirm Return</button>
+        <button class="btn btn-green" onclick="confirmReturnItem()"><i data-lucide="check"></i> Confirm Return</button>
       </div>
     </div>
   </div>
@@ -1651,7 +1651,7 @@
 <div class="modal-overlay" id="m-wine-request">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🍷 Request Wine Withdrawal</div>
+      <div class="modal-title"><i data-lucide="wine"></i> Request Wine Withdrawal</div>
       <button class="modal-close" onclick="closeM('m-wine-request')">✕</button>
     </div>
     <div class="modal-body">
@@ -1664,7 +1664,7 @@
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="wine-req-remarks" rows="2" maxlength="255" placeholder="Purpose of withdrawal..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-wine-request')">Cancel</button>
-        <button class="btn btn-primary" onclick="submitWineRequest()">📩 Submit Request</button>
+        <button class="btn btn-primary" onclick="submitWineRequest()"><i data-lucide="send"></i> Submit Request</button>
       </div>
     </div>
   </div>
@@ -1755,7 +1755,7 @@
 <div class="modal-overlay" id="m-confirm-fur-del">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Furniture</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Furniture</div>
       <button onclick="closeM('m-confirm-fur-del')">✕</button>
     </div>
 
@@ -1767,7 +1767,7 @@
           Cancel
         </button>
         <button class="btn btn-red" onclick="confirmDeleteFur()">
-          🗑️ Delete
+          <i data-lucide="trash-2"></i> Delete
         </button>
       </div>
     </div>
@@ -1873,7 +1873,7 @@
 <div class="modal-overlay" id="m-confirm-it-del">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete IT Supply</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete IT Supply</div>
       <button onclick="closeM('m-confirm-it-del')">✕</button>
     </div>
 
@@ -1906,7 +1906,7 @@
 <div class="modal-overlay" id="m-add-lp">
   <div class="modal modal-lg">
     <div class="modal-hd">
-      <div class="modal-title">💻 Add Laptop</div>
+      <div class="modal-title"><i data-lucide="laptop"></i> Add Laptop</div>
       <button class="modal-close" onclick="closeM('m-add-lp')">✕</button>
     </div>
     <div class="modal-body">
@@ -2001,7 +2001,7 @@
 <div class="modal-overlay" id="m-maint">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🔧 Add Maintenance Record</div>
+      <div class="modal-title"><i data-lucide="wrench"></i> Add Maintenance Record</div>
       <button class="modal-close" onclick="closeM('m-maint')">✕</button>
     </div>
     <div class="modal-body">
@@ -2033,7 +2033,7 @@
 <div class="modal-overlay" id="m-assign">
   <div class="modal" style="max-width:400px">
     <div class="modal-hd">
-      <div class="modal-title">👤 Assign User</div>
+      <div class="modal-title"><i data-lucide="user-plus"></i> Assign User</div>
       <button class="modal-close" onclick="closeM('m-assign')">✕</button>
     </div>
     <div class="modal-body">
@@ -2060,7 +2060,7 @@
 <div class="modal-overlay" id="m-confirm-lp-del">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Laptop</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Laptop</div>
       <button onclick="closeM('m-confirm-lp-del')">✕</button>
     </div>
     <div class="modal-body">
@@ -2089,7 +2089,7 @@
 <div class="modal-overlay" id="m-add-con">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">📄 Contract</div>
+      <div class="modal-title"><i data-lucide="file-text"></i> Contract</div>
       <button class="modal-close" onclick="closeM('m-add-con')">✕</button>
     </div>
 
@@ -2153,7 +2153,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-con')">Cancel</button>
-        <button class="btn btn-green" onclick="saveContract()">✅ Save</button>
+        <button class="btn btn-green" onclick="saveContract()"><i data-lucide="check"></i> Save</button>
       </div>
 
     </div>
@@ -2181,7 +2181,7 @@
 
         <button class="btn btn-red"
           onclick="confirmDeleteContract()">
-          🗑️ Delete
+          <i data-lucide="trash-2"></i> Delete
         </button>
       </div>
     </div>
@@ -2201,7 +2201,6 @@
 <div class="modal-overlay" id="m-add-veh">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🚗 Add Vehicle</div>
       <div class="modal-title"><i data-lucide="car"></i> Add Vehicle</div>
     </div>
     <div class="modal-body">
@@ -2262,7 +2261,7 @@
 <div class="modal-overlay" id="m-veh-maint">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🔧 Vehicle Maintenance Record</div>
+      <div class="modal-title"><i data-lucide="wrench"></i> Vehicle Maintenance Record</div>
       <button class="modal-close" onclick="closeM('m-veh-maint')">✕</button>
     </div>
     <div class="modal-body">
@@ -2283,7 +2282,7 @@
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="vm-remarks" rows="2" maxlength="255" placeholder="Optional notes..."></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-veh-maint')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveVehicleMaint()">💾 Save Record</button>
+        <button class="btn btn-primary" onclick="saveVehicleMaint()"><i data-lucide="save"></i> Save Record</button>
       </div>
     </div>
   </div>
@@ -2293,7 +2292,7 @@
 <div class="modal-overlay" id="m-update-odo">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">📊 Update Odometer</div>
+      <div class="modal-title"><i data-lucide="gauge"></i> Update Odometer</div>
       <button onclick="closeM('m-update-odo')">✕</button>
     </div>
 
@@ -2315,7 +2314,7 @@
 <div class="modal-overlay" id="m-confirm-del">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Confirm Delete</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Confirm Delete</div>
       <button onclick="closeM('m-confirm-del')">✕</button>
     </div>
 
@@ -2330,7 +2329,7 @@
 
         <button class="btn btn-red"
           onclick="confirmDeleteVehicle()">
-          🗑️ Delete
+          <i data-lucide="trash-2"></i> Delete
         </button>
       </div>
     </div>
@@ -2343,7 +2342,7 @@
 <div class="modal-overlay" id="m-plan-add">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🔧 Maintenance Plan</div>
+      <div class="modal-title"><i data-lucide="wrench"></i> Maintenance Plan</div>
       <button class="modal-close" onclick="closeM('m-plan-add')">✕</button>
     </div>
     <div class="modal-body">
@@ -2377,7 +2376,7 @@
         <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);
           border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;
           color:#1e40af;margin-bottom:14px">
-          ℹ️ Next service = Last KM + Interval.
+          <i data-lucide="info"></i> Next service = Last KM + Interval.
           If maintenance is done early, that actual KM becomes the new baseline.
         </div>
       </div>
@@ -2402,7 +2401,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-plan-add')">Cancel</button>
-        <button class="btn btn-green"   onclick="savePlan()">✅ Save Plan</button>
+        <button class="btn btn-green"   onclick="savePlan()"><i data-lucide="check"></i> Save Plan</button>
       </div>
     </div>
   </div>
@@ -2412,7 +2411,7 @@
 <div class="modal-overlay" id="m-record-maint">
   <div class="modal" style="max-width:460px">
     <div class="modal-hd">
-      <div class="modal-title">✅ Record Maintenance</div>
+      <div class="modal-title"><i data-lucide="check-circle"></i> Record Maintenance</div>
       <button class="modal-close" onclick="closeM('m-record-maint')">✕</button>
     </div>
     <div class="modal-body">
@@ -2444,7 +2443,7 @@
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-record-maint')">Cancel</button>
-        <button class="btn btn-green"   onclick="saveRecordMaint()">✅ Confirm</button>
+        <button class="btn btn-green"   onclick="saveRecordMaint()"><i data-lucide="check"></i> Confirm</button>
       </div>
     </div>
   </div>
@@ -2453,7 +2452,7 @@
 <div class="modal-overlay" id="m-maint-checklist">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🔧 Put Under Maintenance</div>
+      <div class="modal-title"><i data-lucide="wrench"></i> Put Under Maintenance</div>
       <button class="modal-close" onclick="closeM('m-maint-checklist')">✕</button>
     </div>
     <div class="modal-body">
@@ -2468,7 +2467,7 @@
       <div class="form-grp"><label>Remarks</label><textarea class="form-ctrl" id="maint-checklist-remarks" rows="2" maxlength="255"></textarea></div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-maint-checklist')">Cancel</button>
-        <button class="btn btn-green" onclick="submitMaintenanceChecklist()">✅ Confirm</button>
+        <button class="btn btn-green" onclick="submitMaintenanceChecklist()"><i data-lucide="check"></i> Confirm</button>
       </div>
     </div>
   </div>
@@ -2478,7 +2477,7 @@
 <div class="modal-overlay" id="m-confirm-plan-del">
   <div class="modal" style="max-width:400px">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Maintenance Plan</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Maintenance Plan</div>
       <button class="modal-close" onclick="closeM('m-confirm-plan-del')">✕</button>
     </div>
     <div class="modal-body">
@@ -2486,7 +2485,7 @@
       <p id="plan-del-summary" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-plan-del')">Cancel</button>
-        <button class="btn btn-red"     onclick="confirmDeletePlan()">🗑️ Delete</button>
+        <button class="btn btn-red"     onclick="confirmDeletePlan()"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -2508,7 +2507,7 @@
 <div class="modal-overlay" id="m-add-m365">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">💼 M365 License</div>
+      <div class="modal-title"><i data-lucide="briefcase"></i> M365 License</div>
       <button class="modal-close" onclick="closeM('m-add-m365')">✕</button>
     </div>
     <div class="modal-body">
@@ -2574,7 +2573,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-m365')">Cancel</button>
-        <button class="btn btn-green"   onclick="saveM365()">✅ Save</button>
+        <button class="btn btn-green"   onclick="saveM365()"><i data-lucide="check"></i> Save</button>
       </div>
     </div>
   </div>
@@ -2584,7 +2583,7 @@
 <div class="modal-overlay" id="m-confirm-m365-del">
   <div class="modal" style="max-width:380px">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete License</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete License</div>
       <button onclick="closeM('m-confirm-m365-del')">✕</button>
     </div>
     <div class="modal-body">
@@ -2592,7 +2591,7 @@
       <p id="m365-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-m365-del')">Cancel</button>
-        <button class="btn btn-red"     onclick="confirmDeleteM365()">🗑️ Delete</button>
+        <button class="btn btn-red"     onclick="confirmDeleteM365()"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -2614,7 +2613,7 @@
 <div class="modal-overlay" id="m-add-globe">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">📱 Globe Mobile Plan</div>
+      <div class="modal-title"><i data-lucide="smartphone"></i> Globe Mobile Plan</div>
       <button class="modal-close" onclick="closeM('m-add-globe')">✕</button>
     </div>
     <div class="modal-body">
@@ -2708,7 +2707,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-add-globe')">Cancel</button>
-        <button class="btn btn-green"   onclick="saveGlobe()">✅ Save</button>
+        <button class="btn btn-green"   onclick="saveGlobe()"><i data-lucide="check"></i> Save</button>
       </div>
     </div>
   </div>
@@ -2718,7 +2717,7 @@
 <div class="modal-overlay" id="m-confirm-globe-del">
   <div class="modal" style="max-width:380px">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Plan</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Plan</div>
       <button onclick="closeM('m-confirm-globe-del')">✕</button>
     </div>
     <div class="modal-body">
@@ -2726,7 +2725,7 @@
       <p id="globe-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-globe-del')">Cancel</button>
-        <button class="btn btn-red"     onclick="confirmDeleteGlobe()">🗑️ Delete</button>
+        <button class="btn btn-red"     onclick="confirmDeleteGlobe()"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -2737,7 +2736,7 @@
 <div class="modal-overlay" id="m-sub-add">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">🔐 Subscription</div>
+      <div class="modal-title"><i data-lucide="lock"></i> Subscription</div>
       <button class="modal-close" onclick="closeM('m-sub-add')">✕</button>
     </div>
     <div class="modal-body">
@@ -2813,7 +2812,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-sub-add')">Cancel</button>
-        <button class="btn btn-green"   onclick="saveSubscription()">✅ Save</button>
+        <button class="btn btn-green"   onclick="saveSubscription()"><i data-lucide="check"></i> Save</button>
       </div>
     </div>
   </div>
@@ -2823,7 +2822,7 @@
 <div class="modal-overlay" id="m-confirm-sub-del">
   <div class="modal" style="max-width:380px">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Subscription</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Subscription</div>
       <button onclick="closeM('m-confirm-sub-del')">✕</button>
     </div>
     <div class="modal-body">
@@ -2831,7 +2830,7 @@
       <p id="sub-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-sub-del')">Cancel</button>
-        <button class="btn btn-red"     onclick="confirmDeleteSubscription()">🗑️ Delete</button>
+        <button class="btn btn-red"     onclick="confirmDeleteSubscription()"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -2960,7 +2959,7 @@
         <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;cursor:pointer"
             onclick="toggleInsEmpCollapse()">
           <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-size:12.5px;font-weight:700;color:#1e40af">👥 Select Covered Employees</div>
+            <div style="font-size:12.5px;font-weight:700;color:#1e40af;display:flex;align-items:center;gap:5px"><i data-lucide="users"></i> Select Covered Employees</div>
             <span id="ins-emp-collapse-arrow" style="font-size:11px;color:#1e40af">▼ Hide</span>
           </div>
           <div style="font-size:11.5px;color:#3b5bdb;margin-top:2px">Check all employees covered under this policy.</div>
@@ -3000,7 +2999,7 @@
 <div class="modal-overlay" id="m-confirm-ins-del">
   <div class="modal" style="max-width:380px">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Insurance Record</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Insurance Record</div>
       <button onclick="closeM('m-confirm-ins-del')">✕</button>
     </div>
     <div class="modal-body">
@@ -3008,7 +3007,7 @@
       <p id="ins-del-label" style="font-weight:700;margin-top:6px;color:var(--slate-700)"></p>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-ins-del')">Cancel</button>
-        <button class="btn btn-red"     onclick="confirmDeleteInsurance()">🗑️ Delete</button>
+        <button class="btn btn-red"     onclick="confirmDeleteInsurance()"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -3085,7 +3084,7 @@
 <div class="modal-overlay" id="m-confirm-fin-del">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete Folder</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete Folder</div>
       <button onclick="closeM('m-confirm-fin-del')">✕</button>
     </div>
 
@@ -3094,7 +3093,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-confirm-fin-del')">Cancel</button>
-        <button class="btn btn-red" onclick="confirmDeleteFinance()">🗑️ Delete</button>
+        <button class="btn btn-red" onclick="confirmDeleteFinance()"><i data-lucide="trash-2"></i> Delete</button>
       </div>
     </div>
   </div>
@@ -3104,7 +3103,7 @@
 <div class="modal-overlay" id="m-fin-move">
   <div class="modal" style="max-width:420px">
     <div class="modal-hd">
-      <div class="modal-title">🔄 Move Document</div>
+      <div class="modal-title"><i data-lucide="repeat"></i> Move Document</div>
       <button class="modal-close" onclick="closeM('m-fin-move')">✕</button>
     </div>
     <div class="modal-body">
@@ -3122,7 +3121,7 @@
       </div>
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-fin-move')">Cancel</button>
-        <button class="btn btn-green" onclick="confirmFinanceMove()">✅ Confirm Move</button>
+        <button class="btn btn-green" onclick="confirmFinanceMove()"><i data-lucide="check"></i> Confirm Move</button>
       </div>
     </div>
   </div>
@@ -3218,7 +3217,7 @@
 <div class="modal-overlay" id="m-reset-pass">
   <div class="modal" style="max-width:400px">
     <div class="modal-hd">
-      <div class="modal-title">🔑 Reset Password</div>
+      <div class="modal-title"><i data-lucide="key"></i> Reset Password</div>
       <button class="modal-close" onclick="closeM('m-reset-pass')">✕</button>
     </div>
 
@@ -3273,7 +3272,7 @@
 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-reset-pass')">Cancel</button>
-        <button class="btn btn-green" onclick="confirmResetPassword()">✅ Reset</button>
+        <button class="btn btn-green" onclick="confirmResetPassword()"><i data-lucide="check"></i> Reset</button>
       </div>
     </div>
   </div>
@@ -3283,7 +3282,7 @@
 <div class="modal-overlay" id="m-edit-user">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">✏️ Edit User</div>
+      <div class="modal-title"><i data-lucide="pencil"></i> Edit User</div>
       <button class="modal-close" onclick="closeM('m-edit-user')">✕</button>
     </div>
 
@@ -3334,7 +3333,7 @@
 <div class="modal-overlay" id="m-confirm-user-del">
   <div class="modal">
     <div class="modal-hd">
-      <div class="modal-title">⚠️ Delete User</div>
+      <div class="modal-title"><i data-lucide="triangle-alert"></i> Delete User</div>
       <button onclick="closeM('m-confirm-user-del')">✕</button>
     </div>
 
@@ -3349,7 +3348,7 @@
 
         <button class="btn btn-red"
           onclick="confirmDeleteUser()">
-          🗑️ Delete
+          <i data-lucide="trash-2"></i> Delete
         </button>
       </div>
     </div>
@@ -3366,7 +3365,7 @@
 <div class="modal-overlay" id="m-item-history">
   <div class="modal modal-lg">
     <div class="modal-hd">
-      <div class="modal-title">🕒 Item History <span id="ih-title-label" style="font-weight:400;font-size:12px;color:var(--slate-400)"></span></div>
+      <div class="modal-title"><i data-lucide="clock"></i> Item History <span id="ih-title-label" style="font-weight:400;font-size:12px;color:var(--slate-400)"></span></div>
         <button class="modal-close" onclick="closeM('m-item-history')">✕</button>
       </div>
     <div class="modal-body" id="ih-body" style="max-height:500px;overflow-y:auto"></div>
