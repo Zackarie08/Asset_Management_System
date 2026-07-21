@@ -333,7 +333,7 @@ window.openEditInv = async function(id) {
 
   invEditId = id;
   closeDP();
-  loadLocationDropdown();
+  await loadLocationDropdown(); 
 
   document.getElementById('m-add-inv-title').innerHTML = `<i data-lucide="pencil"></i> Edit Inventory Item`;
   if (window.lucide) lucide.createIcons();
@@ -353,7 +353,6 @@ window.openEditInv = async function(id) {
 
   openM('m-add-inv');
   loadUsersDropdown();
-  loadLocationDropdown();
 };
 
 let deleteInventoryId = null;
