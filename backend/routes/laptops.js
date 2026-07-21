@@ -26,9 +26,11 @@ router.get("/", async (req, res) => {
     const result = await pool.query(`
       SELECT l.*,
              u.name AS user_name,
-             u.role AS user_role
+             u.role AS user_role,
+             loc.location_name AS location_name
       FROM laptop l
       LEFT JOIN users u ON l.current_user_id = u.user_id
+      LEFT JOIN location loc ON l.current_location = loc.location_id
       ORDER BY l.asset_number ASC   
     `);
     res.json(result.rows);

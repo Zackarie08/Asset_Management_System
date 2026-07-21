@@ -296,6 +296,7 @@ async function dpLaptop(id, useCache = false) {
         ${dpField("Supplier", lp.supplier || '—')}
         ${dpField("Price", lp.price ? '₱' + lp.price : '-')}
         ${dpField("Status", lp.status)}
+        ${dpField("Location", lp.location_name || '—')}
       </div>
     </div>
     <div class="dp-section">
