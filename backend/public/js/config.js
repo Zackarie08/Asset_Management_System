@@ -10,9 +10,4 @@
 //
 // If you ever split the frontend and backend into two separate
 // deployments again, restore an absolute URL here.
-const API_URL =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:3000"
-    : window.location.origin.includes("assetmanagementsystem")
-      ? window.location.origin        // frontend & backend same Railway origin
-      : "https://assetmanagementsystem.up.railway.app"; // fallback if hosted separately
+const API_URL = ""
