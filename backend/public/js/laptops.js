@@ -164,7 +164,7 @@ async function _renderLpTable() {
     const tr = document.createElement('tr');
     tr.className = 'tr-clickable';
     tr.innerHTML = `
-      <td>${lp.asset_number}</td>
+      <td class="td-strong">${lp.asset_number}</td>
       <td>${lp.serial_number}</td>
       <td>${assignedCell}</td>
       <td>${badge(lp.status, sCls)}</td>

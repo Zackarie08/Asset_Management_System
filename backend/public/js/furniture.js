@@ -200,7 +200,7 @@ function saveFurniture() {
   const supplier         = document.getElementById('fur-f-supplier')?.value.trim() || '';          // ✅ NEW
   const supplier_contact = document.getElementById('fur-f-supplier-contact')?.value.trim() || '';  // ✅ NEW
 
-  if (!name || !qty || !loc) {
+  if (!name || !qty || !loc || !condition) {
     showToast('Fill required fields', 't-error');
     return;
   }
@@ -214,8 +214,8 @@ function saveFurniture() {
     body: JSON.stringify({
       furniture_name: name,
       quantity: qty,
-      date_of_purchase: date,
-      price,
+      date_of_purchase: date || null,
+      price: price || null,
       remarks,
       current_location: loc,
       condition,

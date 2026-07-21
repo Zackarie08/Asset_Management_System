@@ -580,7 +580,7 @@ async function renderInventory() {
     }
 
     tr.innerHTML = `
-      <td>${item.item_name}</td>
+      <td class="td-strong">${item.item_name}</td>
       <td>${item.category}</td>
       <td>${item.current_quantity}</td>
       <td>${item.unit || "-"}</td>

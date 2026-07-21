@@ -152,8 +152,8 @@ function _renderConTable() {
       const tr = document.createElement("tr");
       tr.className = "tr-clickable";
       tr.innerHTML = `
+        <td class="td-strong">${c.other_party}</td>
         <td>${formatDateHuman(c.contract_date)}</td>
-        <td>${c.other_party}</td>
         <td>${c.description}</td>
         <td>${validity}</td>
         <td>${expiryBadge}</td>
