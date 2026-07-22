@@ -298,8 +298,8 @@ async function dpVehicle(id) {
     ? maintRes.map(m => `
         <div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:700">${_escVeh(m.service_type)}</span>
-            <span class="badge b-slate" style="font-family:var(--mono);font-size:10px">${m.maintenance_date || '—'}</span>
+            <span style="font-size:13px;font-weight:600">${_escVeh(m.service_type)}</span>
+            <span class="badge b-slate" style="font-size:10px">${formatDateHuman(m.maintenance_date)}</span>
           </div>
           <div style="display:flex;gap:16px;font-size:11.5px;color:var(--slate-500)">
             <span><i data-lucide="gauge"></i> ${m.odometer ? m.odometer.toLocaleString() + ' km' : '—'}</span>
@@ -443,10 +443,10 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
     const daysLeft = _daysUntil(plan.next_due_date);
     let dueLabel = plan.next_due_date
       ? (daysLeft <= 0
-          ? `<i data-lucide="triangle-alert"></i> Was due ${plan.next_due_date}`
+          ? `<i data-lucide="triangle-alert"></i> Was due ${formatDateHuman(plan.next_due_date)}`
           : daysLeft <= 30
-            ? `<i data-lucide="triangle-alert"></i> Due in ${daysLeft} days (${plan.next_due_date})`
-            : `<i data-lucide="calendar"></i> Due: ${plan.next_due_date}`)
+            ? `<i data-lucide="triangle-alert"></i> Due in ${daysLeft} days (${formatDateHuman(plan.next_due_date)})`
+            : `<i data-lucide="calendar"></i> Due: ${formatDateHuman(plan.next_due_date)}`)
       : '<i data-lucide="clock"></i> Not yet performed';
 
     // ✅ FIX: clean "Every month" / "Every year" (no "Every 1 month(s)")
@@ -456,9 +456,7 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
       <div style="margin:8px 0;font-size:12px;color:var(--slate-600)">
         <div style="margin-bottom:3px">${dueLabel}</div>
         <div style="color:var(--slate-400)">${intervalLabel} · Last performed: ${
-          plan.last_performed_date
-            ? new Date(plan.last_performed_date).toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'})
-            : 'Never'
+          plan.last_performed_date ? formatDateHuman(plan.last_performed_date) : 'Never'
         }</div>
       </div>`;
   }
@@ -466,7 +464,7 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
   return `
     <div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:13px;font-weight:700;color:var(--slate-800)">${_escVeh(plan.name)}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--slate-800)">${_escVeh(plan.name)}</span>
         <span style="font-size:11px;color:var(--slate-400);text-transform:uppercase">${plan.basis}</span>
         ${statusBadge}
       </div>

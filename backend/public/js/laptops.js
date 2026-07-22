@@ -262,7 +262,7 @@ async function dpLaptop(id, useCache = false) {
             <div class="mh-dot good"></div>
             <div>
               <div class="mh-cond info">${h.previous_user_name || 'Unassigned'} → ${h.new_user_name || 'Unassigned'}</div>
-              <div class="mh-date">${new Date(h.date_changed).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</div>
+              <div class="mh-date">${formatDateHuman(h.date_changed)}</div>
               <div class="mh-remarks">${h.remarks || 'User assignment update'}</div>
             </div>
           </li>`).join('')}
@@ -275,7 +275,7 @@ async function dpLaptop(id, useCache = false) {
             <div class="mh-dot good"></div>
             <div>
               <div class="mh-cond info">${m.condition}</div>
-              <div class="mh-date">${new Date(m.check_date).toLocaleDateString()}</div>
+              <div class="mh-date">${formatDateHuman(m.check_date)}</div>
               <div class="mh-remarks">${m.remarks || "No remarks"}</div>
             </div>
           </li>`).join('')}

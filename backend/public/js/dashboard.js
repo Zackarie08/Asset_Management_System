@@ -27,10 +27,7 @@ function daysFromNow(dateStr) {
 ══════════════════════════════════════════════════════════════ */
 async function refreshDashboard() {
 
-  document.getElementById('dash-date').textContent =
-    new Date().toLocaleDateString('en-PH', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
+document.getElementById('dash-date').textContent = formatDateHuman(new Date());
 
   const [
     inventory, orders, laptops, vehicles, contracts, logs, globe, m365, contractRequests,

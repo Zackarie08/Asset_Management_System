@@ -128,7 +128,19 @@ function formatDateHuman(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Same "Mon D, YYYY" style as formatDateHuman, plus time — only for
+// fields that are genuinely timestamps (Activity Log, Item History),
+// never for date-only fields.
+function formatDateTimeHuman(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  const datePart = d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+  const timePart = d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+  return `${datePart}, ${timePart}`;
 }
 
 function clearForm(ids) { ids.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; }); }

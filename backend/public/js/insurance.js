@@ -74,7 +74,7 @@ function buildEmployeeCheckboxes(selectedIds = []) {
     _allInsuranceUsers.every(u => selectedIds.includes(u.user_id));
 
   container.innerHTML = `
-    <label style="display:flex;align-items:center;gap:8px;padding:4px 0 10px;cursor:pointer;font-size:12.5px;font-weight:700;border-bottom:1.5px solid var(--slate-200);margin-bottom:6px">
+    <label style="display:flex;align-items:center;gap:8px;padding:4px 0 10px;cursor:pointer;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;border-bottom:1.5px solid var(--slate-200);margin-bottom:6px">
       <input type="checkbox" id="ins-emp-select-all" ${allSelected ? 'checked' : ''}
         onchange="toggleAllInsuranceEmployees(this.checked)"
         style="width:14px;height:14px;cursor:pointer;accent-color:var(--blue-600)"/>

@@ -87,7 +87,7 @@ function _renderItemHistory(rows) {
         <div class="mh-dot ${dotCls}"></div>
         <div style="flex:1">
           <div class="mh-cond info"><i data-lucide="${meta.icon}"></i> ${meta.label}</div>
-          <div class="mh-date">${new Date(r.created_at).toLocaleString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })} · ${_ihEsc(who)}</div>
+          <div class="mh-date">${formatDateTimeHuman(r.created_at)} · ${_ihEsc(who)}</div>
           ${changeLine}
           ${r.remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${_ihEsc(r.remarks)}</div>` : ''}
         </div>

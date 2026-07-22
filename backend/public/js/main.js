@@ -114,7 +114,7 @@ async function renderLogs() {
         tr.className = 'tr-clickable';
         const actionIcon = LOG_ICONS[log.action_type] || 'settings';
         tr.innerHTML = `
-          <td style="font-size:11px; font-family:var(--mono)">${new Date(log.date_time).toLocaleString()}</td>
+          <td style="font-size:11px">${formatDateTimeHuman(log.date_time)}</td>
           <td>${log.name || '—'}</td>
           <td><span class="log-action-badge ${_logActionCls(log.action_type)}"><i data-lucide="${actionIcon}"></i> ${log.action_type}</span></td>
           <td><span class="badge b-slate b-none">${log.module}</span></td>
@@ -214,7 +214,7 @@ function dpLog(id) {
           <div class="dp-section-hd"><i data-lucide="scroll-text"></i> Log Entry</div>
           <div class="dp-grid">
             ${dpField('Log ID',      `#${l.log_id}`,   'mono')}
-            ${dpField('Timestamp',   new Date(l.date_time).toLocaleString(), 'mono')}
+            ${dpField('Timestamp',   formatDateTimeHuman(l.date_time))}
             ${dpField('User',        l.name || '—')}
             ${dpField('Action',      `<span class="log-action-badge ${clsMap[l.action_type] || 'la-system'}"><i data-lucide="${actionIcon}"></i> ${l.action_type}</span>`)}
             ${dpField('Module',      l.module)}
