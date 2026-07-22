@@ -1,4 +1,4 @@
-// backend/routes/itSupplies.js — Part 3 (item history) + Part 6 (Supplier fields)
+// backend/routes/itSupplies.js — Part 3 (item history) + Part 6 (Supplier fields) + Part 7 (Unit)
 const express = require("express");
 const router = express.Router();
 const pool = require("../db");
@@ -23,6 +23,7 @@ router.post("/", async (req, res) => {
     asset_name,
     serial_number,
     quantity,
+    unit, // ✅ NEW (Part 7)
     date_of_purchase,
     price,
     warranty_end_date,
@@ -31,18 +32,19 @@ router.post("/", async (req, res) => {
     status,
     user_id,
     performed_by,
-    supplier, supplier_contact, // ✅ NEW (Part 6)
+    supplier, supplier_contact,
   } = req.body;
 
   const inserted = await pool.query(`
     INSERT INTO it_supplies
-    (asset_name, serial_number, quantity, date_of_purchase, price, warranty_end_date, remarks, location_id, status, supplier, supplier_contact)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    (asset_name, serial_number, quantity, unit, date_of_purchase, price, warranty_end_date, remarks, location_id, status, supplier, supplier_contact)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     RETURNING it_supplies_id
   `, [
     asset_name,
     serial_number,
     quantity,
+    unit || 'Piece', // ✅ NEW (Part 7) — matches Inventory's default posture
     date_of_purchase,
     price,
     warranty_end_date,
@@ -57,7 +59,7 @@ router.post("/", async (req, res) => {
     module: "itsupplies",
     record_id: inserted.rows[0].it_supplies_id,
     action: "CREATED",
-    remarks: `${asset_name}${serial_number ? ' · ' + serial_number : ''}${supplier ? ' · Supplier: ' + supplier : ''}`,
+    remarks: `${asset_name}${serial_number ? ' · ' + serial_number : ''}${unit ? ' · ' + quantity + ' ' + unit : ''}${supplier ? ' · Supplier: ' + supplier : ''}`,
     performed_by_id: user_id || null,
     performed_by_name: performed_by || null,
   });
@@ -72,6 +74,7 @@ router.put("/:id", async (req, res) => {
     asset_name,
     serial_number,
     quantity,
+    unit, // ✅ NEW (Part 7)
     date_of_purchase,
     price,
     warranty_end_date,
@@ -80,7 +83,7 @@ router.put("/:id", async (req, res) => {
     status,
     user_id,
     performed_by,
-    supplier, supplier_contact, // ✅ NEW (Part 6)
+    supplier, supplier_contact,
   } = req.body;
 
   const before = await pool.query("SELECT * FROM it_supplies WHERE it_supplies_id=$1", [req.params.id]);
@@ -91,19 +94,21 @@ router.put("/:id", async (req, res) => {
       asset_name=$1,
       serial_number=$2,
       quantity=$3,
-      date_of_purchase=$4,
-      price=$5,
-      warranty_end_date=$6,
-      remarks=$7,
-      location_id=$8,
-      status=$9,
-      supplier=$10,
-      supplier_contact=$11
-    WHERE it_supplies_id=$12
+      unit=$4,
+      date_of_purchase=$5,
+      price=$6,
+      warranty_end_date=$7,
+      remarks=$8,
+      location_id=$9,
+      status=$10,
+      supplier=$11,
+      supplier_contact=$12
+    WHERE it_supplies_id=$13
   `, [
     asset_name,
     serial_number,
     quantity,
+    unit || 'Piece',
     date_of_purchase,
     price,
     warranty_end_date,
@@ -120,10 +125,11 @@ router.put("/:id", async (req, res) => {
       ["asset_name", old.asset_name, asset_name],
       ["serial_number", old.serial_number, serial_number],
       ["quantity", old.quantity, quantity],
+      ["unit", old.unit, unit], // ✅ NEW (Part 7) — tracked in Main History like every other field
       ["status", old.status, status],
       ["price", old.price, price],
-      ["supplier", old.supplier, supplier], // ✅ NEW (Part 6)
-      ["supplier_contact", old.supplier_contact, supplier_contact], // ✅ NEW (Part 6)
+      ["supplier", old.supplier, supplier],
+      ["supplier_contact", old.supplier_contact, supplier_contact],
     ];
     for (const [field, oldVal, newVal] of fieldChecks) {
       if (String(oldVal ?? '') !== String(newVal ?? '')) {

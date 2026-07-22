@@ -1,4 +1,3 @@
-
 /* ──────────────────────────────────────────────────────────────
    IT SUPPLIES
 ────────────────────────────────────────────────────────────── */
@@ -149,6 +148,7 @@ async function dpITSupplies(id) {
         ${dpFieldFull('Asset Name', `<strong>${it.asset_name}</strong>`)}
         ${dpField('Serial / Model', it.serial_number || '—', 'mono')}
         ${dpField('Quantity', it.quantity)}
+        ${dpField('Unit', it.unit || '—')}
         ${dpField('Date Purchased', it.date_of_purchase ? new Date(it.date_of_purchase).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—')}
         ${dpField('Price', it.price ? '₱' + Number(it.price).toLocaleString() : '—')}
         ${dpField('Supplier', it.supplier || '—')}
@@ -192,16 +192,17 @@ function saveITSupply() {
   const name     = document.getElementById('it-f-name').value.trim();
   const serial   = document.getElementById('it-f-serial').value.trim();
   const qty      = document.getElementById('it-f-qty').value;
+  const unit     = document.getElementById('it-f-unit')?.value || 'Piece'; // ✅ NEW (Part 7)
   const date     = document.getElementById('it-f-date').value;
   const price    = document.getElementById('it-f-price').value;
   const warranty = document.getElementById('it-f-warranty').value;
   const loc      = document.getElementById('it-f-loc').value;
   const status   = document.getElementById('it-f-status').value;
   const remarks  = document.getElementById('it-f-remarks').value;
-  const supplier         = document.getElementById('it-f-supplier')?.value.trim() || '';          // ✅ NEW
-  const supplier_contact = document.getElementById('it-f-supplier-contact')?.value.trim() || '';  // ✅ NEW
+  const supplier         = document.getElementById('it-f-supplier')?.value.trim() || '';
+  const supplier_contact = document.getElementById('it-f-supplier-contact')?.value.trim() || '';
 
-  if (!name || !qty || !loc) {
+  if (!name || !qty || !loc || !status || !unit) {
     showToast('Fill required fields', 't-error');
     return;
   }
@@ -214,15 +215,16 @@ function saveITSupply() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       asset_name:       name,
-      serial_number:    serial,
+      serial_number:    serial || null,
       quantity:         qty,
+      unit,                         // ✅ NEW (Part 7)
       date_of_purchase: date || null,
       price: price || null,
       warranty_end_date: warranty || null,
       location_id:      loc,
       status,
       remarks,
-      supplier, supplier_contact,   // ✅ NEW
+      supplier, supplier_contact,
       user_id: currentUser.user_id,
       performed_by: currentUser.name,
     })
@@ -251,15 +253,17 @@ async function editIT(id) {
   document.getElementById('it-f-name').value     = it.asset_name;
   document.getElementById('it-f-serial').value   = it.serial_number || '';
   document.getElementById('it-f-qty').value      = it.quantity;
+  const unitEl = document.getElementById('it-f-unit');               // ✅ NEW (Part 7)
+  if (unitEl) unitEl.value = it.unit || 'Piece';
   document.getElementById('it-f-date').value     = it.date_of_purchase ? new Date(it.date_of_purchase).toISOString().slice(0,10) : '';
   document.getElementById('it-f-price').value    = it.price || '';
   document.getElementById('it-f-warranty').value = it.warranty_end_date ? new Date(it.warranty_end_date).toISOString().slice(0,10) : '';
   document.getElementById('it-f-loc').value      = it.location_id;
   document.getElementById('it-f-status').value   = it.status || 'Available';
   document.getElementById('it-f-remarks').value  = it.remarks || '';
-  const supEl = document.getElementById('it-f-supplier');            // ✅ NEW
+  const supEl = document.getElementById('it-f-supplier');
   if (supEl) supEl.value = it.supplier || '';
-  const supCEl = document.getElementById('it-f-supplier-contact');   // ✅ NEW
+  const supCEl = document.getElementById('it-f-supplier-contact');
   if (supCEl) supCEl.value = it.supplier_contact || '';
 }
 
@@ -299,6 +303,8 @@ function openAddIT() {
   itEditId = null;
   openM('m-add-it');
   loadITLocations();
+  const unitEl = document.getElementById('it-f-unit');   // ✅ NEW (Part 7) — default on fresh Add
+  if (unitEl) unitEl.value = 'Piece';
 }
 
 async function _renderITTable() {
@@ -335,7 +341,7 @@ async function _renderITTable() {
         <td class="td-strong">${it.asset_name}</td>
         <td class="td-mono">${it.serial_number || '—'}</td>
         <td>${it.quantity}</td>
-        <td>${_warrantyBadge(it.warranty_end_date)}</td>
+        <td>${it.unit || '—'}</td>
         <td>${it.location_name || '—'}</td>
         <td>${it.status ? `<span class="badge ${statusCls}">${it.status}</span>` : '—'}${requestBadge}</td>
       `;

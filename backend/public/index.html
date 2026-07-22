@@ -499,7 +499,7 @@
                 <th>Asset Name</th>
                 <th>Serial / Model</th>
                 <th>Quantity</th>
-                <th>Warranty</th>
+                <th>Unit</th>
                 <th>Location</th>
                 <th>Status</th>
               </tr></thead>
@@ -1801,7 +1801,7 @@
         </div>
 
         <div class="form-grp">
-          <label>Serial / Model *</label>
+          <label>Serial / Model</label>
           <input class="form-ctrl" id="it-f-serial" maxlength="50" placeholder="Serial number or model"/>
         </div>
       </div>
@@ -1814,22 +1814,45 @@
         </div>
 
         <div class="form-grp">
+          <label>Unit *</label>
+          <select class="form-ctrl" id="it-f-unit">
+            <option>Piece</option>
+            <option>Ream</option>
+            <option>Pack</option>
+            <option>Box</option>
+            <option>Bottle</option>
+            <option>Roll</option>
+            <option>Set</option>
+            <option>Kit</option>
+            <option>Ml</option>
+            <option>Kg</option>
+            <option>Liter</option>
+            <option>Gram</option>
+            <option>Ball</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 2b -->
+      <div class="form-row">
+        <div class="form-grp">
           <label>Price (₱)</label>
           <input class="form-ctrl" id="it-f-price" type="number" placeholder="0.00"/>
+        </div>
+
+        <div class="form-grp">
+          <label>Date Purchased</label>
+          <input class="form-ctrl" id="it-f-date" type="date"/>
         </div>
       </div>
 
       <!-- Row 3 -->
       <div class="form-row">
         <div class="form-grp">
-          <label>Date Purchased</label>
-          <input class="form-ctrl" id="it-f-date" type="date"/>
-        </div>
-
-        <div class="form-grp">
           <label>Warranty End</label>
           <input class="form-ctrl" id="it-f-warranty" type="date"/>
         </div>
+        <div class="form-grp"></div>
       </div>
 
       <!-- Row 4 -->

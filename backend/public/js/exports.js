@@ -131,12 +131,13 @@ async function exportITSupplies() {
       ? _filterIT(_allITSupplies)
       : await (await fetch(`${API_URL}/api/it-supplies`)).json();
 
-    const headers = ['Asset Name', 'Serial / Model', 'Quantity', 'Date Purchased',
+    const headers = ['Asset Name', 'Serial / Model', 'Quantity', 'Unit', 'Date Purchased',
       'Price', 'Supplier', 'Supplier Contact', 'Warranty End', 'Location', 'Status', 'Remarks'];
     const rows = source.map(it => [
       _csvStr(it.asset_name),
       _csvStr(it.serial_number),
       it.quantity,
+      _csvStr(it.unit),
       _csvStr(it.date_of_purchase),
       it.price ?? '',
       _csvStr(it.supplier),
@@ -153,7 +154,6 @@ async function exportITSupplies() {
     showToast('Failed to export IT supplies', 't-error');
   }
 }
-
 /* ── LAPTOPS ─────────────────────────────────────────────────
    Uses _allLaptops + _filterLaptops (main.js). Includes the new
    Remarks + Supplier columns (Part 3) and the resolved employee
