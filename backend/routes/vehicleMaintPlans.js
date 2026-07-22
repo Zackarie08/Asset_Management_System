@@ -55,7 +55,7 @@ router.post("/", async (req, res) => {
   try {
     const {
       vehicle_id, name, basis, threshold_km, last_maintenance_km,
-      interval_unit, last_performed_date, user_id, performed_by,
+      interval_unit, interval_value, last_performed_date, user_id, performed_by,
     } = req.body;
 
     if (!vehicle_id || !name || !basis) {
@@ -64,10 +64,12 @@ router.post("/", async (req, res) => {
     if (basis !== "odometer" && basis !== "time") {
       return res.status(400).json({ error: "basis must be 'odometer' or 'time'" });
     }
-    // ✅ FIX: only month/year accepted now — week removed
     if (basis === "time" && !VALID_TIME_UNITS.includes(interval_unit)) {
       return res.status(400).json({ error: "interval_unit must be 'month' or 'year'" });
     }
+    // ✅ CHANGED (Vehicle_TimePlan_Interval_Update): "Every N" is back —
+    // interval_value is user-supplied (min 1), no longer hardcoded to 1.
+    const cleanIntervalValue = Math.max(1, parseInt(interval_value) || 1);
 
     const result = await pool.query(`
       INSERT INTO vehicle_maintenance_types
@@ -79,7 +81,7 @@ router.post("/", async (req, res) => {
       basis === "odometer" ? (threshold_km || null) : null,
       basis === "odometer" ? (last_maintenance_km || 0) : null,
       basis === "time" ? interval_unit : null,
-      basis === "time" ? 1 : null, // ✅ FIX: always 1 — "Every N" removed
+      basis === "time" ? cleanIntervalValue : null,
       last_performed_date || null,
     ]);
 
@@ -105,12 +107,13 @@ router.put("/:id", async (req, res) => {
   try {
     const {
       name, basis, threshold_km, last_maintenance_km,
-      interval_unit, last_performed_date, user_id, performed_by,
+      interval_unit, interval_value, last_performed_date, user_id, performed_by,
     } = req.body;
 
     if (basis === "time" && !VALID_TIME_UNITS.includes(interval_unit)) {
       return res.status(400).json({ error: "interval_unit must be 'month' or 'year'" });
     }
+    const cleanIntervalValue = Math.max(1, parseInt(interval_value) || 1);
 
     const before = await pool.query("SELECT * FROM vehicle_maintenance_types WHERE maint_type_id=$1", [req.params.id]);
     const old = before.rows[0];
@@ -128,7 +131,7 @@ router.put("/:id", async (req, res) => {
       RETURNING *
     `, [name, basis, threshold_km || null, last_maintenance_km || null,
         basis === "time" ? interval_unit : null,
-        basis === "time" ? 1 : null,
+        basis === "time" ? cleanIntervalValue : null,
         last_performed_date || null, req.params.id]);
 
     if (!result.rows.length) return res.status(404).json({ error: "Plan not found" });

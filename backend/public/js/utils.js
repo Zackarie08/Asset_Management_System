@@ -1,3 +1,7 @@
+// ✅ NEW — shared renewal/expiry alert lead time (days), mirrors
+// ALERT_WINDOW_DAYS in backend/utils/renewalAlerts.js.
+const RENEWAL_ALERT_WINDOW_DAYS = 60;
+
 const ADMIN_NAV = [
   { id: "dashboard",     icon: "layout-dashboard", label: "Dashboard"           },
   { id: "inventory",     icon: "box",              label: "Inventory Management", badge: "inv" },

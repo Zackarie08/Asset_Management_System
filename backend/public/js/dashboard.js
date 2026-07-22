@@ -21,6 +21,14 @@ function daysFromNow(dateStr) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
+// ✅ NEW (Dashboard_New_Item_Highlighting) — module-level so both
+// refreshDashboard() and _renderSubInsAlertRow() (called later, outside
+// refreshDashboard's scope) can read the same "unseen" set. An item stops
+// being "new" the instant it's marked seen — same trigger as the sidebar
+// red-dot/count: opening its DP (openDP → markNotificationSeen) or
+// clicking its dashboard alert row (_openAlertItem → same call).
+let _dashUnseenSet = new Set();
+
 
 /* ══════════════════════════════════════════════════════════════
    MAIN DASHBOARD REFRESH
@@ -28,6 +36,19 @@ function daysFromNow(dateStr) {
 async function refreshDashboard() {
 
 document.getElementById('dash-date').textContent = formatDateHuman(new Date());
+
+  // ✅ NEW — unseen notification keys, so panels can flag new items.
+  // Scoped to the same modules the red-dot system already tracks
+  // (contracts, vehicle, insurance, m365, globe, subscriptions) so the
+  // two systems can never disagree.
+  _dashUnseenSet = new Set();
+  if (currentUser) {
+    try {
+      const res  = await fetch(`${API_URL}/api/notifications/${currentUser.user_id}`);
+      const data = await res.json();
+      _dashUnseenSet = new Set((data.items || []).map(n => `${n.module}:${n.record_id}`));
+    } catch { /* non-fatal — panels just render without highlighting */ }
+  }
 
   const [
     inventory, orders, laptops, vehicles, contracts, logs, globe, m365, contractRequests,
@@ -176,7 +197,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     if (!lp.current_user_id) return;
     if (lp.date_of_purchase && lp.user_role !== 'intern') {
       const ageYears = (now - new Date(lp.date_of_purchase)) / (365.25 * 24 * 3600 * 1000);
-      if (ageYears >= 3) {
+    if (ageYears >= 2) {
         laptopAlerts.push({ lp, reason: `${Math.floor(ageYears)}y old`, cls: 'amber' });
       }
     }
@@ -279,7 +300,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       html += _emptyMsg('No vehicle maintenance alerts');
     } else {
       html += vehicleAlerts.map(({ v, reason, cls }) => `
-        <div class="panel-row">
+        <div class="panel-row${_dashUnseenSet.has(`vehicle:${v.vehicle_id}`) ? ' is-new' : ''}">
           <div class="pr-dot ${cls}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(v.vehicle_name)}</div>
@@ -325,7 +346,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     }
     if (contractAlerts.length) {
       html += contractAlerts.map(({ c, reason, cls }) => `
-        <div class="panel-row">
+        <div class="panel-row${_dashUnseenSet.has(`contracts:${c.contract_id}`) ? ' is-new' : ''}">
           <div class="pr-dot ${cls}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(c.other_party)}</div>
@@ -359,7 +380,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     const insuranceAlerts = insuranceList.filter(i => {
       if (!i.expiry_date) return false;
       const days = Math.ceil((new Date(i.expiry_date) - today0) / 86400000);
-      return days <= 30;
+      return days <= RENEWAL_ALERT_WINDOW_DAYS;
     });
 
     const totalActiveSubs = globe.filter(g => g.status === 'Active').length
@@ -496,10 +517,11 @@ let _lastSubInsAlerts = [];
 
 function _renderSubInsAlertRow(a) {
   const expired = a.daysLeft < 0;
-  const cls   = expired ? 'red' : (a.daysLeft <= 3 ? 'amber' : 'blue');
+  const cls   = expired ? 'red' : (a.daysLeft <= 7 ? 'amber' : 'blue');
   const label = expired ? 'Expired' : `${a.daysLeft}d left`;
+  const isNew = _dashUnseenSet.has(`${a.dpType}:${a.recordId}`);
   return `
-    <div class="panel-row" style="cursor:pointer" onclick="_openAlertItem('${a.page}','${a.dpType}',${a.recordId})">
+    <div class="panel-row${isNew ? ' is-new' : ''}" style="cursor:pointer" onclick="_openAlertItem('${a.page}','${a.dpType}',${a.recordId})">
       <div class="pr-dot ${cls}"></div>
       <div style="flex:1">
         <div class="pr-name">${_esc(a.name)}</div>

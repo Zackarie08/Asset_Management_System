@@ -90,10 +90,15 @@ async function fetchPlansForVehicle(vehicleId) {
 /* ─────────────────────────────────────────────────────────
    PLAN STATUS HELPERS
 ───────────────────────────────────────────────────────── */
+// ✅ CHANGED (Vehicle_Progress_Alert_Update): percentage-of-interval
+// progress instead of a fixed "500 km remaining" cutoff. Fires at 90%.
 function planOdoStatus(plan, currentKm) {
-  const remaining = (plan.next_due_km || 0) - currentKm;
-  if (remaining <= 0)   return 'overdue';
-  if (remaining <= 500) return 'due_soon';
+  const base     = plan.last_maintenance_km || 0;
+  const interval = plan.threshold_km || 0;
+  if (!interval) return 'unknown';
+  const pct = ((currentKm - base) / interval) * 100;
+  if (pct >= 100) return 'overdue';
+  if (pct >= 90)  return 'due_soon';
   return 'ok';
 }
 
@@ -405,13 +410,15 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
     const interval  = plan.threshold_km || 1;
     const remaining = nextKm - currentKm;
     const pct       = Math.min(100, Math.max(0, Math.round(((currentKm - lastKm) / interval) * 100)));
-    const barColor  = remaining <= 0 ? '#ef4444' : remaining <= 500 ? '#f59e0b' : '#22c55e';
+    // ✅ CHANGED (Vehicle_Progress_Alert_Update): 90% progress threshold
+    // instead of a fixed 500 km remaining.
+    const barColor  = pct >= 100 ? '#ef4444' : pct >= 90 ? '#f59e0b' : '#22c55e';
 
-    statusBadge = remaining <= 0
+    statusBadge = pct >= 100
       ? `<span class="badge b-red"><i data-lucide="triangle-alert"></i> Overdue (${Math.abs(remaining).toLocaleString()} km over)</span>`
-      : remaining <= 500
-        ? `<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Due Soon (${remaining.toLocaleString()} km)</span>`
-        : `<span class="badge b-green"><i data-lucide="check-circle"></i> OK (${remaining.toLocaleString()} km left)</span>`;
+      : pct >= 90
+        ? `<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Due Soon (${pct}% · ${remaining.toLocaleString()} km left)</span>`
+        : `<span class="badge b-green"><i data-lucide="check-circle"></i> OK (${pct}% · ${remaining.toLocaleString()} km left)</span>`;
 
     visualHTML = `
       <div style="margin:8px 0">
@@ -425,6 +432,7 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
         </div>
         <div style="font-size:11px;color:var(--slate-400);margin-top:3px">
           Current: ${currentKm.toLocaleString()} km · Interval: every ${interval.toLocaleString()} km
+          ${plan.last_performed_date ? ' · Last serviced: ' + formatDateHuman(plan.last_performed_date) : ''}
         </div>
       </div>`;
 
@@ -449,8 +457,11 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
             : `<i data-lucide="calendar"></i> Due: ${formatDateHuman(plan.next_due_date)}`)
       : '<i data-lucide="clock"></i> Not yet performed';
 
-    // ✅ FIX: clean "Every month" / "Every year" (no "Every 1 month(s)")
-    const intervalLabel = plan.interval_unit === 'year' ? 'Every year' : 'Every month';
+    // ✅ CHANGED (Vehicle_TimePlan_Interval_Update): reflects the actual
+    // interval_value ("Every 3 Months" / "Every 2 Years").
+    const ivN = Math.max(1, parseInt(plan.interval_value) || 1);
+    const unitWord = plan.interval_unit === 'year' ? (ivN === 1 ? 'year' : 'years') : (ivN === 1 ? 'month' : 'months');
+    const intervalLabel = ivN === 1 ? `Every ${unitWord}` : `Every ${ivN} ${unitWord}`;
 
     visualHTML = `
       <div style="margin:8px 0;font-size:12px;color:var(--slate-600)">
@@ -726,9 +737,13 @@ async function openEditPlan(maintTypeId, vehicleId) {
     if (plan.basis === 'odometer') {
       document.getElementById('plan-f-km').value      = plan.threshold_km        || '';
       document.getElementById('plan-f-last-km').value = plan.last_maintenance_km || '';
+      const lastOdoDateEl = document.getElementById('plan-f-last-odo-date'); // ✅ NEW
+      if (lastOdoDateEl) lastOdoDateEl.value = plan.last_performed_date
+        ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
     } else {
-      // ✅ FIX: no interval-count input to populate anymore
       document.getElementById('plan-f-unit').value      = plan.interval_unit === 'year' ? 'year' : 'month';
+      const intervalEl = document.getElementById('plan-f-interval'); // ✅ NEW
+      if (intervalEl) intervalEl.value = plan.interval_value || 1;
       document.getElementById('plan-f-last-date').value = plan.last_performed_date
         ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
     }
@@ -745,15 +760,16 @@ function _setBasisUI(basis) {
 }
 
 function _resetPlanForm() {
-  ['plan-f-name','plan-f-km','plan-f-last-km','plan-f-last-date'].forEach(id => {
+  ['plan-f-name','plan-f-km','plan-f-last-km','plan-f-last-odo-date','plan-f-last-date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
   const basisEl = document.getElementById('plan-f-basis');
   if (basisEl) basisEl.value = 'odometer';
-  // ✅ FIX: no more interval-count field — only a Monthly/Yearly choice
   const unitEl = document.getElementById('plan-f-unit');
   if (unitEl) unitEl.value = 'month';
+  const intervalEl = document.getElementById('plan-f-interval'); // ✅ NEW
+  if (intervalEl) intervalEl.value = 1;
 }
 
 function savePlan() {
@@ -770,14 +786,18 @@ function savePlan() {
   if (basis === 'odometer') {
     const km     = parseInt(document.getElementById('plan-f-km').value);
     const lastKm = parseInt(document.getElementById('plan-f-last-km').value) || 0;
+    const lastOdoDate = document.getElementById('plan-f-last-odo-date')?.value || null; // ✅ NEW
     if (!km || km <= 0) { showToast('Threshold KM is required', 't-error'); return; }
     payload.threshold_km        = km;
     payload.last_maintenance_km = lastKm;
+    payload.last_performed_date = lastOdoDate; // ✅ NEW — Last Maintenance Date
   } else {
-    // ✅ FIX: Monthly/Yearly only — no interval count sent
     const unit     = document.getElementById('plan-f-unit').value;
+    const interval = parseInt(document.getElementById('plan-f-interval')?.value) || 1; // ✅ NEW
     const lastDate = document.getElementById('plan-f-last-date').value;
+    if (interval < 1) { showToast('Interval must be at least 1', 't-error'); return; }
     payload.interval_unit       = unit;
+    payload.interval_value      = interval; // ✅ NEW
     payload.last_performed_date = lastDate || null;
   }
 

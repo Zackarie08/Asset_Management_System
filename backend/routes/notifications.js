@@ -83,11 +83,11 @@ async function collectNotifications() {
 
   // ── Other subscriptions ──
   const subs = await pool.query(
-    `SELECT subscription_id, subscription_name, billing_cycle, renewal_date, status FROM subscriptions`
+    `SELECT subscription_id, subscription_name, billing_cycle, billing_interval, renewal_date, status FROM subscriptions`
   );
   subs.rows.forEach(s => {
     if (s.status === 'Cancelled') return;
-    const alert = computeRenewalAlert(s.renewal_date, s.billing_cycle);
+    const alert = computeRenewalAlert(s.renewal_date, s.billing_cycle, s.billing_interval);
     if (alert.alertActive) {
       notifications.push({
         module: 'subscriptions', record_id: s.subscription_id,
@@ -97,16 +97,16 @@ async function collectNotifications() {
     }
   });
 
-  // ── Insurance — expiring within 30 days ──
+  // ── Insurance — expiring within 60 days (Dashboard_Alert_Expansion) ──
   const ins = await pool.query(`SELECT insurance_id, employee_name, expiry_date FROM insurance`);
   ins.rows.forEach(i => {
     if (!i.expiry_date) return;
     const days = Math.ceil((new Date(i.expiry_date) - today) / 86400000);
-    if (days <= 30) {
+    if (days <= 60) {
       notifications.push({
         module: 'insurance', record_id: i.insurance_id,
         type: days < 0 ? 'INSURANCE_EXPIRED' : 'INSURANCE_EXPIRING',
-        severity: days < 0 ? 'red' : 'amber',
+        severity: days < 0 || days <= 7 ? 'red' : 'amber',
         label: i.employee_name, detail: days < 0 ? 'Policy expired' : `Expires in ${days}d`,
       });
     }

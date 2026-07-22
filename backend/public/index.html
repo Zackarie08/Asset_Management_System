@@ -2412,10 +2412,14 @@
       <div id="plan-time-section" style="display:none">
         <div class="form-row">
           <div class="form-grp">
+            <label>Every (Interval) *</label>
+            <input class="form-ctrl" id="plan-f-interval" type="number" min="1" value="1" placeholder="e.g. 3"/>
+          </div>
+          <div class="form-grp">
             <label>Frequency *</label>
             <select class="form-ctrl" id="plan-f-unit">
-              <option value="month" selected>Monthly</option>
-              <option value="year">Yearly</option>
+              <option value="month" selected>Month(s)</option>
+              <option value="year">Year(s)</option>
             </select>
           </div>
         </div>
@@ -2647,9 +2651,9 @@
 
       <div class="form-row">
         <div class="form-grp">
-          <label>Employee *</label>
+          <label>Employee</label>
           <div class="search-select">
-            <input id="globe-f-user" class="form-ctrl" placeholder="Type name…"/>
+            <input id="globe-f-user" class="form-ctrl" placeholder="Type name… (optional — leave blank for Unassigned)"/>
             <div id="globe-f-user-list" class="select-list"></div>
           </div>
         </div>
@@ -2807,11 +2811,19 @@
         </div>
         <div class="form-grp">
           <label>Billing Cycle *</label>
-          <select class="form-ctrl" id="sub-f-cycle">
+          <select class="form-ctrl" id="sub-f-cycle" onchange="_toggleSubIntervalField()">
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
             <option value="one-time">One-time</option>
           </select>
+        </div>
+      </div>
+
+      <div class="form-row" id="sub-f-interval-row">
+        <div class="form-grp">
+          <label>Every (Interval) *</label>
+          <input class="form-ctrl" id="sub-f-interval" type="number" min="1" value="1" placeholder="e.g. 3"/>
+          <span class="form-note">Interval 3 + Months = "Every 3 Months"</span>
         </div>
       </div>
 

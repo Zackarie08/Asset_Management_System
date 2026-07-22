@@ -111,7 +111,7 @@ async function renderSubscriptionsUnified() {
       rows.push({
         source: 'Globe', id: g.plan_id,
         name: g.plan_name || 'Globe Plan',
-        assignedTo: g.employee_name || '—',
+        assignedTo: g.employee_name || 'Unassigned',
         supplier: 'Globe Telecom',
         category: 'Telecom',
         cost: g.monthly_cost,
@@ -182,6 +182,12 @@ function _renderUniTable() {
   const start = (uniCurrentPage - 1) * UNI_PAGE_SIZE;
   const page  = rows.slice(start, start + UNI_PAGE_SIZE);
 
+  // ✅ FIX (Subscription_Total_Count_Fix): "total" was only recomputed by
+  // renderSubscriptionsUnified() (fired by the dropdown filters) — the
+  // search box only ever called this function, so the count silently
+  // went stale while searching. Now it's kept in sync here too.
+  _setTxt('uni-stat-total', total);
+
   const tbody = document.getElementById('uni-tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -247,6 +253,9 @@ function selectSubType(type) {
   } else {
     subEditId = null;
     openM('m-sub-add');
+    const intervalEl = document.getElementById('sub-f-interval');
+    if (intervalEl) intervalEl.value = 1;
+    _toggleSubIntervalField();
   }
 }
 
@@ -426,7 +435,7 @@ async function renderGlobe() {
         const tr = document.createElement('tr');
         tr.className = 'tr-clickable';
         tr.innerHTML = `
-          <td>${g.employee_name  || '—'}</td>
+          <td>${g.employee_name || '<span class="badge b-slate">Unassigned</span>'}</td>
           <td>${g.mobile_number  || '—'}</td>
           <td>${g.plan_name      || '—'}</td>
           <td>${fmtCost(g.monthly_cost)}</td>
@@ -458,7 +467,7 @@ setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Pla
       <div class="dp-section">
         <div class="dp-section-hd"><i data-lucide="user"></i> Subscriber</div>
         <div class="dp-grid">
-          ${dpField('Employee',   g.employee_name  || '—')}
+          ${dpField('Employee',   g.employee_name || '<span class="badge b-slate">Unassigned</span>')}
           ${dpField('Mobile No.', g.mobile_number  || '—')}
           ${dpField('Account No.',g.account_number || '—')}
         </div>
@@ -511,12 +520,14 @@ function saveGlobe() {
   const renew    = document.getElementById('globe-f-renew').value;
 
   if (!mobile || !plan || !renew) { showToast('Mobile number, plan name, and renewal date are required', 't-error'); return; }
-  if (!selectState['globe-f-user']) { showToast('Select a valid employee', 't-error'); return; }
+  // ✅ CHANGED (Globe_Unassigned_Support): Employee is now optional —
+  // only validate it if something was actually typed.
+  if (userName && !selectState['globe-f-user']) { showToast('Select a valid employee from the list, or leave blank for Unassigned', 't-error'); return; }
   const mobilePattern = /^09\d{2}-\d{3}-\d{4}$/;
   if (!mobilePattern.test(mobile)) { showToast('Invalid mobile format (e.g. 0917-123-4567)', 't-error'); return; }
 
   const payload = {
-    user_id:        globeUserMap[userName] || null,
+    user_id:        userName ? (globeUserMap[userName] || null) : null,
     mobile_number:  mobile,
     account_number: document.getElementById('globe-f-acct').value,
     plan_name:      plan,
@@ -552,7 +563,7 @@ async function editGlobe(id) {
     globeEditId = id;
     await loadGlobeUsers();
     document.getElementById('globe-f-user').value    = g.employee_name  || '';
-    selectState['globe-f-user'] = true;
+    selectState['globe-f-user'] = !!g.employee_name;
     document.getElementById('globe-f-num').value     = g.mobile_number  || '';
     document.getElementById('globe-f-acct').value    = g.account_number || '';
     document.getElementById('globe-f-plan').value    = g.plan_name      || '';
@@ -648,7 +659,7 @@ async function dpSubscriptions(id) {
           ${dpField('Supplier',    s.supplier          || '—')}
           ${dpField('Assigned To', s.assigned_user_name || s.assigned_to || '—')}
           ${dpField('Cost',fmtCost(s.monthly_cost))}
-          ${dpField('Billing',     s.billing_cycle     || '—')}
+          ${dpField('Billing',     s.billing_cycle_label || s.billing_cycle || '—')}
         </div>
       </div>
       <div class="dp-section">
@@ -677,11 +688,20 @@ async function dpSubscriptions(id) {
   } catch (err) { showToast('Failed to load subscription', 't-error'); }
 }
 
+function _toggleSubIntervalField() {
+  const cycle = document.getElementById('sub-f-cycle')?.value;
+  const row   = document.getElementById('sub-f-interval-row');
+  if (row) row.style.display = (cycle === 'one-time') ? 'none' : 'flex';
+}
+
 function saveSubscription() {
   const name     = document.getElementById('sub-f-name').value.trim();
   const category = document.getElementById('sub-f-cat').value;
   const renewal  = document.getElementById('sub-f-renew').value;
+  const cycle    = document.getElementById('sub-f-cycle').value;
+  const interval = parseInt(document.getElementById('sub-f-interval')?.value) || 1;
   if (!name || !category) { showToast('Subscription name and category are required', 't-error'); return; }
+  if (cycle !== 'one-time' && interval < 1) { showToast('Interval must be at least 1', 't-error'); return; }
 
   const payload = {
     subscription_name: name,
@@ -689,7 +709,8 @@ function saveSubscription() {
     supplier:      document.getElementById('sub-f-supplier').value.trim() || null,
     assigned_to:   document.getElementById('sub-f-assigned').value.trim() || null,
     monthly_cost:  document.getElementById('sub-f-cost').value    || null,
-    billing_cycle: document.getElementById('sub-f-cycle').value,
+    billing_cycle: cycle,
+    billing_interval: cycle === 'one-time' ? 1 : interval, // ✅ NEW
     renewal_date:  renewal || null,
     status:        document.getElementById('sub-f-status').value,
     remarks:       document.getElementById('sub-f-remarks').value,
@@ -720,6 +741,9 @@ async function editSubscription(id) {
     document.getElementById('sub-f-assigned').value = s.assigned_to       || s.assigned_user_name || '';
     document.getElementById('sub-f-cost').value     = s.monthly_cost      || '';
     document.getElementById('sub-f-cycle').value    = s.billing_cycle     || 'monthly';
+    const intervalEl = document.getElementById('sub-f-interval');
+    if (intervalEl) intervalEl.value = s.billing_interval || 1;
+    _toggleSubIntervalField();
     document.getElementById('sub-f-renew').value    = s.renewal_date ? new Date(s.renewal_date).toISOString().slice(0,10) : '';
     document.getElementById('sub-f-status').value   = s.status            || 'Active';
     document.getElementById('sub-f-remarks').value  = s.remarks           || '';

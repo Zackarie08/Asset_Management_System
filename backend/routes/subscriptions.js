@@ -6,24 +6,33 @@ const { computeRenewalAlert } = require("../utils/renewalAlerts");
 const { logItemHistory } = require("../utils/itemHistory");
 const { numChanged } = require("../utils/itemHistory");
 
-function computeSubStatus(renewalDate, billingCycle, storedStatus) {
+function computeSubStatus(renewalDate, billingCycle, storedStatus, billingInterval) {
   if (storedStatus === "Cancelled") return "Cancelled";
   if (!renewalDate) return storedStatus || "Active";
 
-  const alert = computeRenewalAlert(renewalDate, billingCycle);
+  const alert = computeRenewalAlert(renewalDate, billingCycle, billingInterval);
   if (billingCycle === "one-time" && alert.isPastOneTime) return "Expired";
   if (alert.alertActive) return "For Renewal";
   return storedStatus || "Active";
 }
 
+// ✅ NEW — human label, e.g. "Every 3 Months" / "Every 2 Years" / "Monthly"
+function billingCycleLabel(cycle, interval) {
+  const n = Math.max(1, parseInt(interval) || 1);
+  if (cycle === 'one-time') return 'One-time';
+  if (n === 1) return cycle === 'monthly' ? 'Monthly' : 'Yearly';
+  return `Every ${n} ${cycle === 'monthly' ? 'Months' : 'Years'}`;
+}
+
 function withComputed(row) {
-  const alert = computeRenewalAlert(row.renewal_date, row.billing_cycle);
+  const alert = computeRenewalAlert(row.renewal_date, row.billing_cycle, row.billing_interval);
   return {
     ...row,
-    computed_status: computeSubStatus(row.renewal_date, row.billing_cycle, row.status),
+    computed_status: computeSubStatus(row.renewal_date, row.billing_cycle, row.status, row.billing_interval),
     renewal_alert_active: alert.alertActive,
     renewal_days_until: alert.daysUntil,
     next_renewal_date: alert.nextDate,
+    billing_cycle_label: billingCycleLabel(row.billing_cycle, row.billing_interval),
   };
 }
 
@@ -67,7 +76,7 @@ router.post("/", async (req, res) => {
     const {
       subscription_name, category, supplier,
       assigned_user_id, assigned_to,
-      monthly_cost, billing_cycle, renewal_date, status, remarks,
+      monthly_cost, billing_cycle, billing_interval, renewal_date, status, remarks,
       performed_by,
     } = req.body;
 
@@ -81,18 +90,23 @@ router.post("/", async (req, res) => {
       assignedName = uRes.rows[0]?.name || null;
     }
 
+    // ✅ NEW (Subscription_Interval_Enhancement)
+    const cleanInterval = (billing_cycle === "monthly" || billing_cycle === "yearly")
+      ? Math.max(1, parseInt(billing_interval) || 1)
+      : 1;
+
     const result = await pool.query(`
       INSERT INTO subscriptions (
         subscription_name, category, supplier,
         assigned_user_id, assigned_to,
-        monthly_cost, billing_cycle,
+        monthly_cost, billing_cycle, billing_interval,
         renewal_date, status, remarks
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *
     `, [
       subscription_name, category, supplier || null,
       assigned_user_id || null, assigned_to || null,
-      monthly_cost || null, billing_cycle || "monthly",
+      monthly_cost || null, billing_cycle || "monthly", cleanInterval,
       renewal_date || null, status || "Active", remarks || null,
     ]);
 
@@ -117,7 +131,7 @@ router.put("/:id", async (req, res) => {
     const {
       subscription_name, category, supplier,
       assigned_user_id, assigned_to,
-      monthly_cost, billing_cycle, renewal_date, status, remarks,
+      monthly_cost, billing_cycle, billing_interval, renewal_date, status, remarks,
       performed_by,
     } = req.body;
 
@@ -133,19 +147,23 @@ router.put("/:id", async (req, res) => {
       newAssignedName = uRes.rows[0]?.name || null;
     }
 
+    const cleanInterval = (billing_cycle === "monthly" || billing_cycle === "yearly")
+      ? Math.max(1, parseInt(billing_interval) || 1)
+      : 1;
+
     const result = await pool.query(`
       UPDATE subscriptions SET
         subscription_name = $1, category = $2, supplier = $3,
         assigned_user_id = $4, assigned_to = $5,
-        monthly_cost = $6, billing_cycle = $7,
-        renewal_date = $8, status = $9, remarks = $10,
+        monthly_cost = $6, billing_cycle = $7, billing_interval = $8,
+        renewal_date = $9, status = $10, remarks = $11,
         updated_at = NOW()
-      WHERE subscription_id = $11
+      WHERE subscription_id = $12
       RETURNING *
     `, [
       subscription_name, category, supplier || null,
       assigned_user_id || null, assigned_to || null,
-      monthly_cost || null, billing_cycle || "monthly",
+      monthly_cost || null, billing_cycle || "monthly", cleanInterval,
       renewal_date || null, status || "Active", remarks || null,
       req.params.id,
     ]);
@@ -173,6 +191,7 @@ router.put("/:id", async (req, res) => {
         ["status", old.status, status, false],
         ["monthly_cost", old.monthly_cost, monthly_cost, true],
         ["billing_cycle", old.billing_cycle, billing_cycle, false],
+        ["billing_interval", old.billing_interval, cleanInterval, true], // ✅ NEW
       ];
 
       for (const [field, oldVal, newVal, isNum] of fieldChecks) {
