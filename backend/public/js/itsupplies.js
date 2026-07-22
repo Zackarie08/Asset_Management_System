@@ -308,7 +308,8 @@ function openAddIT() {
 }
 
 async function _renderITTable() {
-  const filtered  = _filterIT(_allITSupplies);
+  const filtered  = _filterIT(_allITSupplies)
+    .sort((a, b) => (a.asset_name || '').localeCompare(b.asset_name || '')); // ✅ FIX: alphabetical by item name, like Inventory
   const total     = filtered.length;
   const start     = (currentITPage - 1) * itPerPage;
   const paginated = filtered.slice(start, start + itPerPage);
