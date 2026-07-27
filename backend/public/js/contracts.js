@@ -287,6 +287,10 @@ async function renderContractActions(c) {
 
   const isAdmin      = currentUser.role === "admin" || currentUser.role === "super_admin";
   const isSuperAdmin = currentUser.role === "super_admin";
+  // ✅ NEW: everyone EXCEPT super_admin can request a contract now —
+  // previously ANY admin (incl. plain "admin") was fully blocked from
+  // requesting. Super_admin stays excluded since they're the approver.
+  const canRequest   = currentUser.role !== "super_admin";
 
   let buttons = "";
   let statusPillHTML = "";
@@ -349,8 +353,8 @@ async function renderContractActions(c) {
         </ul>` : ''}`;
     }
 
-    // ── Action buttons (same logic as before, unaffected by the fix) ──
-    if (!isAdmin) {
+    // ── Action buttons ──
+    if (canRequest) {
       if (!currentReq) {
         buttons = `<button class="btn btn-primary btn-sm" onclick="requestContract(${c.contract_id})"><i data-lucide="send"></i> Request Contract</button>`;
       } else if (currentReq.requested_by !== currentUser.user_id) {

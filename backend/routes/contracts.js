@@ -117,6 +117,15 @@ router.post("/request", async (req, res) => {
   try {
     const { contract_id, user_id } = req.body;
 
+    // ✅ NEW: Super Admin cannot request contracts — they're the sole
+    // approver. Admin CAN request now (frontend used to block both admin
+    // and super_admin from requesting; only super_admin stays blocked,
+    // enforced here too so it can't be bypassed via direct API call).
+    const reqUserRes = await db.query("SELECT role FROM users WHERE user_id=$1", [user_id]);
+    if (reqUserRes.rows[0]?.role === "super_admin") {
+      return res.status(400).json({ error: "Super Admin cannot request contracts (approver role)" });
+    }
+
     const existing = await db.query(`
       SELECT * FROM contract_requests
       WHERE contract_id=$1

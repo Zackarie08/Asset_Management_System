@@ -512,6 +512,7 @@ async function renderInventory() {
   ]);
   const wineItemIds = new Set(wineReqs.map(r => r.inventory_gen_id));
   const borrowedIds = new Set(invBorrows.filter(b => b.status === 'BORROWED').map(b => b.record_id));
+  const pendingBorrowIds = new Set(invBorrows.filter(b => b.status === 'PENDING').map(b => b.record_id)); // ✅ NEW
 
   // ── Step 1: Search ──
   let filtered = searchQuery
@@ -575,6 +576,8 @@ async function renderInventory() {
     let requestBadge = '';
     if (wineItemIds.has(item.inventory_gen_id)) {
       requestBadge = '<span class="badge b-amber" style="margin-left:4px"><i data-lucide="wine"></i> Pending Request</span>';
+    } else if (pendingBorrowIds.has(item.inventory_gen_id)) { // ✅ NEW
+      requestBadge = '<span class="badge b-amber" style="margin-left:4px"><i data-lucide="clock"></i> Pending Request</span>';
     } else if (borrowedIds.has(item.inventory_gen_id)) {
       requestBadge = '<span class="badge b-blue" style="margin-left:4px"><i data-lucide="package-minus"></i> Borrowed</span>';
     }
@@ -739,13 +742,13 @@ function confirmBorrowItem() {
   })
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); return res.json(); })
     .then(() => {
-      showToast('Item borrowed', 't-success');
-      // ✅ FIX (Part 2): borrower now goes into Performed By, not baked
-      // into the Description text.
+      // ✅ CHANGED — no longer instant; now creates a PENDING request that
+      // needs admin/super_admin approval before stock actually moves.
+      showToast('Borrow request submitted — awaiting approval', 't-success');
       addLog(
-        'UPDATE',
+        'REQUEST',
         _borrowItemModule === 'inventory' ? 'INVENTORY' : 'IT SUPPLY',
-        `Borrowed ${quantity} unit(s) of ${_borrowItemName}`,
+        `Requested to borrow ${quantity} unit(s) of ${_borrowItemName}`,
         _borrowItemId,
         borrowed_by
       );
@@ -753,7 +756,7 @@ function confirmBorrowItem() {
       if (_borrowItemModule === 'inventory') { renderInventory(); if (dpOpen && dpCurrentId === _borrowItemId) dpInventory(_borrowItemId); }
       else { renderITSupplies(); if (dpOpen && dpCurrentId === _borrowItemId) dpITSupplies(_borrowItemId); }
     })
-    .catch(err => showToast(err.message || 'Failed to borrow item', 't-error'));
+    .catch(err => showToast(err.message || 'Failed to submit borrow request', 't-error'));
 }
 
 function confirmReturnItem() {

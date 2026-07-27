@@ -117,29 +117,21 @@ async function dpITSupplies(id) {
 
   setDPHeader('plug', '#eef2ff', it.asset_name, 'IT Supply');
 
-  let openBorrows = [];
+  let records = [];
   try {
     const res = await fetch(`${API_URL}/api/borrow-return/itsupplies/${id}`);
-    openBorrows = await res.json();
+    records = await res.json();
   } catch { /* ignore */ }
-  const currentlyOut = openBorrows.filter(b => b.status === 'BORROWED');
+
+  const pendingCount = records.filter(b => b.status === 'PENDING').length;
+  const outCount     = records.filter(b => b.status === 'BORROWED').length;
+  // ✅ NEW — true available = stock minus qty already tied up in pending requests
+  const pendingQty    = records.filter(b => b.status === 'PENDING').reduce((s, b) => s + (b.quantity || 0), 0);
+  const trueAvailable = Math.max(it.quantity - pendingQty, 0);
 
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
 
-  const listHTML = openBorrows.length ? `
-    <ul class="mh-list">
-      ${openBorrows.map(b => `
-        <li class="mh-item">
-          <div class="mh-dot ${b.status === 'BORROWED' ? 'repair' : 'good'}"></div>
-          <div style="flex:1">
-            <div class="mh-cond info">${b.status === 'BORROWED' ? '<i data-lucide="package-minus"></i> Borrowed' : '<i data-lucide="package-check"></i> Returned'} — ${b.quantity} unit(s)</div>
-            <div class="mh-date">${b.borrowed_by_name} · ${formatDateHuman(b.borrow_date)}</div>
-            ${b.borrow_remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${b.borrow_remarks}</div>` : ''}
-            ${b.status === 'RETURNED' ? `<div class="mh-remarks"><i data-lucide="corner-up-left"></i> Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
-          </div>
-          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="check"></i> Mark Returned</button>` : ''}
-        </li>`).join('')}
-    </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
+  const listHTML = buildBorrowRequestsHTML('itsupplies', records, isAdmin);
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
@@ -165,7 +157,7 @@ async function dpITSupplies(id) {
     <div class="dp-section">
       <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        ${isAdmin ? `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${it.it_supplies_id},'${it.asset_name.replace(/'/g,"\\'")}','itsupplies',${it.quantity})"><i data-lucide="package-minus"></i> Borrow</button>` : ''}
+        <button class="btn btn-amber btn-sm" onclick="openBorrowItem(${it.it_supplies_id},'${it.asset_name.replace(/'/g,"\\'")}','itsupplies',${trueAvailable})"><i data-lucide="send"></i> Request Borrow</button>
         ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('itsupplies', it.it_supplies_id, it.asset_name)}
         ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
@@ -173,7 +165,10 @@ async function dpITSupplies(id) {
     </div>
 
     <div class="dp-section">
-      <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return ${currentlyOut.length ? `<span class="badge b-amber" style="margin-left:6px">${currentlyOut.length} out</span>` : ''}</div>
+      <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return
+        ${pendingCount ? `<span class="badge b-amber" style="margin-left:6px">${pendingCount} pending</span>` : ''}
+        ${outCount ? `<span class="badge b-blue" style="margin-left:6px">${outCount} out</span>` : ''}
+      </div>
       ${listHTML}
     </div>
   `;
@@ -317,6 +312,7 @@ async function _renderITTable() {
   // ✅ NEW: which IT supply items are currently borrowed
   const itBorrows = await safeFetch(`${API_URL}/api/borrow-return/open/itsupplies`);
   const borrowedIds = new Set(itBorrows.filter(b => b.status === 'BORROWED').map(b => b.record_id));
+  const pendingBorrowIds = new Set(itBorrows.filter(b => b.status === 'PENDING').map(b => b.record_id)); // ✅ NEW
 
   const tbody = document.getElementById('it-tbody');
   tbody.innerHTML = '';
@@ -331,10 +327,12 @@ async function _renderITTable() {
         Damaged:   'b-red'
       }[it.status] || 'b-slate';
 
-      // ✅ NEW: borrowed indicator badge
-      const requestBadge = borrowedIds.has(it.it_supplies_id)
-        ? '<span class="badge b-blue" style="margin-left:4px"><i data-lucide="package-minus"></i> Borrowed</span>'
-        : '';
+      // ✅ CHANGED: pending-request badge added alongside the borrowed one
+      const requestBadge = pendingBorrowIds.has(it.it_supplies_id)
+        ? '<span class="badge b-amber" style="margin-left:4px"><i data-lucide="clock"></i> Pending Request</span>'
+        : borrowedIds.has(it.it_supplies_id)
+          ? '<span class="badge b-blue" style="margin-left:4px"><i data-lucide="package-minus"></i> Borrowed</span>'
+          : '';
 
       const tr = document.createElement('tr');
       tr.className = 'tr-clickable';

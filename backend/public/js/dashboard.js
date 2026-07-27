@@ -97,20 +97,45 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
   const invMap = {};
   inventory.forEach(i => { invMap[i.inventory_gen_id] = i.item_name; });
 
-  const requestRows = [
+  // ✅ CHANGED — split into "pending" (needs action — Wine, Event Supplies,
+  // IT Supplies requests) vs "out" (already approved & borrowed). Pending
+  // requests render FIRST (top of the list), then "out" items, then low
+  // stock. Each pending row is flagged "is-new" via the same unseen set
+  // driving the sidebar red dot (module keys match notifications.js).
+  const pendingRequestRows = [
     ...wineReqs.map(r => ({
+      key: `inventory:${r.inventory_gen_id}`,
       dotCls: 'amber',
       name: r.item_name || invMap[r.inventory_gen_id] || 'Wine item',
       meta: `🍷 Wine · Requested by ${_esc(r.requested_name)} · ${r.quantity} unit(s)`,
       badgeLabel: 'Pending', badgeCls: 'b-amber',
     })),
+    ...invBorrows.filter(b => b.status === 'PENDING').map(b => ({
+      key: `inventory:${b.record_id}`,
+      dotCls: 'amber',
+      name: invMap[b.record_id] || `Item #${b.record_id}`,
+      meta: `📤 Event Supplies · Borrow requested by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
+      badgeLabel: 'Pending', badgeCls: 'b-amber',
+    })),
+    ...itBorrows.filter(b => b.status === 'PENDING').map(b => ({
+      key: `itsupplies:${b.record_id}`,
+      dotCls: 'amber',
+      name: itMap[b.record_id] || `Item #${b.record_id}`,
+      meta: `📤 IT Supplies · Borrow requested by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
+      badgeLabel: 'Pending', badgeCls: 'b-amber',
+    })),
+  ];
+
+  const outRows = [
     ...invBorrows.filter(b => b.status === 'BORROWED').map(b => ({
+      key: `inventory:${b.record_id}`,
       dotCls: 'blue',
       name: invMap[b.record_id] || `Item #${b.record_id}`,
       meta: `📤 Event Supplies · Borrowed by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
       badgeLabel: 'Borrowed', badgeCls: 'b-blue',
     })),
     ...itBorrows.filter(b => b.status === 'BORROWED').map(b => ({
+      key: `itsupplies:${b.record_id}`,
       dotCls: 'blue',
       name: itMap[b.record_id] || `Item #${b.record_id}`,
       meta: `📤 IT Supplies · Borrowed by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
@@ -118,7 +143,9 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     })),
   ];
 
-  _setText('dash-low-ct', `${lowStock.length} low stock · ${requestRows.length} requests`);
+  const requestRows = [...pendingRequestRows, ...outRows];
+
+  _setText('dash-low-ct', `${lowStock.length} low stock · ${pendingRequestRows.length} pending`);
 
   if (lowStock.length === 0 && requestRows.length === 0) {
     _setHTML('dash-low-list', _emptyMsg('All inventory levels are Good — no pending requests'));
@@ -137,7 +164,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     }).join('');
 
     const requestRowsHTML = requestRows.map(r => `
-      <div class="panel-row">
+      <div class="panel-row${_dashUnseenSet.has(r.key) ? ' is-new' : ''}">
         <div class="pr-dot ${r.dotCls}"></div>
         <div style="flex:1">
           <div class="pr-name">${_esc(r.name)}</div>
@@ -146,7 +173,8 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
         ${badge(r.badgeLabel, r.badgeCls)}
       </div>`).join('');
 
-    _setHTML('dash-low-list', lowRowsHTML + requestRowsHTML);
+    // ✅ CHANGED — requests render BEFORE low stock rows now.
+    _setHTML('dash-low-list', requestRowsHTML + lowRowsHTML);
   }
 
   /* ── PANEL 2 — PENDING / DELAYED ORDERS (unchanged) ── */
@@ -333,7 +361,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     let html = '';
     if (pendingContractRequests.length) {
       html += pendingContractRequests.map(r => `
-        <div class="panel-row">
+        <div class="panel-row${_dashUnseenSet.has(`contracts:${r.contract_id}`) ? ' is-new' : ''}">
           <div class="pr-dot amber"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(r.requested_name)}</div>

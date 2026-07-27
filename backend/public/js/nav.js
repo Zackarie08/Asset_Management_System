@@ -137,7 +137,9 @@ function refreshPageActions(page) {
   if (actions[page]) actions[page]();
 }
 
-const NOTIFICATION_MODULES = ['contracts', 'vehicle', 'insurance', 'm365', 'globe', 'subscriptions'];
+// ✅ CHANGED — 'inventory' (Wine + Event Supplies) and 'itsupplies' added so
+// pending requests from those modules feed the red-dot/unseen system too.
+const NOTIFICATION_MODULES = ['contracts', 'vehicle', 'insurance', 'm365', 'globe', 'subscriptions', 'inventory', 'itsupplies'];
 
 async function refreshNotifications() {
   if (!currentUser) return;

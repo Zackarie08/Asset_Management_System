@@ -98,6 +98,49 @@ async function collectNotifications() {
     }
   });
 
+  // ── Wine withdrawal requests — pending ──
+  const wineReqPending = await pool.query(`
+    SELECT wr.request_id, wr.inventory_gen_id, wr.requested_name, i.item_name
+    FROM wine_withdrawal_requests wr
+    JOIN inventory_gen i ON wr.inventory_gen_id = i.inventory_gen_id
+    WHERE wr.status = 'PENDING'
+  `);
+  wineReqPending.rows.forEach(r => {
+    notifications.push({
+      module: 'inventory', record_id: r.inventory_gen_id,
+      type: 'WINE_REQUEST_PENDING', severity: 'amber',
+      label: r.item_name, detail: `Withdrawal requested by ${r.requested_name || '—'}`,
+    });
+  });
+
+  // ── Event Supplies / IT Supplies — pending borrow requests ──
+  const pendingBorrows = await pool.query(`SELECT * FROM borrow_records WHERE status = 'PENDING'`);
+  if (pendingBorrows.rows.length) {
+    const invIds = pendingBorrows.rows.filter(b => b.module === 'inventory').map(b => b.record_id);
+    const itIds  = pendingBorrows.rows.filter(b => b.module === 'itsupplies').map(b => b.record_id);
+
+    const invNamesRes = invIds.length
+      ? await pool.query(`SELECT inventory_gen_id, item_name FROM inventory_gen WHERE inventory_gen_id = ANY($1::int[])`, [invIds])
+      : { rows: [] };
+    const itNamesRes = itIds.length
+      ? await pool.query(`SELECT it_supplies_id, asset_name FROM it_supplies WHERE it_supplies_id = ANY($1::int[])`, [itIds])
+      : { rows: [] };
+
+    const invNameMap = {}; invNamesRes.rows.forEach(r => { invNameMap[r.inventory_gen_id] = r.item_name; });
+    const itNameMap  = {}; itNamesRes.rows.forEach(r => { itNameMap[r.it_supplies_id] = r.asset_name; });
+
+    pendingBorrows.rows.forEach(b => {
+      const label = b.module === 'inventory'
+        ? (invNameMap[b.record_id] || 'Item')
+        : (itNameMap[b.record_id] || 'Item');
+      notifications.push({
+        module: b.module, record_id: b.record_id,
+        type: 'BORROW_REQUEST_PENDING', severity: 'amber',
+        label, detail: `Borrow requested by ${b.borrowed_by_name || '—'} · awaiting approval`,
+      });
+    });
+  }
+
   // ── Insurance — expiring within 60 days (Dashboard_Alert_Expansion) ──
   const ins = await pool.query(`SELECT insurance_id, employee_name, expiry_date FROM insurance`);
   ins.rows.forEach(i => {

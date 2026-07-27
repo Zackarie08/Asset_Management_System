@@ -182,6 +182,87 @@ function dpSection(title, icon='') {
 }
 function badge(text, cls) { return `<span class="badge ${cls}">${text}</span>`; }
 
+/* ── SHARED BORROW REQUEST UI (IT Supplies + Event Supplies) ─────────
+   Same request → approve/deny → borrowed → return pattern as Wine and
+   Contracts. Shared here so both modules stay in sync. ──────────── */
+function buildBorrowRequestsHTML(module, records, isAdmin) {
+  const pending = records.filter(b => b.status === 'PENDING');
+  const active  = records.filter(b => b.status === 'BORROWED');
+  const history = records.filter(b => b.status === 'DENIED' || b.status === 'RETURNED');
+  const ordered = [...pending, ...active, ...history];
+
+  if (!ordered.length) {
+    return `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
+  }
+
+  const rowHTML = (b) => {
+    const meta = {
+      PENDING:  ['<i data-lucide="clock"></i> Pending Approval', 'good'],
+      BORROWED: ['<i data-lucide="package-minus"></i> Borrowed', 'repair'],
+      RETURNED: ['<i data-lucide="package-check"></i> Returned', 'good'],
+      DENIED:   ['<i data-lucide="x"></i> Denied', 'repair'],
+    }[b.status] || [b.status, 'good'];
+
+    return `
+      <li class="mh-item">
+        <div class="mh-dot ${meta[1]}"></div>
+        <div style="flex:1">
+          <div class="mh-cond info">${meta[0]} — ${b.quantity} unit(s)</div>
+          <div class="mh-date">${b.borrowed_by_name} · ${formatDateHuman(b.borrow_date)}</div>
+          ${b.borrow_remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${b.borrow_remarks}</div>` : ''}
+          ${b.status === 'RETURNED' ? `<div class="mh-remarks"><i data-lucide="corner-up-left"></i> Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
+          ${b.status === 'DENIED' ? `<div class="mh-remarks"><i data-lucide="x"></i> Denied by ${b.denied_by_name || '—'}</div>` : ''}
+        </div>
+        ${isAdmin && b.status === 'PENDING' ? `
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-xs btn-green" onclick="approveBorrowRequest(${b.borrow_id},'${module}')"><i data-lucide="check"></i></button>
+            <button class="btn btn-xs btn-red" onclick="denyBorrowRequest(${b.borrow_id},'${module}')"><i data-lucide="x"></i></button>
+          </div>` : ''}
+        ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '')"><i data-lucide="check"></i> Mark Returned</button>` : ''}
+      </li>`;
+  };
+
+  return `<ul class="mh-list">${ordered.map(rowHTML).join('')}</ul>`;
+}
+
+function approveBorrowRequest(borrowId, module) {
+  fetch(`${API_URL}/api/borrow-return/${borrowId}/approve`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_id: currentUser.user_id }),
+  })
+    .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); return res.json(); })
+    .then(() => {
+      showToast('Borrow request approved', 't-success');
+      addLog('REQUEST', module === 'itsupplies' ? 'IT SUPPLY' : 'INVENTORY', 'Approved borrow request', borrowId);
+      _refreshBorrowUI(module);
+    })
+    .catch(err => showToast(err.message || 'Approve failed', 't-error'));
+}
+
+function denyBorrowRequest(borrowId, module) {
+  fetch(`${API_URL}/api/borrow-return/${borrowId}/deny`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_id: currentUser.user_id }),
+  })
+    .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); return res.json(); })
+    .then(() => {
+      showToast('Borrow request denied', 't-warning');
+      addLog('REQUEST', module === 'itsupplies' ? 'IT SUPPLY' : 'INVENTORY', 'Denied borrow request', borrowId);
+      _refreshBorrowUI(module);
+    })
+    .catch(err => showToast(err.message || 'Deny failed', 't-error'));
+}
+
+function _refreshBorrowUI(module) {
+  if (module === 'itsupplies') {
+    if (typeof renderITSupplies === 'function') renderITSupplies();
+    if (dpOpen && dpCurrentType === 'itsupplies') dpITSupplies(dpCurrentId);
+  } else {
+    if (typeof renderInventory === 'function') renderInventory();
+    if (dpOpen && dpCurrentType === 'inventory') dpInventory(dpCurrentId);
+  }
+}
+
 
 /* ──────────────────────────────────────────────────────────────
    MODAL HELPERS
