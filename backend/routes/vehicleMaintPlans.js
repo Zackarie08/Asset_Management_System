@@ -18,6 +18,7 @@ const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
 const { logItemHistory } = require("../utils/itemHistory");
+const { computePlanStatus } = require("../utils/vehiclePlanStatus"); // ✅ NEW — shared with notifications.js
 
 const VALID_TIME_UNITS = ["month", "year"]; // ✅ "week" removed
 

@@ -9,6 +9,7 @@ const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
 const { computeRenewalAlert } = require("../utils/renewalAlerts");
+const { computePlanStatus } = require("../utils/vehiclePlanStatus"); // ✅ NEW
 
 async function collectNotifications() {
   const notifications = [];
@@ -112,10 +113,21 @@ async function collectNotifications() {
     }
   });
 
-  // ── Vehicle maintenance ──
+  // ── Vehicle maintenance — driven ONLY by custom maintenance plans now
+  // (vehicle_maintenance_types), both odometer-based and time-based.
+  // ✅ REMOVED: the old vehicle.last_maintenance_km / .maintenance_threshold
+  // fixed "1000 km since last service" check. That data is stale/unused
+  // once a vehicle has real plans — it no longer reflects actual service
+  // state, so it must not drive the Dashboard or the red-dot count anymore.
   const vehicles = await pool.query(
-    `SELECT vehicle_id, vehicle_name, status, odometer, last_maintenance_km, maintenance_threshold FROM vehicle`
+    `SELECT vehicle_id, vehicle_name, status, odometer FROM vehicle`
   );
+  const vehiclePlansRes = await pool.query(`SELECT * FROM vehicle_maintenance_types`);
+  const plansByVehicle = {};
+  vehiclePlansRes.rows.forEach(p => {
+    (plansByVehicle[p.vehicle_id] = plansByVehicle[p.vehicle_id] || []).push(p);
+  });
+
   vehicles.rows.forEach(v => {
     if (v.status === 'UNDER_MAINTENANCE') {
       notifications.push({
@@ -125,13 +137,30 @@ async function collectNotifications() {
       });
       return;
     }
-    const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
-    const threshold = v.maintenance_threshold || 1000;
-    if (kmUsed >= threshold) {
+
+    const plans     = plansByVehicle[v.vehicle_id] || [];
+    const currentKm = v.odometer || 0;
+
+    // One notification per vehicle (matches the pre-existing pattern) —
+    // pick the worst plan status across all of this vehicle's plans,
+    // overdue outranking due_soon.
+    let worst = null;
+    plans.forEach(p => {
+      const { status } = computePlanStatus(p, currentKm);
+      if (status === 'overdue') {
+        worst = { status: 'overdue', plan: p };
+      } else if (status === 'due_soon' && (!worst || worst.status !== 'overdue')) {
+        worst = { status: 'due_soon', plan: p };
+      }
+    });
+
+    if (worst) {
       notifications.push({
         module: 'vehicle', record_id: v.vehicle_id,
-        type: 'VEHICLE_MAINTENANCE_DUE', severity: 'red',
-        label: v.vehicle_name, detail: `${kmUsed} km since last service`,
+        type: 'VEHICLE_MAINTENANCE_DUE',
+        severity: worst.status === 'overdue' ? 'red' : 'amber',
+        label: v.vehicle_name,
+        detail: `${worst.plan.name}: ${worst.status === 'overdue' ? 'Overdue' : 'Due soon'}`,
       });
     }
   });

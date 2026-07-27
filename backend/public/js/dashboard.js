@@ -250,18 +250,16 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     return day <= 3 && d !== 0 && d !== 6;
   })();
 
+  // ✅ REMOVED: the old fixed "kmUsed >= vehicle.maintenance_threshold"
+  // check (~1000 km since last service). Vehicle alerts now come ONLY
+  // from custom maintenance plans (odometer + time-based) — same source
+  // the notifications/red-dot feed uses (see notifications.js).
   const vehicleAlerts = [];
 
   await Promise.all(vehicles.map(async v => {
     if (v.status === 'UNDER_MAINTENANCE') {
       vehicleAlerts.push({ v, reason: 'Under Maintenance', cls: 'blue' });
       return;
-    }
-
-    const kmUsed = (v.odometer || 0) - (v.last_maintenance_km || 0);
-    const threshold = v.maintenance_threshold || 1000;
-    if (kmUsed >= threshold) {
-      vehicleAlerts.push({ v, reason: `${kmUsed} km since last service`, cls: 'red' });
     }
 
     let plans = [];
