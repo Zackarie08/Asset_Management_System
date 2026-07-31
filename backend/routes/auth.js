@@ -150,7 +150,7 @@ router.delete("/users/:id", async (req, res) => {
 
     // DELETE requests carry no body — attribution comes via query string
     // (same convention already used by inventory.js's DELETE /:id).
-    const { performer_id, performed_by } = req.query;
+    const { performed_by } = req.query;
 
     await logItemHistory({
       module: "users",
