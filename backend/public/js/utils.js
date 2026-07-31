@@ -225,6 +225,40 @@ function buildBorrowRequestsHTML(module, records, isAdmin) {
   return `<ul class="mh-list">${ordered.map(rowHTML).join('')}</ul>`;
 }
 
+/* ── SHARED: full Borrow/Return panel for a record ─────────────────
+   ✅ IT Supplies AND Event Supplies now call this EXACT SAME function —
+   one implementation, not two parallel ones. Fetches the record's borrow
+   ledger, computes true availability (stock minus other pending
+   requests), returns both the "Request Borrow" button and the full
+   Borrow/Return section (pending/out counts + timeline). */
+async function renderBorrowSection(module, recordId, recordName, currentQty, isAdmin) {
+  let records = [];
+  try {
+    const res = await fetch(`${API_URL}/api/borrow-return/${module}/${recordId}`);
+    records = await res.json();
+  } catch { /* ignore */ }
+
+  const pendingCount  = records.filter(b => b.status === 'PENDING').length;
+  const outCount      = records.filter(b => b.status === 'BORROWED').length;
+  const pendingQty    = records.filter(b => b.status === 'PENDING').reduce((s, b) => s + (b.quantity || 0), 0);
+  const trueAvailable = Math.max((currentQty || 0) - pendingQty, 0);
+  const safeName      = String(recordName || '').replace(/'/g, "\\'");
+
+  const listHTML = buildBorrowRequestsHTML(module, records, isAdmin);
+
+  return {
+    borrowButtonHTML: `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${recordId},'${safeName}','${module}',${trueAvailable})"><i data-lucide="send"></i> Request Borrow</button>`,
+    sectionHTML: `
+      <div class="dp-section">
+        <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return
+          ${pendingCount ? `<span class="badge b-amber" style="margin-left:6px">${pendingCount} pending</span>` : ''}
+          ${outCount ? `<span class="badge b-blue" style="margin-left:6px">${outCount} out</span>` : ''}
+        </div>
+        ${listHTML}
+      </div>`,
+  };
+}
+
 function approveBorrowRequest(borrowId, module) {
   fetch(`${API_URL}/api/borrow-return/${borrowId}/approve`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

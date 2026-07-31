@@ -797,45 +797,23 @@ function confirmReturnItem() {
 /* ════════════════ EVENT SUPPLIES — BORROW / RETURN ════════════════ */
 
 async function _buildEventSupplyActionsHTML(item, isAdmin) {
-  let openBorrows = [];
-  try {
-    const res = await fetch(`${API_URL}/api/borrow-return/inventory/${item.inventory_gen_id}`);
-    openBorrows = await res.json();
-  } catch { /* ignore */ }
-
-  const currentlyOut = openBorrows.filter(b => b.status === 'BORROWED');
-
-  const listHTML = openBorrows.length ? `
-    <ul class="mh-list">
-      ${openBorrows.map(b => `
-        <li class="mh-item">
-          <div class="mh-dot ${b.status === 'BORROWED' ? 'repair' : 'good'}"></div>
-          <div style="flex:1">
-            <div class="mh-cond info">${b.status === 'BORROWED' ? '<i data-lucide="package-minus"></i> Borrowed' : '<i data-lucide="package-check"></i> Returned'} — ${b.quantity} unit(s)</div>
-            <div class="mh-date">${b.borrowed_by_name} · ${formatDateHuman(b.borrow_date)}</div>
-            ${b.borrow_remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${b.borrow_remarks}</div>` : ''}
-            ${b.status === 'RETURNED' ? `<div class="mh-remarks"><i data-lucide="corner-up-left"></i> Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
-          </div>
-          ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${_escInv(item.item_name)}')"><i data-lucide="check"></i> Mark Returned</button>` : ''}
-        </li>`).join('')}
-    </ul>` : `<div style="color:var(--slate-400);font-size:12px;padding:8px 0">No borrow history yet.</div>`;
+  // ✅ literal na parehong function ng IT Supplies (renderBorrowSection sa utils.js)
+  const { borrowButtonHTML, sectionHTML: borrowSectionHTML } =
+    await renderBorrowSection('inventory', item.inventory_gen_id, item.item_name, item.current_quantity, isAdmin);
 
   return `
     <div class="dp-section">
       <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        ${isAdmin ? `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${item.inventory_gen_id},'${_escInv(item.item_name)}','inventory',${item.current_quantity})"><i data-lucide="package-minus"></i> Borrow</button>` : ''}
+        ${borrowButtonHTML}
         ${isAdmin ? `<button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})"><i data-lucide="minus"></i> Withdraw (Permanent)</button>` : ''}
         ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})"><i data-lucide="package-plus"></i> Create Order</button>` : ''}
         ${isAdmin ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}
-        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
-    <div class="dp-section">
-      <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return ${currentlyOut.length ? `<span class="badge b-amber" style="margin-left:6px">${currentlyOut.length} out</span>` : ''}</div>
-      ${listHTML}
-    </div>`;
+    ${borrowSectionHTML}`;
 }
 
 function _escInv(str) {

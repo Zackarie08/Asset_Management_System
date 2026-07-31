@@ -117,21 +117,10 @@ async function dpITSupplies(id) {
 
   setDPHeader('plug', '#eef2ff', it.asset_name, 'IT Supply');
 
-  let records = [];
-  try {
-    const res = await fetch(`${API_URL}/api/borrow-return/itsupplies/${id}`);
-    records = await res.json();
-  } catch { /* ignore */ }
-
-  const pendingCount = records.filter(b => b.status === 'PENDING').length;
-  const outCount     = records.filter(b => b.status === 'BORROWED').length;
-  // ✅ NEW — true available = stock minus qty already tied up in pending requests
-  const pendingQty    = records.filter(b => b.status === 'PENDING').reduce((s, b) => s + (b.quantity || 0), 0);
-  const trueAvailable = Math.max(it.quantity - pendingQty, 0);
-
   const isAdmin = currentUser.role === 'admin' || currentUser.role === 'super_admin';
-
-  const listHTML = buildBorrowRequestsHTML('itsupplies', records, isAdmin);
+  // ✅ shared with Event Supplies via renderBorrowSection() (utils.js)
+  const { borrowButtonHTML, sectionHTML: borrowSectionHTML } =
+    await renderBorrowSection('itsupplies', it.it_supplies_id, it.asset_name, it.quantity, isAdmin);
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
@@ -157,20 +146,14 @@ async function dpITSupplies(id) {
     <div class="dp-section">
       <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        <button class="btn btn-amber btn-sm" onclick="openBorrowItem(${it.it_supplies_id},'${it.asset_name.replace(/'/g,"\\'")}','itsupplies',${trueAvailable})"><i data-lucide="send"></i> Request Borrow</button>
+        ${borrowButtonHTML}
         ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('itsupplies', it.it_supplies_id, it.asset_name)}
         ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
 
-    <div class="dp-section">
-      <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return
-        ${pendingCount ? `<span class="badge b-amber" style="margin-left:6px">${pendingCount} pending</span>` : ''}
-        ${outCount ? `<span class="badge b-blue" style="margin-left:6px">${outCount} out</span>` : ''}
-      </div>
-      ${listHTML}
-    </div>
+    ${borrowSectionHTML}
   `;
 
   document.getElementById('dp-footer').style.display = 'none';

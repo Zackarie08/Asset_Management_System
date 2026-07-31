@@ -95,7 +95,7 @@ async function renderSubscriptionsUnified() {
         source: 'M365', id: m.license_id,
         name: m.assigned_email || 'M365 License',
         assignedTo: m.assigned_user_name || 'Unassigned',
-        supplier: 'Microsoft',
+        supplier: m.supplier || 'Microsoft', // ✅ CHANGED — custom na, hindi na hardcoded
         category: m.license_type || '—',
         cost: m.monthly_cost ?? m.license_cost,
         expiry: m.renewal_date,          // ✅ renewal-only now
@@ -112,7 +112,7 @@ async function renderSubscriptionsUnified() {
         source: 'Globe', id: g.plan_id,
         name: g.plan_name || 'Globe Plan',
         assignedTo: g.employee_name || 'Unassigned',
-        supplier: 'Globe Telecom',
+        supplier: g.supplier || 'Globe Telecom', // ✅ CHANGED — custom na, hindi na hardcoded
         category: 'Telecom',
         cost: g.monthly_cost,
         expiry: g.renewal_date,
@@ -314,6 +314,7 @@ async function dpM365(id) {
         <div class="dp-grid">
           ${dpField('Assigned Email', m.assigned_email || '—')}
           ${dpField('Assigned User',  m.assigned_user_name || 'Unassigned')}
+          ${dpField('Supplier',       m.supplier || 'Microsoft')}
           ${dpField('License Type',   m.license_type  || '—')}
           ${dpField('Cost',   fmtCost(m.monthly_cost ?? m.license_cost))}
         </div>
@@ -365,6 +366,7 @@ function saveM365() {
   const payload = {
     assigned_email: email, license_type: type, licensed, assigned_user_id,
     monthly_cost: cost, renewal_date: renewal, remarks,
+    supplier: document.getElementById('m365-f-supplier')?.value.trim() || null, // ✅ NEW
     user_id: currentUser.user_id,
     performed_by: currentUser.name,
   };
@@ -392,6 +394,8 @@ async function editM365(id) {
     document.getElementById('m365-f-licensed').value  = m.licensed === false ? 'false' : 'true';
     document.getElementById('m365-f-cost').value      = m.monthly_cost ?? m.license_cost ?? '';
     document.getElementById('m365-f-remarks').value   = m.remarks        || '';
+    const m365SupEl = document.getElementById('m365-f-supplier'); // ✅ NEW
+    if (m365SupEl) m365SupEl.value = m.supplier || 'Microsoft';
     document.getElementById('m365-f-renew').value     = m.renewal_date ? new Date(m.renewal_date).toISOString().slice(0,10) : '';
 
     await loadM365Users();
@@ -474,6 +478,7 @@ setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Pla
         <div class="dp-section-hd"><i data-lucide="smartphone"></i> Plan Details</div>
         <div class="dp-grid">
           ${dpField('Plan Name',    g.plan_name      || '—')}
+          ${dpField('Supplier',     g.supplier || 'Globe Telecom')}
           ${dpField('Cost', fmtCost(g.monthly_cost))}
           ${dpField('Data',         g.data_allocation|| '—')}
           ${dpField('Credit Limit', fmtCost(g.credit_limit))}
@@ -524,7 +529,7 @@ function saveGlobe() {
   if (!mobilePattern.test(mobile)) { showToast('Invalid mobile format (e.g. 0917-123-4567)', 't-error'); return; }
 
   const payload = {
-    user_id:        userName ? (globeUserMap[userName] || null) : null,
+    user_id:        globeUserMap[userName] || null,
     mobile_number:  mobile,
     account_number: document.getElementById('globe-f-acct').value,
     plan_name:      plan,
@@ -534,6 +539,7 @@ function saveGlobe() {
     renewal_date:   renew,
     status:         document.getElementById('globe-f-status').value,
     remarks:        document.getElementById('globe-f-remarks').value,
+    supplier:       document.getElementById('globe-f-supplier')?.value.trim() || null, // ✅ NEW
     unli_allnet_calls: document.getElementById('globe-f-unli-calls').value === 'true',
     unli_text:         document.getElementById('globe-f-unli-text').value === 'true',
     freebie:            document.getElementById('globe-f-freebie').value.trim() || null,
@@ -568,6 +574,8 @@ async function editGlobe(id) {
     document.getElementById('globe-f-data').value    = g.data_allocation|| '';
     document.getElementById('globe-f-credit').value  = g.credit_limit   || '';
     document.getElementById('globe-f-remarks').value = g.remarks        || '';
+    const globeSupEl = document.getElementById('globe-f-supplier'); // ✅ NEW
+    if (globeSupEl) globeSupEl.value = g.supplier || 'Globe Telecom';
     document.getElementById('globe-f-status').value  = g.status         || 'Active';
     document.getElementById('globe-f-renew').value   = g.renewal_date ? new Date(g.renewal_date).toISOString().slice(0,10) : '';
     document.getElementById('globe-f-unli-calls').value = g.unli_allnet_calls ? 'true' : 'false';

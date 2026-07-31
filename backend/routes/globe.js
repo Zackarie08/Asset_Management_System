@@ -20,7 +20,7 @@ function withComputed(row) {
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT g.*, u.name AS employee_name
+      SELECT g.*, u.name AS employee_name, u.department AS assigned_department
       FROM globe_mobile_plan g
       LEFT JOIN users u ON g.user_id = u.user_id
       ORDER BY g.plan_id DESC
@@ -53,7 +53,7 @@ router.post("/", async (req, res) => {
     const {
       user_id, mobile_number, account_number, plan_name,
       data_allocation, monthly_cost, credit_limit,
-      renewal_date, status, remarks,
+      renewal_date, status, remarks, supplier,
       unli_allnet_calls, unli_text, freebie,
       performed_by,
     } = req.body;
@@ -70,14 +70,15 @@ router.post("/", async (req, res) => {
       INSERT INTO globe_mobile_plan (
         user_id, mobile_number, account_number, plan_name,
         data_allocation, monthly_cost, credit_limit,
-        renewal_date, status, remarks,
+        renewal_date, status, remarks, supplier,
         unli_allnet_calls, unli_text, freebie
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       RETURNING *
     `, [
       user_id || null, mobile_number, account_number || null, plan_name || null,
       data_allocation || null, monthly_cost || null, credit_limit || null,
       renewal_date || null, status || "Active", remarks || null,
+      supplier?.trim() || "Globe Telecom", // ✅ NEW — custom, defaults to Globe Telecom
       !!unli_allnet_calls, !!unli_text, freebie || null,
     ]);
 
@@ -102,7 +103,7 @@ router.put("/:id", async (req, res) => {
     const {
       user_id, mobile_number, account_number, plan_name,
       data_allocation, monthly_cost, credit_limit,
-      renewal_date, status, remarks,
+      renewal_date, status, remarks, supplier,
       unli_allnet_calls, unli_text, freebie,
       performed_by,
     } = req.body;
@@ -123,14 +124,15 @@ router.put("/:id", async (req, res) => {
       UPDATE globe_mobile_plan SET
         user_id = $1, mobile_number = $2, account_number = $3, plan_name = $4,
         data_allocation = $5, monthly_cost = $6, credit_limit = $7,
-        renewal_date = $8, status = $9, remarks = $10,
-        unli_allnet_calls = $11, unli_text = $12, freebie = $13
-      WHERE plan_id = $14
+        renewal_date = $8, status = $9, remarks = $10, supplier = $11,
+        unli_allnet_calls = $12, unli_text = $13, freebie = $14
+      WHERE plan_id = $15
       RETURNING *
     `, [
       user_id || null, mobile_number, account_number || null, plan_name || null,
       data_allocation || null, monthly_cost || null, credit_limit || null,
       renewal_date || null, status || "Active", remarks || null,
+      supplier?.trim() || old?.supplier || "Globe Telecom", // ✅ NEW
       !!unli_allnet_calls, !!unli_text, freebie || null, req.params.id,
     ]);
 
@@ -153,6 +155,7 @@ router.put("/:id", async (req, res) => {
         ["plan_name", old.plan_name, plan_name, false],
         ["status", old.status, status, false],
         ["monthly_cost", old.monthly_cost, monthly_cost, true],
+        ["supplier", old.supplier, supplier?.trim() || old.supplier, false], // ✅ NEW
       ];
 
       for (const [field, oldVal, newVal, isNum] of fieldChecks) {

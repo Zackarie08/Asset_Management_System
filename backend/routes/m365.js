@@ -61,7 +61,7 @@ router.post("/", async (req, res) => {
   try {
     const {
       assigned_user_id, assigned_email, license_type,
-      monthly_cost, license_cost, renewal_date, remarks, licensed,
+      monthly_cost, license_cost, renewal_date, remarks, licensed, supplier,
       user_id, performed_by,
     } = req.body;
 
@@ -81,13 +81,14 @@ router.post("/", async (req, res) => {
     const result = await pool.query(`
       INSERT INTO m365 (
         assigned_user_id, assigned_email, license_type,
-        license_cost, monthly_cost, renewal_date, status, remarks, licensed
-      ) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8)
+        license_cost, monthly_cost, renewal_date, status, remarks, licensed, supplier
+      ) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8,$9)
       RETURNING *
     `, [
       assigned_user_id || null, assigned_email, license_type, cost,
       renewal_date || null, isLicensed ? "Active" : "Inactive",
       remarks || null, isLicensed,
+      supplier?.trim() || "Microsoft", // ✅ NEW — custom, defaults to Microsoft
     ]);
 
     await logItemHistory({
@@ -111,7 +112,7 @@ router.put("/:id", async (req, res) => {
   try {
     const {
       assigned_user_id, assigned_email, license_type,
-      monthly_cost, license_cost, renewal_date, remarks, licensed,
+      monthly_cost, license_cost, renewal_date, remarks, licensed, supplier,
       user_id, performed_by,
     } = req.body;
 
@@ -135,13 +136,15 @@ router.put("/:id", async (req, res) => {
       UPDATE m365 SET
         assigned_user_id = $1, assigned_email = $2, license_type = $3,
         license_cost = $4, monthly_cost = $4, renewal_date = $5,
-        status = $6, remarks = $7, licensed = $8
-      WHERE license_id = $9
+        status = $6, remarks = $7, licensed = $8, supplier = $9
+      WHERE license_id = $10
       RETURNING *
     `, [
       assigned_user_id || null, assigned_email, license_type, cost,
       renewal_date || null, isLicensed ? "Active" : "Inactive",
-      remarks || null, isLicensed, req.params.id,
+      remarks || null, isLicensed,
+      supplier?.trim() || old?.supplier || "Microsoft", // ✅ NEW
+      req.params.id,
     ]);
 
     if (!result.rows.length) return res.status(404).json({ error: "License not found" });
@@ -164,6 +167,7 @@ router.put("/:id", async (req, res) => {
         ["license_type", old.license_type, license_type, false],
         ["licensed", old.licensed, isLicensed, false],
         ["monthly_cost", old.monthly_cost, cost, true],
+        ["supplier", old.supplier, supplier?.trim() || old.supplier, false], // ✅ NEW
       ];
 
       for (const [field, oldVal, newVal, isNum] of fieldChecks) {

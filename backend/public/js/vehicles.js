@@ -737,7 +737,7 @@ async function openEditPlan(maintTypeId, vehicleId) {
     if (plan.basis === 'odometer') {
       document.getElementById('plan-f-km').value      = plan.threshold_km        || '';
       document.getElementById('plan-f-last-km').value = plan.last_maintenance_km || '';
-      const lastOdoDateEl = document.getElementById('plan-f-last-odo-date'); // ✅ NEW
+      const lastOdoDateEl = document.getElementById('plan-f-last-odo-date');
       if (lastOdoDateEl) lastOdoDateEl.value = plan.last_performed_date
         ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
     } else {
@@ -786,11 +786,11 @@ function savePlan() {
   if (basis === 'odometer') {
     const km     = parseInt(document.getElementById('plan-f-km').value);
     const lastKm = parseInt(document.getElementById('plan-f-last-km').value) || 0;
-    const lastOdoDate = document.getElementById('plan-f-last-odo-date')?.value || null; // ✅ NEW
+    const lastOdoDate = document.getElementById('plan-f-last-odo-date')?.value || null;
     if (!km || km <= 0) { showToast('Threshold KM is required', 't-error'); return; }
     payload.threshold_km        = km;
     payload.last_maintenance_km = lastKm;
-    payload.last_performed_date = lastOdoDate; // ✅ NEW — Last Maintenance Date
+    payload.last_performed_date = lastOdoDate;
   } else {
     const unit     = document.getElementById('plan-f-unit').value;
     const interval = parseInt(document.getElementById('plan-f-interval')?.value) || 1; // ✅ NEW
