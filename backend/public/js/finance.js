@@ -6,7 +6,10 @@
 const FIN_CATEGORY_MAP = {
   "Check Voucher": "CV",
   "Official Receipt": "OR",
-  "Sales Invoice": "SI",
+  "Acknowledgment Receipt": "AR",
+  "Service Invoice": "SI",
+  "Statement of Account": "SOA",
+  "Liquidation": "LCA",
   "Purchase Order": "PO"
   // ✅ add more later here
 };
