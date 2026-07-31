@@ -152,6 +152,7 @@ function _renderConTable() {
       const tr = document.createElement("tr");
       tr.className = "tr-clickable";
       tr.innerHTML = `
+        <td>${formatDateHuman(c.contract_id)}</td>
         <td>${formatDateHuman(c.contract_date)}</td>
         <td class="td-strong">${c.other_party}</td>
         <td>${c.description}</td>
