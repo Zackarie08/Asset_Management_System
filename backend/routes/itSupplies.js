@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const { logItemHistory } = require("../utils/itemHistory");
+const { isSuperAdmin } = require("../utils/roleCheck");
 
 // ✅ GET ALL
 router.get("/", async (req, res) => {
@@ -151,8 +152,13 @@ router.put("/:id", async (req, res) => {
 });
 
 
-// ✅ DELETE
+// ✅ DELETE — Super Admin only
 router.delete("/:id", async (req, res) => {
+  const { user_id, performed_by } = req.query;
+  if (!(await isSuperAdmin(user_id))) {
+    return res.status(403).json({ error: "Only Super Admin can delete records" });
+  }
+
   const existing = await pool.query("SELECT asset_name FROM it_supplies WHERE it_supplies_id=$1", [req.params.id]);
 
   await pool.query(
@@ -165,6 +171,8 @@ router.delete("/:id", async (req, res) => {
     record_id: req.params.id,
     action: "DELETED",
     remarks: existing.rows[0]?.asset_name || null,
+    performed_by_id: user_id || null,
+    performed_by_name: performed_by || null,
   });
 
   res.sendStatus(200);

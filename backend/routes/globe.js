@@ -181,8 +181,14 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// ✅ Super Admin only
 router.delete("/:id", async (req, res) => {
   try {
+    const { user_id, performed_by } = req.query;
+    if (!(await isSuperAdmin(user_id))) {
+      return res.status(403).json({ error: "Only Super Admin can delete plans" });
+    }
+
     const existing = await pool.query("SELECT plan_name, mobile_number FROM globe_mobile_plan WHERE plan_id=$1", [req.params.id]);
     const result = await pool.query(
       "DELETE FROM globe_mobile_plan WHERE plan_id = $1 RETURNING plan_id",
@@ -195,6 +201,8 @@ router.delete("/:id", async (req, res) => {
       record_id: req.params.id,
       action: "DELETED",
       remarks: existing.rows[0] ? `${existing.rows[0].plan_name || 'Globe Plan'} · ${existing.rows[0].mobile_number}` : null,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
     });
 
     res.json({ deleted: result.rows[0].plan_id });

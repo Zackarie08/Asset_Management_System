@@ -281,7 +281,7 @@ async function dpInventory(id) {
         <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})"><i data-lucide="package-plus"></i> Create Order</button>
         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>
         ${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}
-        <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')"><i data-lucide="trash-2"></i> Delete</button>
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${item.item_name.replace(/'/g, "\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>`;
   } else {
@@ -368,9 +368,10 @@ function deleteInventory(id, name) {
 }
 
 function confirmDeleteInventory() {
-  fetch(`${API_URL}/api/inventory/${deleteInventoryId}`, {
+  fetch(`${API_URL}/api/inventory/${deleteInventoryId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, {
     method: "DELETE"
   })
+  .then(res => { if (!res.ok) throw new Error('Only Super Admin can delete records'); })
   .then(() => {
     showToast("Inventory Item Deleted", "t-warning");
 
@@ -383,7 +384,8 @@ function confirmDeleteInventory() {
 
     closeM("m-confirm-inv-del");
     renderInventory();
-  });
+  })
+  .catch(err => showToast(err.message, 't-error'));
 }
 
 
@@ -664,7 +666,7 @@ async function _buildWineActionsHTML(item, isAdmin) {
       <button class="btn btn-warning btn-sm" onclick="openWithdraw(${item.inventory_gen_id})"><i data-lucide="minus"></i> Withdraw</button>
       <button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})"><i data-lucide="package-plus"></i> Create Order</button>
       <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>
-      <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>`;
+      ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}`;
   }
 
   return `
@@ -827,7 +829,7 @@ async function _buildEventSupplyActionsHTML(item, isAdmin) {
         ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="openCreateOrder(${item.inventory_gen_id})"><i data-lucide="package-plus"></i> Create Order</button>` : ''}
         ${isAdmin ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openEditInv(${item.inventory_gen_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('inventory', item.inventory_gen_id, item.item_name)}
-        ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="event.stopPropagation(); deleteInventory(${item.inventory_gen_id}, '${_escInv(item.item_name)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
     <div class="dp-section">

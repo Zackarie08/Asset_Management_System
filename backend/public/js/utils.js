@@ -317,6 +317,12 @@ function togglePassword(inputId, icon) {
 }
 
 
+// ✅ NEW — Delete is Super Admin only across every module. isAdminUser()
+// still gates Add/Edit/other admin actions; this is used ONLY for Delete.
+function isSuperAdminUser() {
+  return !!(currentUser && currentUser.role === 'super_admin');
+}
+
 const LIMITS = {
   NAME: 50,
   EMAIL: 50,

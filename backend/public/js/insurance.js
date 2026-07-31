@@ -276,10 +276,8 @@ async function dpInsurance(id) {
       <div class="dp-section">
         <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
-          ${isAdminUser() ? `
-            <button class="btn btn-primary btn-sm" onclick="editInsurance(${ins.insurance_id})"><i data-lucide="pencil"></i> Edit</button>
-            <button class="btn btn-red btn-sm"     onclick="deleteInsurancePrompt(${ins.insurance_id})"><i data-lucide="trash-2"></i> Delete</button>
-          ` : ''}
+          ${isAdminUser() ? `<button class="btn btn-primary btn-sm" onclick="editInsurance(${ins.insurance_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
+          ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteInsurancePrompt(${ins.insurance_id})"><i data-lucide="trash-2"></i> Delete</button>` : ''}
           ${itemHistoryButton('insurance', ins.insurance_id, ins.employee_name)}
         </div>
       </div>`;
@@ -400,7 +398,7 @@ function deleteInsurancePrompt(id) {
 }
 
 function confirmDeleteInsurance() {
-  fetch(`${API_URL}/api/insurance/${deleteInsId}`, { method: "DELETE" })
+  fetch(`${API_URL}/api/insurance/${deleteInsId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, { method: "DELETE" })
     .then(res => {
       if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || "Delete failed"); });
     })

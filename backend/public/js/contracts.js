@@ -215,6 +215,7 @@ const html = `
     <div class="dp-section">
       <div class="dp-section-hd"><i data-lucide="clipboard-list"></i> Details</div>
       <div class="dp-grid">
+        ${dpField("Contract No.",   c.contract_id)}
         ${dpField("Date",          formatDateHuman(c.contract_date))}
         ${dpField("Other Party",   c.other_party)}
         ${dpField("Description",   c.description)}
@@ -376,9 +377,10 @@ async function renderContractActions(c) {
       if (c.status === "WITH_EMPLOYEE" && currentReq) {
         buttons += `<button class="btn btn-outline btn-sm" onclick="returnContract(${currentReq.request_id})"><i data-lucide="rotate-ccw"></i> Mark as Returned</button>`;
       }
-      buttons += `
-        <button class="btn btn-primary btn-sm" onclick="editContract(${c.contract_id})"><i data-lucide="pencil"></i> Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteContract(${c.contract_id})"><i data-lucide="trash-2"></i> Delete</button>`;
+      buttons += `<button class="btn btn-primary btn-sm" onclick="editContract(${c.contract_id})"><i data-lucide="pencil"></i> Edit</button>`;
+      if (isSuperAdminUser()) {
+        buttons += `<button class="btn btn-red btn-sm" onclick="deleteContract(${c.contract_id})"><i data-lucide="trash-2"></i> Delete</button>`;
+      }
     }
 
   } catch (err) {
@@ -444,9 +446,9 @@ function confirmDeleteContract() {
     .then(res => res.json())
     .then(c => {
 
-      return fetch(`${API_URL}/api/contracts/${deleteContractId}`, {
+      return fetch(`${API_URL}/api/contracts/${deleteContractId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, {
         method: "DELETE"
-      }).then(() => c);
+      }).then(res => { if (!res.ok) throw new Error('Only Super Admin can delete contracts'); return c; });
     })
     .then(c => {
 
@@ -462,7 +464,8 @@ function confirmDeleteContract() {
       closeM("m-confirm-con-del");
       closeDP();
       renderContracts();
-    });
+    })
+    .catch(err => showToast(err.message, 't-error'));
 }
 function requestContract(id) {
   fetch(`${API_URL}/api/contracts/request`, {

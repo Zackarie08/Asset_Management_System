@@ -353,7 +353,7 @@ async function dpVehicle(id) {
         ` : ''}
         ${isAdminUser() ? `<button class="btn btn-outline btn-sm" onclick="editVehicle(${v.vehicle_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('vehicle', v.vehicle_id, v.vehicle_name)}
-        ${isAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteVehicle(${v.vehicle_id}, '${_escVeh(v.plate_number)}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
   `;
@@ -490,10 +490,10 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
             onclick="openEditPlan(${plan.maint_type_id},${vehicleId})">
             <i data-lucide="pencil"></i>
           </button>
-          <button class="btn btn-xs btn-red"
+          ${isSuperAdminUser() ? `<button class="btn btn-xs btn-red"
             onclick="deletePlan(${plan.maint_type_id},${vehicleId})">
             <i data-lucide="trash-2"></i>
-          </button>
+          </button>` : ''}
         </div>` : ''}
     </div>`;
 }
@@ -606,7 +606,7 @@ function deleteVehicle(id, plate) {
 }
 
 function confirmDeleteVehicle() {
-  fetch(`${API_URL}/api/vehicle/${deleteVehicleId}`, { method: 'DELETE' })
+  fetch(`${API_URL}/api/vehicle/${deleteVehicleId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, { method: 'DELETE' })
     .then(res => { if (!res.ok) throw new Error('Delete failed'); })
     .then(() => {
       showToast('Vehicle deleted', 't-warning');
@@ -616,7 +616,7 @@ function confirmDeleteVehicle() {
       closeDP();
       renderVehicles();
     })
-    .catch(() => showToast('Error deleting vehicle', 't-error'));
+    .catch(() => showToast('Error deleting vehicle — Only Super Admin can delete', 't-error'));
 }
 
 /* ── UPDATE ODOMETER ─────────────────────────────────────── */
@@ -843,7 +843,7 @@ function deletePlan(maintTypeId, vehicleId) {
 
 async function confirmDeletePlan() {
   try {
-    const res = await fetch(`${API_URL}/api/vehicle-plans/${_deletePlanId}`, { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/api/vehicle-plans/${_deletePlanId}?user_id=${currentUser.user_id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Delete failed');
 
     showToast('Plan deleted', 't-warning');

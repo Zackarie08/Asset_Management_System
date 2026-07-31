@@ -7,6 +7,7 @@ const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
 const { logItemHistory } = require("../utils/itemHistory");
+const { isSuperAdmin } = require("../utils/roleCheck");
 
 /* ── LOGIN ──────────────────────────────────────────────── */
 router.post("/login", async (req, res) => {
@@ -126,9 +127,18 @@ router.put("/users/:id", async (req, res) => {
   }
 });
 
-/* ── DELETE USER ────────────────────────────────────────── */
+/* ── DELETE USER — Super Admin only ────────────────────────
+   ✅ FIX: previously never checked the CALLER's role at all — only
+   protected the TARGET from being super_admin. Any logged-in user could
+   hit this endpoint directly. Now requires performer_id to resolve to
+   super_admin. */
 router.delete("/users/:id", async (req, res) => {
   try {
+    const { performer_id } = req.query;
+    if (!(await isSuperAdmin(performer_id))) {
+      return res.status(403).send("Only Super Admin can delete users");
+    }
+
     const user = await pool.query(
       "SELECT name, email, role FROM users WHERE user_id=$1",
       [req.params.id]

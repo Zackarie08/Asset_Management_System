@@ -15,6 +15,7 @@ const express = require('express');
 const router  = express.Router();
 const pool    = require('../db');
 const { logItemHistory } = require('../utils/itemHistory');
+const { isSuperAdmin } = require('../utils/roleCheck');
 
 async function linkEmployeeIfMissing(insuranceId, userId) {
   const existing = await pool.query(
@@ -265,9 +266,14 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE
+// DELETE — Super Admin only
 router.delete('/:id', async (req, res) => {
   try {
+    const { user_id, performed_by } = req.query;
+    if (!(await isSuperAdmin(user_id))) {
+      return res.status(403).json({ error: 'Only Super Admin can delete insurance records' });
+    }
+
     const existing = await pool.query('SELECT employee_name, provider FROM insurance WHERE insurance_id=$1', [req.params.id]);
 
     await pool.query('DELETE FROM insurance_employees WHERE insurance_id=$1', [req.params.id]);
@@ -285,6 +291,8 @@ router.delete('/:id', async (req, res) => {
       record_id: req.params.id,
       action: 'DELETED',
       remarks: existing.rows[0] ? `${existing.rows[0].employee_name} · ${existing.rows[0].provider}` : null,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
     });
 
     res.json({ success: true });

@@ -243,6 +243,7 @@ function dpUser(id) {
 
   const isSuper     = u.role === 'super_admin';
   const canModify   = isAdminUser() && !isSuper;
+  const canDelete   = isSuperAdminUser() && !isSuper; // ✅ NEW — Delete is Super Admin only
 
   document.getElementById('dp-body').innerHTML = `
     <div class="dp-section">
@@ -261,7 +262,7 @@ function dpUser(id) {
         ${isAdminUser() && canModify ? `<button class="btn btn-primary btn-sm" onclick="editUser(${u.user_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${isAdminUser() ? `<button class="btn btn-outline btn-sm" onclick="resetPassword(${u.user_id}, '${u.name}', '${u.email}')"><i data-lucide="key-round"></i> Reset Password</button>` : ''}
         ${itemHistoryButton('users', u.user_id, u.name)}
-        ${isAdminUser() && canModify ? `<button class="btn btn-red btn-sm" onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
+        ${canDelete ? `<button class="btn btn-red btn-sm" onclick="deleteUser(${u.user_id}, '${u.name}', '${u.email}', '${u.role}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
         ${isAdminUser() && !canModify ? `<span class="td-muted" style="margin-left:6px">Edit/Delete disabled for Super Admin</span>` : ''}
       </div>
     </div>

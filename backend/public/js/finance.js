@@ -181,9 +181,9 @@ function confirmDeleteFinance() {
 
       const range = `${f.category_code}${f.year}${start} - ${f.category_code}${f.year}${end}`;
 
-      return fetch(`${API_URL}/api/finance-documents/${deleteFinanceId}`, {
+      return fetch(`${API_URL}/api/finance-documents/${deleteFinanceId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, {
         method: "DELETE"
-      }).then(() => ({ f, range }));
+      }).then(res => { if (!res.ok) throw new Error('Only Super Admin can delete'); return { f, range }; });
     })
     .then(({ f, range }) => {
 
@@ -198,7 +198,8 @@ function confirmDeleteFinance() {
       );
 
       renderFinance();
-    });
+    })
+    .catch(err => showToast(err.message, 't-error'));
 }
 
 async function dpFinance(id) {
@@ -240,7 +241,7 @@ setDPHeader('folder', '#eff6ff', f.category, "Folder #" + f.folder_number);
       <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
         <button class="btn btn-primary btn-sm" onclick="editFinance(${f.finance_id})"><i data-lucide="pencil"></i> Edit</button>
-        <button class="btn btn-red btn-sm" onclick="deleteFinance(${f.finance_id})"><i data-lucide="trash-2"></i> Delete</button>
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteFinance(${f.finance_id})"><i data-lucide="trash-2"></i> Delete</button>` : ''}
         ${itemHistoryButton('finance', f.finance_id, `${f.category} · Folder #${f.folder_number}`)}
       </div>
     </div>

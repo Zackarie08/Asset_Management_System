@@ -331,10 +331,8 @@ async function dpM365(id) {
       <div class="dp-section">
         <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
-          ${isAdminUser() ? `
-            <button class="btn btn-primary btn-sm" onclick="editM365(${m.license_id})"><i data-lucide="pencil"></i> Edit</button>
-            <button class="btn btn-red btn-sm"     onclick="deleteM365Prompt(${m.license_id})"><i data-lucide="trash-2"></i> Delete</button>
-          ` : ''}
+          ${isAdminUser() ? `<button class="btn btn-primary btn-sm" onclick="editM365(${m.license_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
+          ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteM365Prompt(${m.license_id})"><i data-lucide="trash-2"></i> Delete</button>` : ''}
           ${itemHistoryButton('m365', m.license_id, m.assigned_email)}
         </div>
       </div>`;
@@ -495,11 +493,10 @@ setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Pla
       </div>
       ${g.remarks ? `<div class="dp-section"><div class="dp-section-hd"><i data-lucide="sticky-note"></i> Remarks</div><div class="dp-grid">${dpFieldFull('Notes', g.remarks)}</div></div>` : ''}
       <div class="dp-section" id="dp-att-globe-${id}"></div>
-      <div class="dp-section">
         <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
         <div class="dp-action-row">
           <button class="btn btn-primary btn-sm" onclick="editGlobe(${g.plan_id})"><i data-lucide="pencil"></i> Edit</button>
-          <button class="btn btn-red btn-sm"     onclick="deleteGlobePrompt(${g.plan_id})"><i data-lucide="trash-2"></i> Delete</button>
+          ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteGlobePrompt(${g.plan_id})"><i data-lucide="trash-2"></i> Delete</button>` : ''}
           ${itemHistoryButton('globe', g.plan_id, g.employee_name || g.plan_name)}
         </div>
       </div>`;
@@ -675,10 +672,8 @@ async function dpSubscriptions(id) {
       <div class="dp-section">
         <div class="dp-section-hd">⚡ Actions</div>
         <div class="dp-action-row">
-          ${isAdminUser() ? `
-            <button class="btn btn-primary btn-sm" onclick="editSubscription(${s.subscription_id})">✏️ Edit</button>
-            <button class="btn btn-red btn-sm"     onclick="deleteSubPrompt(${s.subscription_id})">🗑️ Delete</button>
-          ` : ''}
+          ${isAdminUser() ? `<button class="btn btn-primary btn-sm" onclick="editSubscription(${s.subscription_id})">✏️ Edit</button>` : ''}
+          ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteSubPrompt(${s.subscription_id})">🗑️ Delete</button>` : ''}
           ${itemHistoryButton('subscriptions', s.subscription_id, s.subscription_name)}
         </div>
       </div>`;
@@ -964,7 +959,7 @@ async function deleteM365Prompt(id) {
 }
 
 function confirmDeleteM365() {
-  fetch(`${API_URL}/api/m365/${deleteM365Id}`, { method: 'DELETE' })
+  fetch(`${API_URL}/api/m365/${deleteM365Id}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, { method: 'DELETE' })
     .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
     .then(() => {
       showToast('License deleted', 't-warning');
@@ -998,7 +993,7 @@ async function deleteGlobePrompt(id) {
 }
 
 function confirmDeleteGlobe() {
-  fetch(`${API_URL}/api/globe/${deleteGlobeId}`, { method: 'DELETE' })
+  fetch(`${API_URL}/api/globe/${deleteGlobeId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, { method: 'DELETE' })
     .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
     .then(() => {
       showToast('Plan deleted', 't-warning');
@@ -1030,7 +1025,7 @@ async function deleteSubPrompt(id) {
 }
 
 function confirmDeleteSubscription() {
-  fetch(`${API_URL}/api/subscriptions/${deleteSubId}`, { method: 'DELETE' })
+  fetch(`${API_URL}/api/subscriptions/${deleteSubId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, { method: 'DELETE' })
     .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error); }); })
     .then(() => {
       showToast('Subscription deleted', 't-warning');

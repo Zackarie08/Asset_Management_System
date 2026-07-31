@@ -11,6 +11,7 @@
 const router = require("express").Router();
 const db     = require("../db");
 const { logItemHistory } = require("../utils/itemHistory");
+const { isSuperAdmin } = require("../utils/roleCheck");
 
 /* ── ROLE HELPER — now also returns the admin's name for snapshotting ── */
 async function requireSuperAdmin(req, res) {

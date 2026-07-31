@@ -12,6 +12,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 const { logItemHistory } = require("../utils/itemHistory");
+const { isSuperAdmin } = require("../utils/roleCheck");
 
 // GET ALL
 router.get("/", async (req, res) => {
@@ -152,9 +153,14 @@ router.put("/:id/move", async (req, res) => {
   }
 });
 
-// DELETE
+// DELETE — Super Admin only
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
+  const { user_id, performed_by } = req.query;
+
+  if (!(await isSuperAdmin(user_id))) {
+    return res.status(403).json({ error: "Only Super Admin can delete finance documents" });
+  }
 
   const existing = await db.query("SELECT category, folder_number FROM finance_documents WHERE finance_id=$1", [id]);
 
@@ -165,6 +171,8 @@ router.delete("/:id", async (req, res) => {
     record_id: id,
     action: "DELETED",
     remarks: existing.rows[0] ? `${existing.rows[0].category} · Folder #${existing.rows[0].folder_number}` : null,
+    performed_by_id: user_id || null,
+    performed_by_name: performed_by || null,
   });
 
   res.json({ message: "Deleted ✅" });

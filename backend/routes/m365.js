@@ -5,6 +5,7 @@ const pool    = require("../db");
 const { computeRenewalAlert } = require("../utils/renewalAlerts");
 const { logItemHistory } = require("../utils/itemHistory");
 const { numChanged } = require("../utils/itemHistory"); 
+const { isSuperAdmin } = require("../utils/roleCheck"); 
 
 function licenseStatusLabel(licensed) {
   return licensed ? "Licensed" : "No License";
@@ -193,8 +194,14 @@ router.put("/:id", async (req, res) => {
 });
 
 // ── DELETE ─────────────────────────────────────────────────
+// ✅ Super Admin only
 router.delete("/:id", async (req, res) => {
   try {
+    const { user_id, performed_by } = req.query;
+    if (!(await isSuperAdmin(user_id))) {
+      return res.status(403).json({ error: "Only Super Admin can delete licenses" });
+    }
+
     const existing = await pool.query("SELECT assigned_email FROM m365 WHERE license_id=$1", [req.params.id]);
     const result = await pool.query(
       "DELETE FROM m365 WHERE license_id = $1 RETURNING license_id",
@@ -207,6 +214,8 @@ router.delete("/:id", async (req, res) => {
       record_id: req.params.id,
       action: "DELETED",
       remarks: existing.rows[0]?.assigned_email || null,
+      performed_by_id: user_id || null,
+      performed_by_name: performed_by || null,
     });
 
     res.json({ deleted: result.rows[0].license_id });

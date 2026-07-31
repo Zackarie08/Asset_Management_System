@@ -334,7 +334,7 @@ async function dpLaptop(id, useCache = false) {
           <button class="btn btn-outline btn-sm" onclick="editLaptop(${lp.laptop_id})"><i data-lucide="pencil"></i> Edit</button>
         ` : ''}
         ${itemHistoryButton('laptop', lp.laptop_id, `${lp.asset_number} · ${lp.serial_number}`)}
-        ${isAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})"><i data-lucide="trash-2"></i> Delete</button>` : ''}
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteLaptop(${lp.laptop_id})"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
 
@@ -591,9 +591,10 @@ function deleteLaptop(id) {
 }
 
 function confirmDeleteLaptop() {
-  fetch(`${API_URL}/api/laptops/${deleteLaptopId}`, {
+  fetch(`${API_URL}/api/laptops/${deleteLaptopId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, {
     method: "DELETE"
   })
+  .then(res => { if (!res.ok) throw new Error('Failed'); })
   .then(() => {
     showToast("Laptop Deleted", "t-warning");
     addLog("DELETE", "LAPTOP", `Deleted laptop: ${deleteLaptopLabel}`, deleteLaptopId);
@@ -602,7 +603,7 @@ function confirmDeleteLaptop() {
     closeDP();
     renderLaptops();
   })
-  .catch(() => showToast("Error deleting laptop", "t-error"));
+  .catch(() => showToast("Error deleting laptop — Only Super Admin can delete", "t-error"));
 }
 
 

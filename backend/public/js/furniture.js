@@ -156,7 +156,7 @@ function deleteFur(id, name) {
 }
 
 function confirmDeleteFur() {
-  fetch(`${API_URL}/api/furniture/${deleteFurId}`, { method: 'DELETE' })
+  fetch(`${API_URL}/api/furniture/${deleteFurId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, { method: 'DELETE' })
   .then(res => { if (!res.ok) throw new Error('Failed'); })
   .then(() => {
     showToast('Furniture deleted', 't-warning');
@@ -165,7 +165,7 @@ function confirmDeleteFur() {
     closeDP();
     renderFurniture();
   })
-  .catch(() => showToast('Error deleting furniture', 't-error'));
+  .catch(() => showToast('Error deleting furniture — Only Super Admin can delete', 't-error'));
 }
 
 async function loadFurLocations() {
@@ -292,10 +292,8 @@ async function dpFurniture(id) {
     <div class="dp-section">
       <div class="dp-section-hd"><i data-lucide="zap"></i> Actions</div>
       <div class="dp-action-row">
-        ${isAdminUser() ? `
-          <button class="btn btn-primary btn-sm" onclick="editFur(${f.office_furniture_id})"><i data-lucide="pencil"></i> Edit</button>
-          <button class="btn btn-red btn-sm" onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>
-        ` : ''}
+        ${isAdminUser() ? `<button class="btn btn-primary btn-sm" onclick="editFur(${f.office_furniture_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteFur(${f.office_furniture_id}, '${f.furniture_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
         ${itemHistoryButton('furniture', f.office_furniture_id, f.furniture_name)}
       </div>
     </div>

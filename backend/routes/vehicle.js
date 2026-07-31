@@ -9,6 +9,7 @@ const router = express.Router();
 const pool = require('../db');
 const { logItemHistory } = require('../utils/itemHistory');
 const { numChanged } = require("../utils/itemHistory"); 
+const { isSuperAdmin } = require('../utils/roleCheck'); 
 
 // ✅ GET ALL VEHICLES
 router.get('/', async (req, res) => {
@@ -241,7 +242,13 @@ router.put("/update-odo/:id", async (req, res) => {
   res.sendStatus(200);
 });
 
+// ✅ Super Admin only
 router.delete("/:id", async (req, res) => {
+  const { user_id, performed_by } = req.query;
+  if (!(await isSuperAdmin(user_id))) {
+    return res.status(403).json({ error: "Only Super Admin can delete records" });
+  }
+
   const existing = await pool.query('SELECT vehicle_name, plate_number FROM vehicle WHERE vehicle_id=$1', [req.params.id]);
 
   await pool.query(
@@ -254,6 +261,8 @@ router.delete("/:id", async (req, res) => {
     record_id: req.params.id,
     action: 'DELETED',
     remarks: existing.rows[0] ? `${existing.rows[0].vehicle_name} · ${existing.rows[0].plate_number}` : null,
+    performed_by_id: user_id || null,
+    performed_by_name: performed_by || null,
   });
 
   res.sendStatus(200);

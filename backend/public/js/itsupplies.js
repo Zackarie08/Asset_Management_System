@@ -160,7 +160,7 @@ async function dpITSupplies(id) {
         <button class="btn btn-amber btn-sm" onclick="openBorrowItem(${it.it_supplies_id},'${it.asset_name.replace(/'/g,"\\'")}','itsupplies',${trueAvailable})"><i data-lucide="send"></i> Request Borrow</button>
         ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="editIT(${it.it_supplies_id})"><i data-lucide="pencil"></i> Edit</button>` : ''}
         ${itemHistoryButton('itsupplies', it.it_supplies_id, it.asset_name)}
-        ${isAdmin ? `<button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
+        ${isSuperAdminUser() ? `<button class="btn btn-red btn-sm" onclick="deleteIT(${it.it_supplies_id}, '${it.asset_name.replace(/'/g,"\\'")}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
       </div>
     </div>
 
@@ -269,7 +269,7 @@ function deleteIT(id, name) {
 }
 
 function confirmDeleteIT() {
-  fetch(`${API_URL}/api/it-supplies/${deleteITId}`, { method: 'DELETE' })
+  fetch(`${API_URL}/api/it-supplies/${deleteITId}?user_id=${currentUser.user_id}&performed_by=${encodeURIComponent(currentUser.name)}`, { method: 'DELETE' })
   .then(res => { if (!res.ok) throw new Error('Failed'); })
   .then(() => {
     showToast('IT Supply deleted', 't-warning');
@@ -278,7 +278,7 @@ function confirmDeleteIT() {
     closeDP();
     renderITSupplies();
   })
-  .catch(() => showToast('Error deleting IT supply', 't-error'));
+  .catch(() => showToast('Error deleting IT supply — Only Super Admin can delete', 't-error'));
 }
 
 async function loadITLocations() {

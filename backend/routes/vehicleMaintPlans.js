@@ -18,6 +18,7 @@ const express = require("express");
 const router  = express.Router();
 const pool    = require("../db");
 const { logItemHistory } = require("../utils/itemHistory");
+const { isSuperAdmin } = require("../utils/roleCheck");
 const { computePlanStatus } = require("../utils/vehiclePlanStatus"); // ✅ NEW — shared with notifications.js
 
 const VALID_TIME_UNITS = ["month", "year"]; // ✅ "week" removed
@@ -157,9 +158,13 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-/* ── DELETE plan ──────────────────────────────────────────── */
+/* ── DELETE plan — Super Admin only ──────────────────────── */
 router.delete("/:id", async (req, res) => {
   try {
+    if (!(await isSuperAdmin(req.query.user_id))) {
+      return res.status(403).json({ error: "Only Super Admin can delete maintenance plans" });
+    }
+
     const result = await pool.query(
       "DELETE FROM vehicle_maintenance_types WHERE maint_type_id=$1 RETURNING maint_type_id, vehicle_id, name",
       [req.params.id]
