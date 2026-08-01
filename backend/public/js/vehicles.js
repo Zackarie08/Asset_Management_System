@@ -742,7 +742,7 @@ async function openEditPlan(maintTypeId, vehicleId) {
         ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
     } else {
       document.getElementById('plan-f-unit').value      = plan.interval_unit === 'year' ? 'year' : 'month';
-      const intervalEl = document.getElementById('plan-f-interval'); // ✅ NEW
+      const intervalEl = document.getElementById('plan-f-interval');
       if (intervalEl) intervalEl.value = plan.interval_value || 1;
       document.getElementById('plan-f-last-date').value = plan.last_performed_date
         ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
@@ -750,7 +750,6 @@ async function openEditPlan(maintTypeId, vehicleId) {
     openM('m-plan-add');
   } catch { showToast('Failed to load plan', 't-error'); }
 }
-
 
 function _setBasisUI(basis) {
   const odoSection  = document.getElementById('plan-odo-section');
@@ -768,7 +767,7 @@ function _resetPlanForm() {
   if (basisEl) basisEl.value = 'odometer';
   const unitEl = document.getElementById('plan-f-unit');
   if (unitEl) unitEl.value = 'month';
-  const intervalEl = document.getElementById('plan-f-interval'); // ✅ NEW
+  const intervalEl = document.getElementById('plan-f-interval');
   if (intervalEl) intervalEl.value = 1;
 }
 
@@ -793,11 +792,11 @@ function savePlan() {
     payload.last_performed_date = lastOdoDate;
   } else {
     const unit     = document.getElementById('plan-f-unit').value;
-    const interval = parseInt(document.getElementById('plan-f-interval')?.value) || 1; // ✅ NEW
+    const interval = parseInt(document.getElementById('plan-f-interval')?.value) || 1;
     const lastDate = document.getElementById('plan-f-last-date').value;
     if (interval < 1) { showToast('Interval must be at least 1', 't-error'); return; }
     payload.interval_unit       = unit;
-    payload.interval_value      = interval; // ✅ NEW
+    payload.interval_value      = interval;
     payload.last_performed_date = lastDate || null;
   }
 
@@ -817,7 +816,6 @@ function savePlan() {
     })
     .catch(err => showToast(err.message || 'Failed to save plan', 't-error'));
 }
-
 let _deletePlanId        = null;
 let _deletePlanVehicleId = null;
 let _deletePlanLabel     = '';

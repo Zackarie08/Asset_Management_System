@@ -69,8 +69,6 @@ router.post("/", async (req, res) => {
     if (basis === "time" && !VALID_TIME_UNITS.includes(interval_unit)) {
       return res.status(400).json({ error: "interval_unit must be 'month' or 'year'" });
     }
-    // ✅ CHANGED (Vehicle_TimePlan_Interval_Update): "Every N" is back —
-    // interval_value is user-supplied (min 1), no longer hardcoded to 1.
     const cleanIntervalValue = Math.max(1, parseInt(interval_value) || 1);
 
     const result = await pool.query(`
@@ -267,22 +265,22 @@ function computeNextDue(plan) {
       p.next_due_date = null;
       p.status_computed = "pending";
     } else {
+      const step = Math.max(1, parseInt(p.interval_value) || 1);
       const last = new Date(p.last_performed_date);
       const next = new Date(last);
       if (p.interval_unit === "month") {
-        next.setMonth(next.getMonth() + 1);
-      } else { // "year" (default / only remaining option besides month)
-        next.setFullYear(next.getFullYear() + 1);
+        next.setMonth(next.getMonth() + step);
+      } else {
+        next.setFullYear(next.getFullYear() + step);
       }
       p.next_due_date = next.toISOString().slice(0, 10);
       const daysLeft = Math.ceil((next - new Date()) / (1000 * 60 * 60 * 24));
       if (daysLeft < 0) p.status_computed = "overdue";
-      else if (daysLeft <= 7) p.status_computed = "due_soon";
+      else if (daysLeft <= 60) p.status_computed = "due_soon";
       else p.status_computed = "ok";
     }
   }
 
   return p;
 }
-
 module.exports = router;
