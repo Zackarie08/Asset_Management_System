@@ -40,7 +40,7 @@ function withComputed(row) {
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT s.*, u.name AS assigned_user_name
+      SELECT s.*, u.name AS assigned_user_name, u.department AS assigned_department
       FROM subscriptions s
       LEFT JOIN users u ON s.assigned_user_id = u.user_id
       ORDER BY s.subscription_id DESC

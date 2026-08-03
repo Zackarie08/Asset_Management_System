@@ -83,9 +83,10 @@ async function renderSubscriptionsUnified() {
     fetch(`${API_URL}/api/globe`).then(r => r.json()).catch(() => []),
     fetch(`${API_URL}/api/subscriptions`).then(r => r.json()).catch(() => []),
   ]);
-  const sourceFilter   = document.getElementById('uni-filter-source')?.value   || 'all';
-  const statusFilter   = document.getElementById('uni-filter-status')?.value   || 'all';
-  const assignedFilter = document.getElementById('uni-filter-assigned')?.value || 'all';
+  const sourceFilter     = document.getElementById('uni-filter-source')?.value     || 'all';
+  const statusFilter     = document.getElementById('uni-filter-status')?.value     || 'all';
+  const assignedFilter   = document.getElementById('uni-filter-assigned')?.value   || 'all';
+  const departmentFilter = document.getElementById('uni-filter-department')?.value || 'all';
 
   let rows = [];
 
@@ -95,6 +96,7 @@ async function renderSubscriptionsUnified() {
         source: 'M365', id: m.license_id,
         name: m.assigned_email || 'M365 License',
         assignedTo: m.assigned_user_name || 'Unassigned',
+        department: m.assigned_department || null, // ✅ NEW — Department filter
         supplier: m.supplier || 'Microsoft', // ✅ CHANGED — custom na, hindi na hardcoded
         category: m.license_type || '—',
         cost: m.monthly_cost ?? m.license_cost,
@@ -112,6 +114,7 @@ async function renderSubscriptionsUnified() {
         source: 'Globe', id: g.plan_id,
         name: g.plan_name || 'Globe Plan',
         assignedTo: g.employee_name || 'Unassigned',
+        department: g.assigned_department || null, // ✅ NEW — Department filter
         supplier: g.supplier || 'Globe Telecom', // ✅ CHANGED — custom na, hindi na hardcoded
         category: 'Telecom',
         cost: g.monthly_cost,
@@ -129,6 +132,7 @@ async function renderSubscriptionsUnified() {
         source: 'Other', id: s.subscription_id,
         name: s.subscription_name || '—',
         assignedTo: s.assigned_to || s.assigned_user_name || '—',
+        department: s.assigned_department || null, // ✅ NEW — Department filter (only set when assigned_user_id was used, not free-text assigned_to)
         supplier: s.supplier || '—',
         category: s.category || '—',
         cost: s.monthly_cost,
@@ -147,6 +151,7 @@ async function renderSubscriptionsUnified() {
       ? rows.filter(r => !isUnassigned(r))
       : rows.filter(r => isUnassigned(r));
   }
+  if (departmentFilter !== 'all') rows = rows.filter(r => r.department === departmentFilter);
 
   const total    = rows.length;
   const active   = rows.filter(r => r.status === 'Active' || r.status === 'Licensed').length;
