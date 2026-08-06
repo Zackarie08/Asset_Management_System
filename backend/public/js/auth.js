@@ -6,6 +6,12 @@ function isAdminUser() {
   return !!currentUser && (currentUser.role === "admin" || currentUser.role === "super_admin");
 }
 
+// ✅ NEW — temp holders used only during the forced default-password
+// change flow (between login response and the user setting their own
+// password). Cleared once the flow completes.
+let _pendingChangeUser     = null;
+let _pendingChangePassword = null;
+
 function doLogin() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -20,39 +26,95 @@ function doLogin() {
   .then(res => res.json())
   .then(data => {
 
+    // ✅ FIX: check for a missing/invalid user FIRST. Previously
+    // data.user.must_change_password was read before this check, which
+    // threw on every wrong email/password (data.user is undefined on
+    // failed login) and silently broke the whole login screen.
     if (!data.user) {
-      document.getElementById("login-error").innerText = "Invalid email or password";
+      document.getElementById("login-error").innerText = data.error || "Invalid email or password";
       return;
     }
 
-    // ✅ Save user
-    sessionStorage.setItem("user", JSON.stringify(data.user));   // was localStorage
+    // ✅ Forced default-password change flow — must_change_password was
+    // set true by a Super Admin's password reset. Block the app, don't
+    // save session yet, show the "set your own password" screen instead.
+    if (data.user.must_change_password) {
+      _pendingChangeUser     = data.user;
+      _pendingChangePassword = password; // ✅ FIX: was the undefined "enteredPassword"
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('force-change-screen').style.display = 'flex';
+      return; // stop here — do not proceed to sessionStorage/#app
+    }
 
-    // ✅ Set current user (for your UI system)
-    currentUser = {
-      user_id: data.user.user_id,
-      name: data.user.name,
-      role: data.user.role,
-      email: data.user.email,
-      initials: data.user.name.substring(0,2).toUpperCase()
-    };
-    addLog("LOGIN", "USER", `User ${currentUser.name} logged in`, currentUser.user_id); // Part 5
-
-
-    // ✅ Hide login
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-
-    // ✅ Load UI
-    buildSidebar();
-    initAllModules();
-    updateUserUI();
+    _completeLogin(data.user);
   })
   .catch(err => {
     console.error(err);
     document.getElementById("login-error").innerText = "Server error";
   });
 }
+
+// ✅ NEW — the normal "log the user in" tail end, factored out of
+// doLogin() so both the normal path AND the post-force-change path can
+// call the exact same logic (no duplication, no drift between the two).
+function _completeLogin(user) {
+  // ✅ Save user
+  sessionStorage.setItem("user", JSON.stringify(user));   // was localStorage
+
+  // ✅ Set current user (for your UI system)
+  currentUser = {
+    user_id: user.user_id,
+    name: user.name,
+    role: user.role,
+    email: user.email,
+    initials: user.name.substring(0,2).toUpperCase()
+  };
+  addLog("LOGIN", "USER", `User ${currentUser.name} logged in`, currentUser.user_id); // Part 5
+
+  // ✅ Hide login / force-change screens
+  document.getElementById('login-screen').style.display = 'none';
+  const forceScreen = document.getElementById('force-change-screen');
+  if (forceScreen) forceScreen.style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+
+  // ✅ Load UI
+  buildSidebar();
+  initAllModules();
+  updateUserUI();
+}
+
+function submitForceChangePassword() {
+  const p1 = document.getElementById('fc-new-pass').value;
+  const p2 = document.getElementById('fc-new-pass2').value;
+  const errEl = document.getElementById('force-change-error');
+  errEl.textContent = '';
+
+  if (!p1 || !p2) { errEl.textContent = 'Fill all fields'; return; }
+  if (p1 !== p2)  { errEl.textContent = 'Passwords do not match'; return; }
+  if (p1.length < 6) { errEl.textContent = 'Password must be at least 6 characters'; return; }
+  if (p1 === 'GPCCI@2026') { errEl.textContent = 'New password cannot be the default password'; return; }
+
+  fetch(`${API_URL}/api/auth/users/change-password/${_pendingChangeUser.user_id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: _pendingChangePassword, new_password: p1 })
+  })
+  .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); })
+  .then(() => {
+    const finishedUser = _pendingChangeUser;
+    finishedUser.must_change_password = false;
+
+    // clear temp holders + form fields
+    _pendingChangeUser = null;
+    _pendingChangePassword = null;
+    document.getElementById('fc-new-pass').value = '';
+    document.getElementById('fc-new-pass2').value = '';
+
+    _completeLogin(finishedUser);
+  })
+  .catch(err => { errEl.textContent = err.message || 'Failed to set password'; });
+}
+
 
 let _loggingOut = false;
 let _tabCloseLogged = false;
