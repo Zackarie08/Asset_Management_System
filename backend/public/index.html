@@ -58,6 +58,33 @@
   </footer>
 </div>  
 
+<div id="force-change-screen" style="display:none; position:fixed; inset:0; z-index:1000;
+     background:linear-gradient(135deg, var(--navy-950) 0%, var(--navy-800) 50%, var(--navy-700) 100%);
+     align-items:center; justify-content:center; flex-direction:column;">
+  <div class="login-box">
+    <div class="login-title">Set a New Password</div>
+    <div class="login-sub">Your password was reset by an administrator. Please set your own password to continue.</div>
+ 
+    <label class="login-label">New Password</label>
+    <div style="position:relative;">
+      <input id="fc-new-pass" type="password" class="login-input" placeholder="Minimum 6 characters" maxlength="50">
+      <i data-lucide="eye" onclick="togglePassword('fc-new-pass', this)"
+        style="position:absolute; right:10px; top:38%; transform:translateY(-50%); cursor:pointer; width:16px; height:16px; color:#dbdbdb;"></i>
+    </div>
+ 
+    <label class="login-label">Confirm New Password</label>
+    <div style="position:relative;">
+      <input id="fc-new-pass2" type="password" class="login-input" placeholder="Re-enter password" maxlength="50">
+      <i data-lucide="eye" onclick="togglePassword('fc-new-pass2', this)"
+        style="position:absolute; right:10px; top:38%; transform:translateY(-50%); cursor:pointer; width:16px; height:16px; color:#dbdbdb;"></i>
+    </div>
+ 
+    <button class="login-btn" onclick="submitForceChangePassword()">Set Password</button>
+    <div id="force-change-error"
+      style="color:#f87171;font-size:12px;margin-top:10px;text-align:center;min-height:16px;"></div>
+  </div>
+</div>
+
 
 
 
@@ -3272,63 +3299,28 @@
       <div class="modal-title"><i data-lucide="key"></i> Reset Password</div>
       <button class="modal-close" onclick="closeM('m-reset-pass')">✕</button>
     </div>
-
+ 
     <div class="modal-body">
       <div style="background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#1e40af">
           User: <span id="rp-user-name">—</span>
         </div>
       </div>
-
-      <div class="form-grp">
-        <label>New Password *</label>
-        <div style="position:relative; display:flex; align-items:center;">
-          <input id="rp-pass"
-                type="password"
-                class="form-ctrl"
-                style="padding-right:40px; width:100%;" maxlength="50" placeholder="Minimum 6 characters">
-          <i data-lucide="eye" onclick="togglePassword('rp-pass', this)"
-                style="
-                  position:absolute;
-                  right:12px;
-                  top:0;
-                  bottom:0;
-                  margin:auto;
-                  height:16px;
-                  width:16px;
-                  cursor:pointer;
-                "></i>
-        </div>
-      </div>
-
-            <div class="form-grp">
-        <label>New Password *</label>
-        <div style="position:relative; display:flex; align-items:center;">
-          <input id="rp-pass2"
-                type="password"
-                class="form-ctrl"
-                style="padding-right:40px; width:100%;" maxlength="50" placeholder="Minimum 6 characters">
-          <i data-lucide="eye" onclick="togglePassword('rp-pass2', this)"
-                style="
-                  position:absolute;
-                  right:12px;
-                  top:0;
-                  bottom:0;
-                  margin:auto;
-                  height:16px;
-                  width:16px;
-                  cursor:pointer;
-                "></i>
-        </div>
-      </div>
-
+ 
+      <p style="font-size:12.5px;color:var(--slate-600);line-height:1.6">
+        This will reset the user's password to the default password
+        (<code style="background:var(--slate-100);padding:2px 6px;border-radius:4px;font-family:var(--mono)">GPCCI@2026</code>).
+        The user will be required to set their own new password the next time they log in.
+      </p>
+ 
       <div class="form-footer">
         <button class="btn btn-outline" onclick="closeM('m-reset-pass')">Cancel</button>
-        <button class="btn btn-green" onclick="confirmResetPassword()"><i data-lucide="check"></i> Reset</button>
+        <button class="btn btn-green" onclick="confirmResetPassword()"><i data-lucide="check"></i> Reset to Default</button>
       </div>
     </div>
   </div>
 </div>
+ 
 
 <!-- Edit User -->
 <div class="modal-overlay" id="m-edit-user">

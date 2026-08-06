@@ -208,24 +208,24 @@ function resetPassword(id, name, email) {
   selectedUserId = id;
   resetUserEmail = email;
   document.getElementById('rp-user-name').textContent = name;
-  document.getElementById('rp-pass').value  = '';
-  document.getElementById('rp-pass2').value = '';
   openM('m-reset-pass');
 }
-
+ 
 function confirmResetPassword() {
-  const pass1 = document.getElementById('rp-pass').value;
-  const pass2 = document.getElementById('rp-pass2').value;
-  if (!pass1 || !pass2)  { showToast('Fill all fields', 't-error'); return; }
-  if (pass1 !== pass2)   { showToast('Passwords do not match', 't-error'); return; }
-  if (pass1.length < 6)  { showToast('Password too short', 't-error'); return; }
   fetch(`${API_URL}/api/auth/users/reset-password/${selectedUserId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ new_password: pass1, performer_id: currentUser.user_id, performed_by: currentUser.name })
+    body: JSON.stringify({ performer_id: currentUser.user_id, performed_by: currentUser.name })
   })
-  .then(() => { showToast('Password reset', 't-success'); addLog('UPDATE', 'USER', `Password reset for ${resetUserEmail}`, resetUserEmail); closeM('m-reset-pass'); })
-  .catch(() => showToast('Error resetting password', 't-error'));
+  .then(res => {
+    if (!res.ok) return res.json().catch(() => ({})).then(e => { throw new Error(e.error || 'Failed to reset password'); });
+  })
+  .then(() => {
+    showToast('Password reset to default — user must set a new password on next login', 't-success');
+    addLog('UPDATE', 'USER', `Password reset to default for ${resetUserEmail}`, resetUserEmail);
+    closeM('m-reset-pass');
+  })
+  .catch(err => showToast(err.message || 'Error resetting password', 't-error'));
 }
 
 function dpUser(id) {
