@@ -26,7 +26,7 @@ function withComputed(row) {
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT m.*, u.name AS assigned_user_name, u.email AS assigned_user_email
+      SELECT m.*, u.name AS assigned_user_name, u.email AS assigned_user_email, u.department AS assigned_department
       FROM m365 m
       LEFT JOIN users u ON m.assigned_user_id = u.user_id
       ORDER BY m.license_id DESC
