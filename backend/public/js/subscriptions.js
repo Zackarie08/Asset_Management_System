@@ -200,11 +200,12 @@ function _renderUniTable() {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--slate-400)">No subscriptions found.</td></tr>`;
   } else {
     const sourceColors = { M365: 'b-blue', Globe: 'b-green', Other: 'b-purple' };
+    const sourceLabels = { M365: 'M365', Globe: 'Globe', Other: 'Others' }; // ✅ NEW — display-only relabel
     page.forEach(row => {
       const tr = document.createElement('tr');
       tr.className = 'tr-clickable';
       tr.innerHTML = `
-        <td><span class="badge ${sourceColors[row.source] || 'b-slate'}">${row.source}</span></td>
+        <td><span class="badge ${sourceColors[row.source] || 'b-slate'}">${sourceLabels[row.source] || row.source}</span></td>
         <td class="td-strong">${row.name}</td>
         <td>${row.assignedTo}</td>
         <td>${row.supplier}</td>

@@ -43,16 +43,24 @@ async function _isApprover(userId) {
 // GET /api/borrow-return/open/:module — everything not yet resolved
 // (PENDING awaiting approval, or BORROWED and still out)
 // GET /api/borrow-return/open/:module — everything not yet resolved
+// GET /api/borrow-return/open/:module — everything not yet resolved
+// (PENDING awaiting approval, or BORROWED and still out)
 router.get("/open/:module", async (req, res) => {
   try {
     const { module } = req.params;
-    if (!TABLE_MAP[module]) return res.status(400).json({ error: "Invalid module" });
+    const cfg = TABLE_MAP[module];
+    if (!cfg) return res.status(400).json({ error: "Invalid module" });
 
+    // ✅ FIX: filter out orphaned records whose underlying item was
+    // deleted — borrow_records has no FK to inventory_gen/it_supplies, so
+    // a deleted item's PENDING/BORROWED rows used to linger forever and
+    // kept showing up on the Dashboard as "Item #123".
     const result = await pool.query(
       `SELECT br.*, ub.name AS submitted_by_name
        FROM borrow_records br
        LEFT JOIN users ub ON br.borrowed_by_id = ub.user_id
        WHERE br.module=$1 AND br.status IN ('PENDING','BORROWED')
+         AND EXISTS (SELECT 1 FROM ${cfg.table} t WHERE t.${cfg.idCol} = br.record_id)
        ORDER BY br.borrow_date ASC`,
       [module]
     );

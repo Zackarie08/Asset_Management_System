@@ -148,6 +148,20 @@ router.delete("/:id", async (req, res) => {
     );
     const itemName = existing.rows[0]?.item_name || `Item #${req.params.id}`;
 
+    // ✅ NEW — cancel any pending wine/borrow requests tied to this item
+    // BEFORE deleting it, so no dangling PENDING request is left orphaned
+    // in the DB once the item itself is gone.
+    await pool.query(
+      `UPDATE wine_withdrawal_requests SET status='CANCELLED', decided_date=NOW()
+       WHERE inventory_gen_id=$1 AND status='PENDING'`,
+      [req.params.id]
+    );
+    await pool.query(
+      `UPDATE borrow_records SET status='CANCELLED'
+       WHERE module='inventory' AND record_id=$1 AND status='PENDING'`,
+      [req.params.id]
+    );
+
     await pool.query(
       "DELETE FROM inventory_gen WHERE inventory_gen_id = $1",
       [req.params.id]

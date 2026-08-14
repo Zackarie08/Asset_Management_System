@@ -129,10 +129,13 @@ async function collectNotifications() {
     const invNameMap = {}; invNamesRes.rows.forEach(r => { invNameMap[r.inventory_gen_id] = r.item_name; });
     const itNameMap  = {}; itNamesRes.rows.forEach(r => { itNameMap[r.it_supplies_id] = r.asset_name; });
 
+    // ✅ FIX: skip orphaned requests whose underlying item was deleted —
+    // same root cause as the Dashboard "Item #123" bug (borrow_records has
+    // no FK to inventory_gen/it_supplies). If the name lookup came back
+    // empty, the item no longer exists — don't notify for it.
     pendingBorrows.rows.forEach(b => {
-      const label = b.module === 'inventory'
-        ? (invNameMap[b.record_id] || 'Item')
-        : (itNameMap[b.record_id] || 'Item');
+      const label = b.module === 'inventory' ? invNameMap[b.record_id] : itNameMap[b.record_id];
+      if (!label) return;
       notifications.push({
         module: b.module, record_id: b.record_id,
         type: 'BORROW_REQUEST_PENDING', severity: 'amber',

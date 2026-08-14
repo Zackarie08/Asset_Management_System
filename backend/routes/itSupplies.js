@@ -161,6 +161,14 @@ router.delete("/:id", async (req, res) => {
 
   const existing = await pool.query("SELECT asset_name FROM it_supplies WHERE it_supplies_id=$1", [req.params.id]);
 
+  // ✅ NEW — cancel any pending borrow requests tied to this item BEFORE
+  // deleting it, same fix as inventory.js's DELETE route.
+  await pool.query(
+    `UPDATE borrow_records SET status='CANCELLED'
+     WHERE module='itsupplies' AND record_id=$1 AND status='PENDING'`,
+    [req.params.id]
+  );
+
   await pool.query(
     "DELETE FROM it_supplies WHERE it_supplies_id=$1",
     [req.params.id]
