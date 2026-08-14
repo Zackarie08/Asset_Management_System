@@ -42,13 +42,18 @@ async function _isApprover(userId) {
 
 // GET /api/borrow-return/open/:module — everything not yet resolved
 // (PENDING awaiting approval, or BORROWED and still out)
+// GET /api/borrow-return/open/:module — everything not yet resolved
 router.get("/open/:module", async (req, res) => {
   try {
     const { module } = req.params;
     if (!TABLE_MAP[module]) return res.status(400).json({ error: "Invalid module" });
 
     const result = await pool.query(
-      `SELECT * FROM borrow_records WHERE module=$1 AND status IN ('PENDING','BORROWED') ORDER BY borrow_date ASC`,
+      `SELECT br.*, ub.name AS submitted_by_name
+       FROM borrow_records br
+       LEFT JOIN users ub ON br.borrowed_by_id = ub.user_id
+       WHERE br.module=$1 AND br.status IN ('PENDING','BORROWED')
+       ORDER BY br.borrow_date ASC`,
       [module]
     );
     res.json(result.rows);
@@ -65,7 +70,14 @@ router.get("/:module/:record_id", async (req, res) => {
     if (!TABLE_MAP[module]) return res.status(400).json({ error: "Invalid module" });
 
     const result = await pool.query(
-      `SELECT * FROM borrow_records WHERE module=$1 AND record_id=$2 ORDER BY borrow_date DESC`,
+      `SELECT br.*,
+              ub.name AS submitted_by_name,
+              ur.name AS processed_return_by_name
+       FROM borrow_records br
+       LEFT JOIN users ub ON br.borrowed_by_id = ub.user_id
+       LEFT JOIN users ur ON br.returned_by_id = ur.user_id
+       WHERE br.module=$1 AND br.record_id=$2
+       ORDER BY br.borrow_date DESC`,
       [module, record_id]
     );
     res.json(result.rows);

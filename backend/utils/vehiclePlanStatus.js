@@ -57,15 +57,34 @@ function timePlanStatus(plan) {
   return { status, nextDueDate: next.toISOString().slice(0, 10), daysLeft };
 }
 
+// ✅ NEW — One-Time Date basis: a single fixed due date, no recurrence.
+// Once performed (last_performed_date set), the plan stays visible but
+// permanently reports 'completed' — no more due date, no more alerts.
+function oneTimePlanStatus(plan) {
+  if (plan.last_performed_date) {
+    return { status: 'completed', daysLeft: null };
+  }
+  if (!plan.due_date) {
+    return { status: 'pending', daysLeft: null };
+  }
+  const due = new Date(plan.due_date);
+  const daysLeft = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
+  let status = 'ok';
+  if (daysLeft < 0) status = 'overdue';
+  else if (daysLeft <= DUE_SOON_WINDOW_DAYS) status = 'due_soon';
+  return { status, daysLeft };
+}
+
 function computePlanStatus(plan, currentKm) {
-  return plan.basis === 'odometer'
-    ? odometerPlanStatus(plan, currentKm)
-    : timePlanStatus(plan);
+  if (plan.basis === 'odometer') return odometerPlanStatus(plan, currentKm);
+  if (plan.basis === 'one_time') return oneTimePlanStatus(plan);
+  return timePlanStatus(plan);
 }
 
 module.exports = {
   computePlanStatus,
   odometerPlanStatus,
   timePlanStatus,
+  oneTimePlanStatus,
   DUE_SOON_WINDOW_DAYS,
 };

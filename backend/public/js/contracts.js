@@ -224,6 +224,9 @@ const html = `
         ${dpField("Validity",      validity)}
         ${dpField("Status",        statusBadge)}
         ${dpField("Expiry Status", expiryBadge)}
+        ${c.validity_type !== 'NA' ? dpField("Auto-Renew", c.auto_renew
+          ? '<span class="badge b-green"><i data-lucide="repeat"></i> Enabled</span>'
+          : '<span class="badge b-slate">Disabled</span>') : ''}
       </div>
     </div>
 
@@ -251,6 +254,7 @@ async function saveContract() {
     valid_year: type === "YEAR"  ? document.getElementById("con-f-year").value : null,
     valid_from: type === "RANGE" ? document.getElementById("con-f-from").value : null,
     valid_to:   type === "RANGE" ? document.getElementById("con-f-to").value   : null,
+    auto_renew: type !== "NA" && document.getElementById("con-f-auto-renew").checked, // ✅ NEW
     remarks:    document.getElementById("con-f-remarks").value
   };
 
@@ -422,6 +426,7 @@ async function editContract(id) {
   document.getElementById("con-f-year").value  = c.valid_year || "";
   document.getElementById("con-f-from").value  = formatDateForInput(c.valid_from);
   document.getElementById("con-f-to").value    = formatDateForInput(c.valid_to);
+  document.getElementById("con-f-auto-renew").checked = !!c.auto_renew; // ✅ NEW
   document.getElementById("con-f-remarks").value = c.remarks  || "";
 
   window.editContractId = id;
@@ -433,6 +438,8 @@ function openAddContract() {
   const title = document.querySelector('#m-add-con .modal-title');
   if (title) title.innerHTML = `<i data-lucide="file-text"></i> Add Contract`;
   if (window.lucide) lucide.createIcons();
+  const cb = document.getElementById('con-f-auto-renew'); // ✅ NEW
+  if (cb) cb.checked = false;
   openM("m-add-con");
 }
 
@@ -567,6 +574,14 @@ function toggleValidity() {
   // ✅ Show NA notice
   const naNotice = document.getElementById("con-na-notice");
   if (naNotice) naNotice.style.display = type === "NA" ? "block" : "none";
+
+  // ✅ NEW — auto-renew only applies to YEAR/RANGE, never NA
+  const autoRenewWrap = document.getElementById("con-auto-renew-wrap");
+  if (autoRenewWrap) autoRenewWrap.style.display = type === "NA" ? "none" : "block";
+  if (type === "NA") {
+    const cb = document.getElementById("con-f-auto-renew");
+    if (cb) cb.checked = false;
+  }
 }
 
 

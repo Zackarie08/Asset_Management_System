@@ -611,7 +611,7 @@
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Asset No.</th><th>Serial No.</th><th>Assigned To</th>
+                <th>Asset No.</th><th>Serial No.</th><th>Brand</th><th>Assigned To</th>
                 <th>Status</th><th>Warranty</th><th>Maintenance</th>
               </tr></thead>
               <tbody id="lp-tbody"></tbody>
@@ -2214,6 +2214,15 @@
         </div>
       </div>
 
+      <!-- ✅ NEW — Auto-Renew (only for YEAR/RANGE validity) -->
+      <div class="form-grp" id="con-auto-renew-wrap" style="display:none;background:var(--blue-50);border:1.5px solid var(--blue-100);border-radius:var(--radius-sm);padding:10px 12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:12.5px;color:#1e40af">
+          <input type="checkbox" id="con-f-auto-renew" style="width:15px;height:15px;accent-color:var(--blue-600)"/>
+          <span><i data-lucide="repeat"></i> Auto-renew when this validity period expires</span>
+        </label>
+        <span class="form-note">When the period ends, the contract automatically extends by one more cycle (e.g. Year → next year, Range → same length shifted forward one year).</span>
+      </div>
+
       <div class="form-grp">
         <label>Remarks</label>
         <textarea class="form-ctrl" id="con-f-remarks" placeholder="Optional notes..."></textarea>
@@ -2423,7 +2432,8 @@
         <label>Basis *</label>
         <select class="form-ctrl" id="plan-f-basis" onchange="_setBasisUI(this.value)">
           <option value="odometer">Odometer (KM-based)</option>
-          <option value="time">Time (calendar-based)</option>
+          <option value="time">Time (recurring — monthly/yearly)</option>
+          <option value="one_time">One-Time Date (fixed, no recurrence)</option>
         </select>
       </div>
 
@@ -2466,6 +2476,15 @@
           <label>Last Performed Date</label>
           <input class="form-ctrl" id="plan-f-last-date" type="date"/>
           <span class="form-note">Leave blank if never performed</span>
+        </div>
+      </div>
+
+      <!-- One-time date field -->
+      <div id="plan-onetime-section" style="display:none">
+        <div class="form-grp">
+          <label>Due Date *</label>
+          <input class="form-ctrl" id="plan-f-due-date" type="date"/>
+          <span class="form-note">Needs to be performed once by this date. Can be performed earlier. After it's done, the plan stays visible but no longer shows a due date.</span>
         </div>
       </div>
 

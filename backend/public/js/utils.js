@@ -203,14 +203,26 @@ function buildBorrowRequestsHTML(module, records, isAdmin) {
       DENIED:   ['<i data-lucide="x"></i> Denied', 'repair'],
     }[b.status] || [b.status, 'good'];
 
+    // ✅ NEW — shows the ACTUAL logged-in user who submitted the borrow/
+    // return, alongside the typed name, whenever they differ (e.g. an
+    // admin submitting a borrow request on behalf of someone else).
+    const submitterLine = (b.submitted_by_name && b.submitted_by_name !== b.borrowed_by_name)
+      ? `<div class="mh-remarks"><i data-lucide="user-check"></i> Submitted by ${b.submitted_by_name}</div>`
+      : '';
+    const processedLine = (b.status === 'RETURNED' && b.processed_return_by_name && b.processed_return_by_name !== b.returned_by_name)
+      ? `<div class="mh-remarks"><i data-lucide="user-check"></i> Processed by ${b.processed_return_by_name}</div>`
+      : '';
+
     return `
       <li class="mh-item">
         <div class="mh-dot ${meta[1]}"></div>
         <div style="flex:1">
           <div class="mh-cond info">${meta[0]} — ${b.quantity} unit(s)</div>
           <div class="mh-date">${b.borrowed_by_name} · ${formatDateHuman(b.borrow_date)}</div>
+          ${submitterLine}
           ${b.borrow_remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${b.borrow_remarks}</div>` : ''}
           ${b.status === 'RETURNED' ? `<div class="mh-remarks"><i data-lucide="corner-up-left"></i> Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
+          ${processedLine}
           ${b.status === 'DENIED' ? `<div class="mh-remarks"><i data-lucide="x"></i> Denied by ${b.denied_by_name || '—'}</div>` : ''}
         </div>
         ${isAdmin && b.status === 'PENDING' ? `

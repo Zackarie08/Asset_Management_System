@@ -398,8 +398,9 @@ function _buildPlansHTML(plans, currentKm, vehicleId) {
 }
 
 function _buildSinglePlanCard(plan, currentKm, vehicleId) {
-  const isOdo  = plan.basis === 'odometer';
-  const isTime = plan.basis === 'time';
+  const isOdo     = plan.basis === 'odometer';
+  const isTime    = plan.basis === 'time';
+  const isOneTime = plan.basis === 'one_time';
 
   let statusBadge = '';
   let visualHTML  = '';
@@ -470,22 +471,62 @@ function _buildSinglePlanCard(plan, currentKm, vehicleId) {
           plan.last_performed_date ? formatDateHuman(plan.last_performed_date) : 'Never'
         }</div>
       </div>`;
+  } else if (isOneTime) {
+    // ✅ NEW — One-Time Date plans
+    if (plan.status_computed === 'completed') {
+      statusBadge = `<span class="badge b-green"><i data-lucide="check-circle"></i> Completed</span>`;
+      visualHTML = `
+        <div style="margin:8px 0;font-size:12px;color:var(--slate-600)">
+          <div><i data-lucide="calendar-check"></i> Performed on ${formatDateHuman(plan.last_performed_date)}</div>
+          <div style="color:var(--slate-400)">Original due date: ${plan.due_date ? formatDateHuman(plan.due_date) : '—'}</div>
+        </div>`;
+    } else {
+      const s = plan.status_computed || 'unknown';
+      const labelMap  = {
+        overdue:  '<i data-lucide="triangle-alert"></i> Overdue',
+        due_soon: '<i data-lucide="triangle-alert"></i> Due Soon',
+        ok:       '<i data-lucide="check-circle"></i> OK',
+        pending:  '<i data-lucide="clock"></i> No Date Set',
+        unknown:  '—',
+      };
+      const classMap  = { overdue: 'b-red', due_soon: 'b-amber', ok: 'b-green', pending: 'b-slate', unknown: 'b-slate' };
+      statusBadge = `<span class="badge ${classMap[s] || 'b-slate'}">${labelMap[s] || s}</span>`;
+
+      const daysLeft = _daysUntil(plan.due_date);
+      let dueLabel2 = plan.due_date
+        ? (daysLeft <= 0
+            ? `<i data-lucide="triangle-alert"></i> Was due ${formatDateHuman(plan.due_date)}`
+            : daysLeft <= 30
+              ? `<i data-lucide="triangle-alert"></i> Due in ${daysLeft} days (${formatDateHuman(plan.due_date)})`
+              : `<i data-lucide="calendar"></i> Due: ${formatDateHuman(plan.due_date)}`)
+        : '<i data-lucide="clock"></i> No due date set';
+
+      visualHTML = `
+        <div style="margin:8px 0;font-size:12px;color:var(--slate-600)">
+          <div style="margin-bottom:3px">${dueLabel2}</div>
+          <div style="color:var(--slate-400)">One-time task — performed once, does not repeat</div>
+        </div>`;
+    }
   }
+
+  const showPerformBtn = !isOneTime || plan.status_computed !== 'completed';
+  const basisLabel = isOneTime ? 'one-time' : plan.basis;
 
   return `
     <div style="background:var(--slate-50);border:1px solid var(--slate-200);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <span style="font-size:13px;font-weight:600;color:var(--slate-800)">${_escVeh(plan.name)}</span>
-        <span style="font-size:11px;color:var(--slate-400);text-transform:uppercase">${plan.basis}</span>
+        <span style="font-size:11px;color:var(--slate-400);text-transform:uppercase">${basisLabel}</span>
         ${statusBadge}
       </div>
       ${visualHTML}
       ${isAdminUser() ? `
         <div style="display:flex;gap:6px;margin-top:8px">
+          ${showPerformBtn ? `
           <button class="btn btn-xs btn-green"
             onclick="openRecordMaint(${vehicleId},'${_escVeh(plan.name)}',${plan.maint_type_id})">
             <i data-lucide="check"></i> Perform
-          </button>
+          </button>` : ''}
           <button class="btn btn-xs btn-outline"
             onclick="openEditPlan(${plan.maint_type_id},${vehicleId})">
             <i data-lucide="pencil"></i>
@@ -740,26 +781,32 @@ async function openEditPlan(maintTypeId, vehicleId) {
       const lastOdoDateEl = document.getElementById('plan-f-last-odo-date');
       if (lastOdoDateEl) lastOdoDateEl.value = plan.last_performed_date
         ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
-    } else {
+    } else if (plan.basis === 'time') {
       document.getElementById('plan-f-unit').value      = plan.interval_unit === 'year' ? 'year' : 'month';
       const intervalEl = document.getElementById('plan-f-interval');
       if (intervalEl) intervalEl.value = plan.interval_value || 1;
       document.getElementById('plan-f-last-date').value = plan.last_performed_date
         ? new Date(plan.last_performed_date).toISOString().slice(0,10) : '';
+    } else if (plan.basis === 'one_time') {
+      const dueDateEl = document.getElementById('plan-f-due-date');
+      if (dueDateEl) dueDateEl.value = plan.due_date
+        ? new Date(plan.due_date).toISOString().slice(0,10) : '';
     }
     openM('m-plan-add');
   } catch { showToast('Failed to load plan', 't-error'); }
 }
 
 function _setBasisUI(basis) {
-  const odoSection  = document.getElementById('plan-odo-section');
-  const timeSection = document.getElementById('plan-time-section');
-  if (odoSection)  odoSection.style.display  = basis === 'odometer' ? 'block' : 'none';
-  if (timeSection) timeSection.style.display = basis === 'time'     ? 'block' : 'none';
+  const odoSection     = document.getElementById('plan-odo-section');
+  const timeSection    = document.getElementById('plan-time-section');
+  const onetimeSection = document.getElementById('plan-onetime-section');
+  if (odoSection)     odoSection.style.display     = basis === 'odometer' ? 'block' : 'none';
+  if (timeSection)    timeSection.style.display    = basis === 'time'     ? 'block' : 'none';
+  if (onetimeSection) onetimeSection.style.display = basis === 'one_time' ? 'block' : 'none';
 }
 
 function _resetPlanForm() {
-  ['plan-f-name','plan-f-km','plan-f-last-km','plan-f-last-odo-date','plan-f-last-date'].forEach(id => {
+  ['plan-f-name','plan-f-km','plan-f-last-km','plan-f-last-odo-date','plan-f-last-date','plan-f-due-date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -790,7 +837,7 @@ function savePlan() {
     payload.threshold_km        = km;
     payload.last_maintenance_km = lastKm;
     payload.last_performed_date = lastOdoDate;
-  } else {
+  } else if (basis === 'time') {
     const unit     = document.getElementById('plan-f-unit').value;
     const interval = parseInt(document.getElementById('plan-f-interval')?.value) || 1;
     const lastDate = document.getElementById('plan-f-last-date').value;
@@ -798,6 +845,10 @@ function savePlan() {
     payload.interval_unit       = unit;
     payload.interval_value      = interval;
     payload.last_performed_date = lastDate || null;
+  } else if (basis === 'one_time') {
+    const dueDate = document.getElementById('plan-f-due-date').value;
+    if (!dueDate) { showToast('Due date is required', 't-error'); return; }
+    payload.due_date = dueDate;
   }
 
   const url    = planEditId ? `${API_URL}/api/vehicle-plans/${planEditId}` : `${API_URL}/api/vehicle-plans`;

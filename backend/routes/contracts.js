@@ -339,13 +339,14 @@ router.put("/:id", async (req, res) => {
   try {
     const {
       contract_date, other_party, description,
-      validity_type, valid_year, valid_from, valid_to, remarks, status,
+      validity_type, valid_year, valid_from, valid_to, remarks, status, auto_renew,
       user_id, performed_by,
     } = req.body;
 
     const cleanYear = validity_type === 'NA' ? null : valid_year;
     const cleanFrom = validity_type === 'NA' ? null : valid_from;
     const cleanTo   = validity_type === 'NA' ? null : valid_to;
+    const cleanAutoRenew = validity_type === 'NA' ? false : !!auto_renew;
 
     const before = await db.query("SELECT * FROM contracts WHERE contract_id=$1", [req.params.id]);
     const old = before.rows[0];
@@ -360,9 +361,10 @@ router.put("/:id", async (req, res) => {
         valid_from     = $6,
         valid_to       = $7,
         remarks        = $8,
-        status         = $9
-      WHERE contract_id = $10
-    `, [contract_date, other_party, description, validity_type, cleanYear, cleanFrom, cleanTo, remarks, status, req.params.id]);
+        status         = $9,
+        auto_renew     = $10
+      WHERE contract_id = $11
+    `, [contract_date, other_party, description, validity_type, cleanYear, cleanFrom, cleanTo, remarks, status, cleanAutoRenew, req.params.id]);
 
     if (old) {
       // ✅ FIX (Part 4 audit): validity_type/valid_year/valid_from/valid_to
@@ -375,6 +377,7 @@ router.put("/:id", async (req, res) => {
         ["valid_year", old.valid_year, cleanYear],
         ["valid_from", old.valid_from, cleanFrom],
         ["valid_to", old.valid_to, cleanTo],
+        ["auto_renew", old.auto_renew, cleanAutoRenew],
       ];
       for (const [field, oldVal, newVal] of fieldChecks) {
         if (String(oldVal ?? '') !== String(newVal ?? '')) {

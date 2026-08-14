@@ -57,24 +57,27 @@ router.post("/", async (req, res) => {
   try {
     const {
       vehicle_id, name, basis, threshold_km, last_maintenance_km,
-      interval_unit, interval_value, last_performed_date, user_id, performed_by,
+      interval_unit, interval_value, last_performed_date, due_date, user_id, performed_by,
     } = req.body;
 
     if (!vehicle_id || !name || !basis) {
       return res.status(400).json({ error: "vehicle_id, name, and basis are required" });
     }
-    if (basis !== "odometer" && basis !== "time") {
-      return res.status(400).json({ error: "basis must be 'odometer' or 'time'" });
+    if (basis !== "odometer" && basis !== "time" && basis !== "one_time") {
+      return res.status(400).json({ error: "basis must be 'odometer', 'time', or 'one_time'" });
     }
     if (basis === "time" && !VALID_TIME_UNITS.includes(interval_unit)) {
       return res.status(400).json({ error: "interval_unit must be 'month' or 'year'" });
+    }
+    if (basis === "one_time" && !due_date) {
+      return res.status(400).json({ error: "due_date is required for one-time plans" });
     }
     const cleanIntervalValue = Math.max(1, parseInt(interval_value) || 1);
 
     const result = await pool.query(`
       INSERT INTO vehicle_maintenance_types
-        (vehicle_id, name, basis, threshold_km, last_maintenance_km, interval_unit, interval_value, last_performed_date)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        (vehicle_id, name, basis, threshold_km, last_maintenance_km, interval_unit, interval_value, last_performed_date, due_date)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
       RETURNING *
     `, [
       vehicle_id, name, basis,
@@ -83,14 +86,19 @@ router.post("/", async (req, res) => {
       basis === "time" ? interval_unit : null,
       basis === "time" ? cleanIntervalValue : null,
       last_performed_date || null,
+      basis === "one_time" ? due_date : null,
     ]);
+
+    const labelSuffix = basis === "time" ? `every ${interval_unit}`
+      : basis === "one_time" ? `due ${due_date}`
+      : `every ${threshold_km} km`;
 
     await logItemHistory({
       module: "vehicle",
       record_id: vehicle_id,
       action: "CREATED",
       field_name: "maintenance_plan",
-      new_value: `${name} (${basis === "time" ? `every ${interval_unit}` : `every ${threshold_km} km`})`,
+      new_value: `${name} (${labelSuffix})`,
       performed_by_id: user_id || null,
       performed_by_name: performed_by || null,
     });
@@ -107,11 +115,14 @@ router.put("/:id", async (req, res) => {
   try {
     const {
       name, basis, threshold_km, last_maintenance_km,
-      interval_unit, interval_value, last_performed_date, user_id, performed_by,
+      interval_unit, interval_value, last_performed_date, due_date, user_id, performed_by,
     } = req.body;
 
     if (basis === "time" && !VALID_TIME_UNITS.includes(interval_unit)) {
       return res.status(400).json({ error: "interval_unit must be 'month' or 'year'" });
+    }
+    if (basis === "one_time" && !due_date) {
+      return res.status(400).json({ error: "due_date is required for one-time plans" });
     }
     const cleanIntervalValue = Math.max(1, parseInt(interval_value) || 1);
 
@@ -126,13 +137,16 @@ router.put("/:id", async (req, res) => {
         last_maintenance_km = $4,
         interval_unit       = $5,
         interval_value      = $6,
-        last_performed_date = $7
-      WHERE maint_type_id = $8
+        last_performed_date = $7,
+        due_date            = $8
+      WHERE maint_type_id = $9
       RETURNING *
     `, [name, basis, threshold_km || null, last_maintenance_km || null,
         basis === "time" ? interval_unit : null,
         basis === "time" ? cleanIntervalValue : null,
-        last_performed_date || null, req.params.id]);
+        last_performed_date || null,
+        basis === "one_time" ? due_date : null,
+        req.params.id]);
 
     if (!result.rows.length) return res.status(404).json({ error: "Plan not found" });
 
@@ -231,6 +245,16 @@ router.post("/perform/:maint_type_id", async (req, res) => {
       );
     }
 
+    // ✅ NEW — one-time plans: mark performed (permanently), plan stays
+    // visible with no more due date. Can also be performed BEFORE
+    // due_date — nothing here blocks early completion.
+    if (plan.basis === "one_time") {
+      await pool.query(
+        "UPDATE vehicle_maintenance_types SET last_performed_date=$1 WHERE maint_type_id=$2",
+        [effectiveDate, id]
+      );
+    }
+
     await logItemHistory({
       module: "vehicle",
       record_id: vehicle_id,
@@ -260,6 +284,20 @@ function computeNextDue(plan) {
     p.next_due_km = base + threshold;
     p.next_due_date = null;
     p.status_computed = "unknown"; // needs current odometer from vehicle
+  } else if (p.basis === "one_time") {
+    if (p.last_performed_date) {
+      p.next_due_date = null;
+      p.status_computed = "completed";
+    } else if (!p.due_date) {
+      p.next_due_date = null;
+      p.status_computed = "pending";
+    } else {
+      p.next_due_date = p.due_date;
+      const daysLeft = Math.ceil((new Date(p.due_date) - new Date()) / (1000 * 60 * 60 * 24));
+      if (daysLeft < 0) p.status_computed = "overdue";
+      else if (daysLeft <= 60) p.status_computed = "due_soon";
+      else p.status_computed = "ok";
+    }
   } else if (p.basis === "time") {
     if (!p.last_performed_date) {
       p.next_due_date = null;

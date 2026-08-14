@@ -109,6 +109,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       name: r.item_name || invMap[r.inventory_gen_id] || 'Wine item',
       meta: `🍷 Wine · Requested by ${_esc(r.requested_name)} · ${r.quantity} unit(s)`,
       badgeLabel: 'Pending', badgeCls: 'b-amber',
+      page: 'inventory', dpType: 'inventory', recordId: r.inventory_gen_id,
     })),
     ...invBorrows.filter(b => b.status === 'PENDING').map(b => ({
       key: `inventory:${b.record_id}`,
@@ -116,6 +117,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       name: invMap[b.record_id] || `Item #${b.record_id}`,
       meta: `📤 Event Supplies · Borrow requested by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
       badgeLabel: 'Pending', badgeCls: 'b-amber',
+      page: 'inventory', dpType: 'inventory', recordId: b.record_id,
     })),
     ...itBorrows.filter(b => b.status === 'PENDING').map(b => ({
       key: `itsupplies:${b.record_id}`,
@@ -123,6 +125,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       name: itMap[b.record_id] || `Item #${b.record_id}`,
       meta: `📤 IT Supplies · Borrow requested by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
       badgeLabel: 'Pending', badgeCls: 'b-amber',
+      page: 'itsupplies', dpType: 'itsupplies', recordId: b.record_id,
     })),
   ];
 
@@ -133,6 +136,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       name: invMap[b.record_id] || `Item #${b.record_id}`,
       meta: `📤 Event Supplies · Borrowed by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
       badgeLabel: 'Borrowed', badgeCls: 'b-blue',
+      page: 'inventory', dpType: 'inventory', recordId: b.record_id,
     })),
     ...itBorrows.filter(b => b.status === 'BORROWED').map(b => ({
       key: `itsupplies:${b.record_id}`,
@@ -140,6 +144,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       name: itMap[b.record_id] || `Item #${b.record_id}`,
       meta: `📤 IT Supplies · Borrowed by ${_esc(b.borrowed_by_name)} · ${b.quantity} unit(s)`,
       badgeLabel: 'Borrowed', badgeCls: 'b-blue',
+      page: 'itsupplies', dpType: 'itsupplies', recordId: b.record_id,
     })),
   ];
 
@@ -150,10 +155,11 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
   if (lowStock.length === 0 && requestRows.length === 0) {
     _setHTML('dash-low-list', _emptyMsg('All inventory levels are Good — no pending requests'));
   } else {
+    // ✅ NEW — clickable: navigates to Inventory and opens the item's DP
     const lowRowsHTML = lowStock.map(i => {
       const critical = i.current_quantity === 0;
       return `
-        <div class="panel-row">
+        <div class="panel-row" style="cursor:pointer" onclick="navigateAndOpen('inventory','inventory',${i.inventory_gen_id})">
           <div class="pr-dot ${critical ? 'red' : 'amber'}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(i.item_name)}</div>
@@ -163,8 +169,9 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
         </div>`;
     }).join('');
 
+    // ✅ NEW — clickable: navigates to Inventory/IT Supplies and opens the item's DP
     const requestRowsHTML = requestRows.map(r => `
-      <div class="panel-row${_dashUnseenSet.has(r.key) ? ' is-new' : ''}">
+      <div class="panel-row${_dashUnseenSet.has(r.key) ? ' is-new' : ''}" style="cursor:pointer" onclick="navigateAndOpen('${r.page}','${r.dpType}',${r.recordId})">
         <div class="pr-dot ${r.dotCls}"></div>
         <div style="flex:1">
           <div class="pr-name">${_esc(r.name)}</div>
@@ -202,7 +209,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       const dotCls = s === 'DELAYED' ? 'red' : s === 'IN TRANSIT' ? 'blue' : 'amber';
       const bdgCls = s === 'DELAYED' ? 'b-red' : s === 'IN TRANSIT' ? 'b-blue' : 'b-amber';
       return `
-        <div class="panel-row">
+        <div class="panel-row" style="cursor:pointer" onclick="navigateAndOpen('orders','order',${o.purchase_order_id})">
           <div class="pr-dot ${dotCls}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(o.item_name || `Item #${o.item_id}`)}</div>
@@ -258,7 +265,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
           ? _esc(lp.user_name || 'Unknown user')
           : 'Unassigned';
         return `
-        <div class="panel-row">
+        <div class="panel-row" style="cursor:pointer" onclick="navigateAndOpen('laptops','laptop',${lp.laptop_id})">
           <div class="pr-dot ${cls}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(lp.serial_number)} • ${_esc(lp.asset_number)}</div>
@@ -326,7 +333,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
       html += _emptyMsg('No vehicle maintenance alerts');
     } else {
       html += vehicleAlerts.map(({ v, reason, cls }) => `
-        <div class="panel-row${_dashUnseenSet.has(`vehicle:${v.vehicle_id}`) ? ' is-new' : ''}">
+        <div class="panel-row${_dashUnseenSet.has(`vehicle:${v.vehicle_id}`) ? ' is-new' : ''}" style="cursor:pointer" onclick="navigateAndOpen('vehicles','vehicle',${v.vehicle_id})">
           <div class="pr-dot ${cls}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(v.vehicle_name)}</div>
@@ -361,7 +368,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     let html = '';
     if (pendingContractRequests.length) {
       html += pendingContractRequests.map(r => `
-        <div class="panel-row${_dashUnseenSet.has(`contracts:${r.contract_id}`) ? ' is-new' : ''}">
+        <div class="panel-row${_dashUnseenSet.has(`contracts:${r.contract_id}`) ? ' is-new' : ''}" style="cursor:pointer" onclick="navigateAndOpen('contracts','contracts',${r.contract_id})">
           <div class="pr-dot amber"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(r.requested_name)}</div>
@@ -372,7 +379,7 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     }
     if (contractAlerts.length) {
       html += contractAlerts.map(({ c, reason, cls }) => `
-        <div class="panel-row${_dashUnseenSet.has(`contracts:${c.contract_id}`) ? ' is-new' : ''}">
+        <div class="panel-row${_dashUnseenSet.has(`contracts:${c.contract_id}`) ? ' is-new' : ''}" style="cursor:pointer" onclick="navigateAndOpen('contracts','contracts',${c.contract_id})">
           <div class="pr-dot ${cls}"></div>
           <div style="flex:1">
             <div class="pr-name">${_esc(c.other_party)}</div>

@@ -133,7 +133,7 @@ async function _renderLpTable() {
   if (paginated.length === 0) {
     if (myToken !== _lpRenderToken) return;
     const tbody = document.getElementById('lp-tbody');
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--slate-400)">No laptops found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--slate-400)">No laptops found.</td></tr>`;
     document.getElementById('lp-ct').textContent = `${total} units`;
     _renderLpPagination(total);
     return;
@@ -166,6 +166,7 @@ async function _renderLpTable() {
     tr.innerHTML = `
       <td class="td-strong">${lp.asset_number}</td>
       <td>${lp.serial_number}</td>
+      <td>${_escVeh_lp(lp.category)}</td>
       <td>${assignedCell}</td>
       <td>${badge(lp.status, sCls)}</td>
       <td>${_warrantyBadge(lp.warranty_end_date)}</td>

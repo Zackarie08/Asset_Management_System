@@ -12,6 +12,7 @@ const path    = require("path");
 require("dotenv").config();
 
 const cleanupOldLogs = require("./utils/logCleanup"); // ✅ NEW
+const processContractAutoRenewals = require("./utils/contractAutoRenew"); // ✅ NEW
 
 const app = express();
 app.use(cors());
@@ -58,3 +59,9 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
    startup, then every 24 hours. See backend/utils/logCleanup.js. */
 cleanupOldLogs();
 setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000);
+
+/* ── CONTRACT AUTO-RENEWAL (✅ NEW) ─────────────────────────
+   Renews contracts flagged auto_renew=TRUE once expired. Runs once
+   on startup, then every 24 hours. See backend/utils/contractAutoRenew.js. */
+processContractAutoRenewals();
+setInterval(processContractAutoRenewals, 24 * 60 * 60 * 1000);
