@@ -15,6 +15,7 @@ let lpFilterStatus   = 'all';
 let lpFilterLocation = 'all';
 let lpFilterWarranty = 'all';
 let lpFilterAssigned = 'all'; 
+let lpFilterBrand    = 'all';
 let currentLpPage    = 1;
 const lpPerPage      = 20;
 let _allLaptops      = [];
@@ -54,6 +55,7 @@ function applyLpFilters() {
   lpFilterLocation = document.getElementById('lp-filter-location').value;
   lpFilterWarranty = document.getElementById('lp-filter-warranty').value;
   lpFilterAssigned = document.getElementById('lp-filter-assigned').value;
+  lpFilterBrand    = document.getElementById('lp-filter-brand').value; // ✅ NEW
   currentLpPage    = 1;
   _renderLpTable();
 }
@@ -69,6 +71,9 @@ function _filterLaptops(data) {
 
     // Status filter
     if (lpFilterStatus !== 'all' && lp.status !== lpFilterStatus) return false;
+
+    // Brand filter (stored in the category column)
+    if (lpFilterBrand !== 'all' && lp.category !== lpFilterBrand) return false;
 
     // Location filter (by location_id)
     if (lpFilterLocation !== 'all' && String(lp.current_location) !== String(lpFilterLocation)) return false;
@@ -127,6 +132,9 @@ async function _renderLpTable() {
 
   const filtered  = _filterLaptops(_allLaptops);
   const total     = filtered.length;
+  const totalLpPages = Math.max(1, Math.ceil(total / lpPerPage));
+  if (currentLpPage > totalLpPages) currentLpPage = totalLpPages;
+
   const start     = (currentLpPage - 1) * lpPerPage;
   const paginated = filtered.slice(start, start + lpPerPage);
 
@@ -207,7 +215,6 @@ async function renderLaptops() {
     const res    = await fetch(`${API_URL}/api/laptops`);
     _allLaptops  = await res.json();
     await _loadLpLocationsFilter();
-    currentLpPage = 1;
     await _renderLpTable();
   } catch (err) {
     console.error('renderLaptops error:', err);

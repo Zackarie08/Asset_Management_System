@@ -88,6 +88,9 @@ function _renderPOPagination(total) {
 function _renderPOTable() {
   const filtered  = _filterOrders(_allOrders);
   const total     = filtered.length;
+  const totalPOPages = Math.max(1, Math.ceil(total / poPerPage));
+  if (currentPOPage > totalPOPages) currentPOPage = totalPOPages;
+
   const start     = (currentPOPage - 1) * poPerPage;
   const paginated = filtered.slice(start, start + poPerPage);
 
@@ -139,7 +142,6 @@ function _renderPOTable() {
 async function renderOrders() {
   const res   = await fetch(`${API_URL}/api/po`);
   _allOrders  = await res.json();
-  currentPOPage = 1;
   _renderPOTable();
 }
 

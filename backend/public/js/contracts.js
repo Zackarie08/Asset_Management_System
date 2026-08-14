@@ -52,7 +52,6 @@ async function renderContracts() {
   try {
     const res     = await fetch(`${API_URL}/api/contracts`);
     _allContracts = await res.json();
-    currentConPage = 1;
     _renderConTable();
   } catch (err) {
     console.error("renderContracts error:", err);
@@ -128,6 +127,9 @@ function _filterContracts(data) {
 function _renderConTable() {
   const filtered  = _filterContracts(_allContracts);
   const total     = filtered.length;
+  const totalConPages = Math.max(1, Math.ceil(total / conPerPage));
+  if (currentConPage > totalConPages) currentConPage = totalConPages;
+
   const start     = (currentConPage - 1) * conPerPage;
   const paginated = filtered.slice(start, start + conPerPage);
 

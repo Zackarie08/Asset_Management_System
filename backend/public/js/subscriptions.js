@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
    UNIFIED TABLE — renderSubscriptionsUnified()
 ────────────────────────────────────────────────────────── */
 
-async function renderSubscriptionsUnified() {
+async function renderSubscriptionsUnified(preservePage = false) {
   const [m365Data, globeData, subData] = await Promise.all([
     fetch(`${API_URL}/api/m365`).then(r => r.json()).catch(() => []),
     fetch(`${API_URL}/api/globe`).then(r => r.json()).catch(() => []),
@@ -166,8 +166,8 @@ async function renderSubscriptionsUnified() {
   _setTxt('uni-stat-expired',  expired);
   _setTxt('uni-total-cost',    `Total active monthly: ${fmtCost(totalCost)}`);
 
-  _uniAllRows    = rows;
-  uniCurrentPage = 1;
+  _uniAllRows = rows;
+  if (!preservePage) uniCurrentPage = 1;
   _renderUniTable();
 }
 
@@ -184,13 +184,12 @@ function _renderUniTable() {
   }
 
   const total = rows.length;
+  const totalUniPages = Math.max(1, Math.ceil(total / UNI_PAGE_SIZE));
+  if (uniCurrentPage > totalUniPages) uniCurrentPage = totalUniPages;
+
   const start = (uniCurrentPage - 1) * UNI_PAGE_SIZE;
   const page  = rows.slice(start, start + UNI_PAGE_SIZE);
 
-  // ✅ FIX (Subscription_Total_Count_Fix): "total" was only recomputed by
-  // renderSubscriptionsUnified() (fired by the dropdown filters) — the
-  // search box only ever called this function, so the count silently
-  // went stale while searching. Now it's kept in sync here too.
   _setTxt('uni-stat-total', total);
 
   const tbody = document.getElementById('uni-tbody');
@@ -300,7 +299,7 @@ async function renderM365() {
 
       if (window.lucide) lucide.createIcons();
     }
-    renderSubscriptionsUnified();
+    renderSubscriptionsUnified(true);
   } catch (err) {
     console.error('renderM365:', err);
     showToast('Failed to load M365 licenses', 't-error');
@@ -460,7 +459,7 @@ async function renderGlobe() {
 
       if (window.lucide) lucide.createIcons();
     }
-    renderSubscriptionsUnified();
+    renderSubscriptionsUnified(true);
   } catch (err) { console.error('renderGlobe:', err); showToast('Failed to load Globe plans', 't-error'); }
 }
 
@@ -650,7 +649,7 @@ async function renderSubscriptions() {
       // ✅ NEW: renders the Edit/Delete icons injected into table rows above
       if (window.lucide) lucide.createIcons();
     }
-    renderSubscriptionsUnified();
+    renderSubscriptionsUnified(true);
   } catch (err) { console.error('renderSubscriptions:', err); showToast('Failed to load subscriptions', 't-error'); }
 }
 

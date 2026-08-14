@@ -557,6 +557,9 @@ async function renderInventory() {
 
   // ── Step 6: Pagination slice ──
   const totalItems = filtered.length;
+  const totalInvPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  if (currentInvPage > totalInvPages) currentInvPage = totalInvPages;
+
   const start = (currentInvPage - 1) * itemsPerPage;
   const paginated = filtered.slice(start, start + itemsPerPage);
 

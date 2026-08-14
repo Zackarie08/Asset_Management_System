@@ -195,6 +195,9 @@ async function renderVehicles() {
 
   // 5. Pagination
   const total = filtered.length;
+  const totalVehPages = Math.max(1, Math.ceil(total / VEH_PAGE_SIZE));
+  if (vehCurrentPage > totalVehPages) vehCurrentPage = totalVehPages;
+
   const start = (vehCurrentPage - 1) * VEH_PAGE_SIZE;
   const page  = filtered.slice(start, start + VEH_PAGE_SIZE);
 

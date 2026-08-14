@@ -78,6 +78,9 @@ function _renderFurPagination(total) {
 function _renderFurTable() {
   const filtered  = _filterFurniture(_allFurniture);
   const total     = filtered.length;
+  const totalFurPages = Math.max(1, Math.ceil(total / furPerPage));
+  if (currentFurPage > totalFurPages) currentFurPage = totalFurPages;
+
   const start     = (currentFurPage - 1) * furPerPage;
   const paginated = filtered.slice(start, start + furPerPage);
 
@@ -138,7 +141,6 @@ async function renderFurniture() {
     const res   = await fetch(`${API_URL}/api/furniture`);
     _allFurniture = await res.json();
     await _loadFurLocationsFilter();
-    currentFurPage = 1;
     _renderFurTable();
   } catch (err) {
     console.error('renderFurniture error:', err);

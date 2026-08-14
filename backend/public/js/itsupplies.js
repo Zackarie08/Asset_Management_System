@@ -97,7 +97,6 @@ async function renderITSupplies() {
     const res      = await fetch(`${API_URL}/api/it-supplies`);
     _allITSupplies = await res.json();
     await _loadITLocationsFilter();
-    currentITPage  = 1;
     _renderITTable();
   } catch (err) {
     console.error('renderITSupplies error:', err);
@@ -287,8 +286,11 @@ function openAddIT() {
 
 async function _renderITTable() {
   const filtered  = _filterIT(_allITSupplies)
-    .sort((a, b) => (a.asset_name || '').localeCompare(b.asset_name || '')); // ✅ FIX: alphabetical by item name, like Inventory
+    .sort((a, b) => (a.asset_name || '').localeCompare(b.asset_name || ''));
   const total     = filtered.length;
+  const totalITPages = Math.max(1, Math.ceil(total / itPerPage));
+  if (currentITPage > totalITPages) currentITPage = totalITPages;
+
   const start     = (currentITPage - 1) * itPerPage;
   const paginated = filtered.slice(start, start + itPerPage);
 

@@ -57,6 +57,9 @@ function _renderUserPagination(total) {
 function _renderUserTable() {
   const filtered  = _filterUsers(_allUsers).sort((a, b) => a.name.localeCompare(b.name));
   const total     = filtered.length;
+  const totalUserPages = Math.max(1, Math.ceil(total / usersPerPage));
+  if (currentUserPage > totalUserPages) currentUserPage = totalUserPages;
+
   const start     = (currentUserPage - 1) * usersPerPage;
   const paginated = filtered.slice(start, start + usersPerPage);
 
@@ -96,7 +99,6 @@ async function renderUsers() {
   try {
     const res  = await fetch(`${API_URL}/api/auth/users`);
     _allUsers  = await res.json();
-    currentUserPage = 1;
     _renderUserTable();
   } catch (err) {
     console.error('renderUsers error:', err);

@@ -65,6 +65,9 @@ function _renderFinPagination(total) {
 function _renderFinTable() {
   const filtered  = _filterFinance(_allFinance);
   const total     = filtered.length;
+  const totalFinPages = Math.max(1, Math.ceil(total / finPerPage));
+  if (currentFinPage > totalFinPages) currentFinPage = totalFinPages;
+
   const start     = (currentFinPage - 1) * finPerPage;
   const paginated = filtered.slice(start, start + finPerPage);
 
@@ -101,7 +104,6 @@ function _renderFinTable() {
 async function renderFinance() {
   const res  = await fetch(`${API_URL}/api/finance-documents`);
   _allFinance = await res.json();
-  currentFinPage = 1;
   _renderFinTable();
 }
 

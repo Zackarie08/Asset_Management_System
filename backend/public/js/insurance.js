@@ -142,6 +142,9 @@ function _renderInsPagination(total) {
 function _renderInsTable() {
   const filtered  = _filterInsurance(_allInsurance);
   const total     = filtered.length;
+  const totalInsPages = Math.max(1, Math.ceil(total / insPerPage));
+  if (currentInsPage > totalInsPages) currentInsPage = totalInsPages;
+
   const start     = (currentInsPage - 1) * insPerPage;
   const paginated = filtered.slice(start, start + insPerPage);
 
@@ -181,7 +184,6 @@ async function renderInsurance() {
   try {
     const res     = await fetch(`${API_URL}/api/insurance`);
     _allInsurance = await res.json();
-    currentInsPage = 1;
     _renderInsTable();
   } catch (err) {
     console.error("renderInsurance error:", err);
