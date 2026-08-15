@@ -22,6 +22,11 @@ function _computeContractExpiry(c) {
   if (c.validity_type === 'NA') {
     return { badge: `<span class="badge b-slate">N/A</span>`, status: 'na' };
   }
+  // ✅ NEW — auto-renew contracts never show Expired/Expiring/Valid; they
+  // show a dedicated badge instead, since they'll never actually lapse.
+  if (c.auto_renew) {
+    return { badge: `<span class="badge b-blue"><i data-lucide="repeat"></i> Auto-Renew</span>`, status: 'auto_renew' };
+  }
   const expiryDate = c.validity_type === "YEAR"
     ? new Date(`${c.valid_year}-12-31`)
     : c.valid_to ? new Date(c.valid_to) : null;
@@ -200,6 +205,9 @@ async function dpContract(id) {
   let expiryBadge = "";
   if (c.validity_type === 'NA') {
     expiryBadge = `<span class="badge b-slate">No Expiration</span>`;
+  } else if (c.auto_renew) {
+    // ✅ NEW — same auto-renew badge as the list view
+    expiryBadge = `<span class="badge b-blue"><i data-lucide="repeat"></i> Auto-Renew</span>`;
   } else {
     const expiryDate = c.validity_type === "YEAR"
       ? new Date(`${c.valid_year}-12-31`)

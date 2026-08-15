@@ -345,10 +345,11 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
     _setHTML('dash-veh-list', html);
   }
 
-  /* ── PANEL 5 — CONTRACTS (unchanged) ─────────────── */
+  /* ── PANEL 5 — CONTRACTS ─────────────── */
   const contractAlerts = [];
   contracts.forEach(c => {
     if (c.validity_type === 'NA') return;
+    if (c.auto_renew) return; // ✅ NEW — auto-renewing contracts never lapse, so no expiry alert
     let expiryDate = null;
     if (c.validity_type === 'YEAR' && c.valid_year) expiryDate = new Date(`${c.valid_year}-12-31`);
     else if (c.valid_to) expiryDate = new Date(c.valid_to);

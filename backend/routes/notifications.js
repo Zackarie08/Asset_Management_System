@@ -17,10 +17,11 @@ async function collectNotifications() {
 
   // ── Contracts — expiring within 30 days ──
   const contracts = await pool.query(
-    `SELECT contract_id, other_party, validity_type, valid_year, valid_to FROM contracts`
+    `SELECT contract_id, other_party, validity_type, valid_year, valid_to, auto_renew FROM contracts`
   );
   contracts.rows.forEach(c => {
     if (c.validity_type === 'NA') return;
+    if (c.auto_renew) return; // ✅ NEW — auto-renewing contracts never lapse, so no expiry alert
     const expiry = c.validity_type === 'YEAR' && c.valid_year
       ? new Date(`${c.valid_year}-12-31`)
       : (c.valid_to ? new Date(c.valid_to) : null);

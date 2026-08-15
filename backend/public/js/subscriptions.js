@@ -814,7 +814,8 @@ function _renderAttBody(module, recordId, containerId, files) {
           <span style="flex:1;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
             title="${_esc(f.file_name)}">${_esc(f.file_name)}</span>
           ${f.file_size_kb ? `<span style="font-size:11px;color:var(--slate-400);white-space:nowrap">${f.file_size_kb} KB</span>` : ''}
-          <button class="btn btn-xs btn-outline" onclick="window.open('${f.file_url}','_blank')"><i data-lucide="download"></i> Download</button>
+          <button class="btn btn-xs btn-outline" onclick="viewAttachment('${f.file_url}')"><i data-lucide="eye"></i> View</button>
+          <button class="btn btn-xs btn-outline" onclick="downloadAttachment('${f.file_url}','${_esc(f.file_name).replace(/'/g, "\\'")}')"><i data-lucide="download"></i> Download</button>
           <button class="btn btn-xs btn-red"
             onclick="deleteAttachment(${f.attachment_id},'${module}',${recordId},'${containerId}')"><i data-lucide="x"></i></button>
         </div>`).join('')
@@ -906,6 +907,23 @@ async function deleteAttachment(attachmentId, module, recordId, containerId) {
     }, 100);
   } catch { showToast('Failed to delete attachment', 't-error'); }
 }
+
+// ✅ NEW — View opens the file in a new browser tab (not the app shell).
+function viewAttachment(fileUrl) {
+  window.open(fileUrl, '_blank');
+}
+
+// ✅ NEW — Download forces an actual file save via a temporary <a download>
+// element, instead of just navigating to the data URL like before.
+function downloadAttachment(fileUrl, fileName) {
+  const a = document.createElement('a');
+  a.href = fileUrl;
+  a.download = fileName || 'attachment';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 
 function _attIcon(mimeType) {
   const size = 'style="width:18px;height:18px"';
