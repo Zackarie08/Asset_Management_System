@@ -909,8 +909,32 @@ async function deleteAttachment(attachmentId, module, recordId, containerId) {
 }
 
 // ✅ NEW — View opens the file in a new browser tab (not the app shell).
+// ✅ FIX: file_url is a base64 data: URL (from FileReader in the upload
+// flow), and Chrome silently blocks top-level navigation to data: URLs in
+// a new tab — that's why it opened a blank/white tab. Converting it to a
+// blob: URL first works around this, since blob: URLs ARE allowed to be
+// opened directly.
 function viewAttachment(fileUrl) {
-  window.open(fileUrl, '_blank');
+  if (fileUrl.startsWith('data:')) {
+    try {
+      const [header, base64] = fileUrl.split(',');
+      const mimeMatch = header.match(/data:(.*?);base64/);
+      const mimeType  = mimeMatch ? mimeMatch[1] : '';
+      const binary    = atob(base64);
+      const bytes     = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob     = new Blob([bytes], { type: mimeType });
+      const blobUrl  = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      // Revoke after a delay so the new tab has time to actually load it
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (err) {
+      console.error('viewAttachment blob conversion failed:', err);
+      showToast('Failed to open attachment', 't-error');
+    }
+  } else {
+    window.open(fileUrl, '_blank');
+  }
 }
 
 // ✅ NEW — Download forces an actual file save via a temporary <a download>
