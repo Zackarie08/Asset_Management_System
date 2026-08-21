@@ -121,6 +121,7 @@ async function renderSubscriptionsUnified(preservePage = false) {
         expiry: g.renewal_date,
         status: g.computed_status,       // ✅ trusts stored status directly (backend fix)
         renewalAlert: g.renewal_alert_active,
+        searchExtra: `${g.account_number || ''} ${g.mobile_number || ''}`, // ✅ NEW — makes Account No. / Mobile No. searchable
         _raw: g,
       });
     });
@@ -179,7 +180,8 @@ function _renderUniTable() {
       r.name.toLowerCase().includes(uniSearchQuery) ||
       r.assignedTo.toLowerCase().includes(uniSearchQuery) ||
       r.supplier.toLowerCase().includes(uniSearchQuery) ||
-      r.category.toLowerCase().includes(uniSearchQuery)
+      r.category.toLowerCase().includes(uniSearchQuery) ||
+      (r.searchExtra && r.searchExtra.toLowerCase().includes(uniSearchQuery)) // ✅ NEW — Account No. / Mobile No.
     );
   }
 
