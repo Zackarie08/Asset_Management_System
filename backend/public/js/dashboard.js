@@ -423,16 +423,23 @@ document.getElementById('dash-date').textContent = formatDateHuman(new Date());
 
     const totalAlerts = globeAlerts.length + m365Alerts.length + otherSubAlerts.length + insuranceAlerts.length;
 
-    _setText('dash-admin-ct', `${totalAlerts} alert${totalAlerts === 1 ? '' : 's'}`);
-    _setText('dash-admin-subs', `${totalActiveSubs} active subscriptions · ${insuranceList.length} policies`);
-
-    // Retitle the panel in place — same panel, same modal target, just a
-    // broader name now that it covers Insurance too.
+    // ✅ FIX: previously this block set innerHTML on .panel-title AFTER
+    // filling #dash-admin-subs (a child span of .panel-title), destroying
+    // that span every single refresh. On the next refresh cycle
+    // _setText('dash-admin-subs', ...) then silently found nothing to
+    // write into — leaving stale/missing subtitle text and shifting the
+    // count badge's layout over repeated refreshes (the misaligned
+    // "45"-looking count). Retitle the icon+label ONLY, once, and never
+    // touch the subs span again.
     const adminTitleEl = adminPanel.querySelector('.panel-title');
-    if (adminTitleEl) {
-      adminTitleEl.innerHTML = '<i data-lucide="lock"></i> Subscription & Insurance Alerts';
+    if (adminTitleEl && !adminTitleEl.dataset.retitled) {
+      adminTitleEl.innerHTML = '<i data-lucide="lock"></i> Subscription & Insurance Alerts <span style="font-size:11px;font-weight:400;color:var(--slate-400);margin-left:6px" id="dash-admin-subs"></span>';
+      adminTitleEl.dataset.retitled = 'true';
       if (window.lucide) lucide.createIcons();
     }
+
+    _setText('dash-admin-ct', `${totalAlerts} alert${totalAlerts === 1 ? '' : 's'}`);
+    _setText('dash-admin-subs', `${totalActiveSubs} active subscriptions · ${insuranceList.length} policies`);
 
     const allAlerts = [
       ...globeAlerts.map(g => ({

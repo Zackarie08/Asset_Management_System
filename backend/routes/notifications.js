@@ -57,8 +57,9 @@ async function collectNotifications() {
   });
 
   // ── M365 renewals ──
-  const m365 = await pool.query(`SELECT license_id, assigned_email, renewal_date FROM m365`);
+  const m365 = await pool.query(`SELECT license_id, assigned_email, renewal_date, auto_renew FROM m365`);
   m365.rows.forEach(m => {
+    if (m.auto_renew) return; // ✅ NEW
     const alert = computeRenewalAlert(m.renewal_date, 'yearly');
     if (alert.alertActive) {
       notifications.push({
@@ -70,9 +71,10 @@ async function collectNotifications() {
   });
 
   // ── Globe renewals ──
-  const globe = await pool.query(`SELECT plan_id, plan_name, status, renewal_date FROM globe_mobile_plan`);
+  const globe = await pool.query(`SELECT plan_id, plan_name, status, renewal_date, auto_renew FROM globe_mobile_plan`);
   globe.rows.forEach(g => {
     if (g.status === 'Inactive') return;
+    if (g.auto_renew) return; // ✅ NEW
     const alert = computeRenewalAlert(g.renewal_date, 'yearly');
     if (alert.alertActive) {
       notifications.push({
@@ -85,10 +87,11 @@ async function collectNotifications() {
 
   // ── Other subscriptions ──
   const subs = await pool.query(
-    `SELECT subscription_id, subscription_name, billing_cycle, billing_interval, renewal_date, status FROM subscriptions`
+    `SELECT subscription_id, subscription_name, billing_cycle, billing_interval, renewal_date, status, auto_renew FROM subscriptions`
   );
   subs.rows.forEach(s => {
     if (s.status === 'Cancelled') return;
+    if (s.auto_renew) return; // ✅ NEW
     const alert = computeRenewalAlert(s.renewal_date, s.billing_cycle, s.billing_interval);
     if (alert.alertActive) {
       notifications.push({

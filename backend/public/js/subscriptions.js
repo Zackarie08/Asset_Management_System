@@ -374,6 +374,7 @@ function saveM365() {
     assigned_email: email, license_type: type, licensed, assigned_user_id,
     monthly_cost: cost, renewal_date: renewal, remarks,
     supplier: document.getElementById('m365-f-supplier')?.value.trim() || null, // ✅ NEW
+    auto_renew: document.getElementById('m365-f-auto-renew')?.checked || false, // ✅ NEW
     user_id: currentUser.user_id,
     performed_by: currentUser.name,
   };
@@ -403,6 +404,8 @@ async function editM365(id) {
     document.getElementById('m365-f-remarks').value   = m.remarks        || '';
     const m365SupEl = document.getElementById('m365-f-supplier'); // ✅ NEW
     if (m365SupEl) m365SupEl.value = m.supplier || 'Microsoft';
+    const m365AutoEl = document.getElementById('m365-f-auto-renew'); // ✅ NEW
+    if (m365AutoEl) m365AutoEl.checked = !!m.auto_renew;
     document.getElementById('m365-f-renew').value     = m.renewal_date ? new Date(m.renewal_date).toISOString().slice(0,10) : '';
 
     await loadM365Users();
@@ -547,6 +550,7 @@ function saveGlobe() {
     status:         document.getElementById('globe-f-status').value,
     remarks:        document.getElementById('globe-f-remarks').value,
     supplier:       document.getElementById('globe-f-supplier')?.value.trim() || null, // ✅ NEW
+    auto_renew:     document.getElementById('globe-f-auto-renew')?.checked || false, // ✅ NEW
     unli_allnet_calls: document.getElementById('globe-f-unli-calls').value === 'true',
     unli_text:         document.getElementById('globe-f-unli-text').value === 'true',
     freebie:            document.getElementById('globe-f-freebie').value.trim() || null,
@@ -583,6 +587,8 @@ async function editGlobe(id) {
     document.getElementById('globe-f-remarks').value = g.remarks        || '';
     const globeSupEl = document.getElementById('globe-f-supplier'); // ✅ NEW
     if (globeSupEl) globeSupEl.value = g.supplier || 'Globe Telecom';
+    const globeAutoEl = document.getElementById('globe-f-auto-renew'); // ✅ NEW
+    if (globeAutoEl) globeAutoEl.checked = !!g.auto_renew;
     document.getElementById('globe-f-status').value  = g.status         || 'Active';
     document.getElementById('globe-f-renew').value   = g.renewal_date ? new Date(g.renewal_date).toISOString().slice(0,10) : '';
     document.getElementById('globe-f-unli-calls').value = g.unli_allnet_calls ? 'true' : 'false';
@@ -702,6 +708,14 @@ function _toggleSubIntervalField() {
   const cycle = document.getElementById('sub-f-cycle')?.value;
   const row   = document.getElementById('sub-f-interval-row');
   if (row) row.style.display = (cycle === 'one-time') ? 'none' : 'flex';
+
+  // ✅ NEW — auto-renew doesn't apply to one-time subscriptions
+  const autoRow = document.getElementById('sub-f-auto-renew-wrap');
+  if (autoRow) autoRow.style.display = (cycle === 'one-time') ? 'none' : 'block';
+  if (cycle === 'one-time') {
+    const cb = document.getElementById('sub-f-auto-renew');
+    if (cb) cb.checked = false;
+  }
 }
 
 function saveSubscription() {
@@ -723,6 +737,7 @@ function saveSubscription() {
     billing_interval: cycle === 'one-time' ? 1 : interval, // ✅ NEW
     renewal_date:  renewal || null,
     status:        document.getElementById('sub-f-status').value,
+    auto_renew:    cycle !== 'one-time' && (document.getElementById('sub-f-auto-renew')?.checked || false), // ✅ NEW
     remarks:       document.getElementById('sub-f-remarks').value,
     performed_by:  currentUser.name,
   };
@@ -756,6 +771,8 @@ async function editSubscription(id) {
     _toggleSubIntervalField();
     document.getElementById('sub-f-renew').value    = s.renewal_date ? new Date(s.renewal_date).toISOString().slice(0,10) : '';
     document.getElementById('sub-f-status').value   = s.status            || 'Active';
+    const subAutoEl = document.getElementById('sub-f-auto-renew'); // ✅ NEW
+    if (subAutoEl) subAutoEl.checked = !!s.auto_renew;
     document.getElementById('sub-f-remarks').value  = s.remarks           || '';
     openM('m-sub-add');
   } catch { showToast('Failed to load subscription for editing', 't-error'); }

@@ -16,7 +16,9 @@ function withComputed(row) {
   return {
     ...row,
     computed_status: licenseStatusLabel(row.licensed),
-    renewal_alert_active: alert.alertActive,
+    // ✅ NEW — auto-renewing licenses don't need a human renewal alert;
+    // the system handles it. Same pattern as Contracts' auto_renew.
+    renewal_alert_active: row.auto_renew ? false : alert.alertActive,
     renewal_days_until: alert.daysUntil,
     next_renewal_date: alert.nextDate,
   };
@@ -62,7 +64,7 @@ router.post("/", async (req, res) => {
     const {
       assigned_user_id, assigned_email, license_type,
       monthly_cost, license_cost, renewal_date, remarks, licensed, supplier,
-      user_id, performed_by,
+      auto_renew, user_id, performed_by,
     } = req.body;
 
     if (!assigned_email || !license_type) {
@@ -81,14 +83,15 @@ router.post("/", async (req, res) => {
     const result = await pool.query(`
       INSERT INTO m365 (
         assigned_user_id, assigned_email, license_type,
-        license_cost, monthly_cost, renewal_date, status, remarks, licensed, supplier
-      ) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8,$9)
+        license_cost, monthly_cost, renewal_date, status, remarks, licensed, supplier, auto_renew
+      ) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8,$9,$10)
       RETURNING *
     `, [
       assigned_user_id || null, assigned_email, license_type, cost,
       renewal_date || null, isLicensed ? "Active" : "Inactive",
       remarks || null, isLicensed,
       supplier?.trim() || "Microsoft", // ✅ NEW — custom, defaults to Microsoft
+      !!auto_renew, // ✅ NEW
     ]);
 
     await logItemHistory({
@@ -113,7 +116,7 @@ router.put("/:id", async (req, res) => {
     const {
       assigned_user_id, assigned_email, license_type,
       monthly_cost, license_cost, renewal_date, remarks, licensed, supplier,
-      user_id, performed_by,
+      auto_renew, user_id, performed_by,
     } = req.body;
 
     const cost      = monthly_cost ?? license_cost ?? null;
@@ -136,14 +139,15 @@ router.put("/:id", async (req, res) => {
       UPDATE m365 SET
         assigned_user_id = $1, assigned_email = $2, license_type = $3,
         license_cost = $4, monthly_cost = $4, renewal_date = $5,
-        status = $6, remarks = $7, licensed = $8, supplier = $9
-      WHERE license_id = $10
+        status = $6, remarks = $7, licensed = $8, supplier = $9, auto_renew = $10
+      WHERE license_id = $11
       RETURNING *
     `, [
       assigned_user_id || null, assigned_email, license_type, cost,
       renewal_date || null, isLicensed ? "Active" : "Inactive",
       remarks || null, isLicensed,
       supplier?.trim() || old?.supplier || "Microsoft", // ✅ NEW
+      !!auto_renew, // ✅ NEW
       req.params.id,
     ]);
 

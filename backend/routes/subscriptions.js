@@ -29,7 +29,8 @@ function withComputed(row) {
   return {
     ...row,
     computed_status: computeSubStatus(row.renewal_date, row.billing_cycle, row.status, row.billing_interval),
-    renewal_alert_active: alert.alertActive,
+    // ✅ NEW — auto-renewing subscriptions don't need a human renewal alert
+    renewal_alert_active: row.auto_renew ? false : alert.alertActive,
     renewal_days_until: alert.daysUntil,
     next_renewal_date: alert.nextDate,
     billing_cycle_label: billingCycleLabel(row.billing_cycle, row.billing_interval),
@@ -77,7 +78,7 @@ router.post("/", async (req, res) => {
       subscription_name, category, supplier,
       assigned_user_id, assigned_to,
       monthly_cost, billing_cycle, billing_interval, renewal_date, status, remarks,
-      performed_by,
+      auto_renew, performed_by,
     } = req.body;
 
     if (!subscription_name || !category) {
@@ -94,20 +95,23 @@ router.post("/", async (req, res) => {
     const cleanInterval = (billing_cycle === "monthly" || billing_cycle === "yearly")
       ? Math.max(1, parseInt(billing_interval) || 1)
       : 1;
+    // ✅ NEW — auto-renew never applies to one-time subscriptions
+    const cleanAutoRenew = (billing_cycle === "monthly" || billing_cycle === "yearly") && !!auto_renew;
 
     const result = await pool.query(`
       INSERT INTO subscriptions (
         subscription_name, category, supplier,
         assigned_user_id, assigned_to,
         monthly_cost, billing_cycle, billing_interval,
-        renewal_date, status, remarks
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        renewal_date, status, remarks, auto_renew
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
       RETURNING *
     `, [
       subscription_name, category, supplier || null,
       assigned_user_id || null, assigned_to || null,
       monthly_cost || null, billing_cycle || "monthly", cleanInterval,
       renewal_date || null, status || "Active", remarks || null,
+      cleanAutoRenew,
     ]);
 
     await logItemHistory({
@@ -132,7 +136,7 @@ router.put("/:id", async (req, res) => {
       subscription_name, category, supplier,
       assigned_user_id, assigned_to,
       monthly_cost, billing_cycle, billing_interval, renewal_date, status, remarks,
-      performed_by,
+      auto_renew, performed_by,
     } = req.body;
 
     const before = await pool.query(`
@@ -150,21 +154,23 @@ router.put("/:id", async (req, res) => {
     const cleanInterval = (billing_cycle === "monthly" || billing_cycle === "yearly")
       ? Math.max(1, parseInt(billing_interval) || 1)
       : 1;
+    const cleanAutoRenew = (billing_cycle === "monthly" || billing_cycle === "yearly") && !!auto_renew;
 
     const result = await pool.query(`
       UPDATE subscriptions SET
         subscription_name = $1, category = $2, supplier = $3,
         assigned_user_id = $4, assigned_to = $5,
         monthly_cost = $6, billing_cycle = $7, billing_interval = $8,
-        renewal_date = $9, status = $10, remarks = $11,
+        renewal_date = $9, status = $10, remarks = $11, auto_renew = $12,
         updated_at = NOW()
-      WHERE subscription_id = $12
+      WHERE subscription_id = $13
       RETURNING *
     `, [
       subscription_name, category, supplier || null,
       assigned_user_id || null, assigned_to || null,
       monthly_cost || null, billing_cycle || "monthly", cleanInterval,
       renewal_date || null, status || "Active", remarks || null,
+      cleanAutoRenew,
       req.params.id,
     ]);
 

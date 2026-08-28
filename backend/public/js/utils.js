@@ -6,7 +6,7 @@ const ADMIN_NAV = [
   { id: "dashboard",     icon: "layout-dashboard", label: "Dashboard"           },
   { id: "inventory",     icon: "box",              label: "Inventory Management", badge: "inv" },
   { id: "orders",        icon: "shopping-cart",    label: "Purchase Orders",     badge: "po"  },
-  { id: "furniture",     icon: "armchair",         label: "Office Furniture"     },
+  { id: "furniture",     icon: "armchair",         label: "Office Furniture and Equipment" },
   { id: "itsupplies",    icon: "plug",             label: "IT Supplies",         badge: "it"  },
   { id: "laptops",       icon: "laptop",           label: "Laptops"              },
   { id: "vehicles",      icon: "car",              label: "Vehicle Management"   },

@@ -11,7 +11,8 @@ function withComputed(row) {
   return {
     ...row,
     computed_status: row.status || "Active",
-    renewal_alert_active: row.status !== "Inactive" && alert.alertActive,
+    // ✅ NEW — auto-renewing plans don't need a human renewal alert
+    renewal_alert_active: row.status !== "Inactive" && !row.auto_renew && alert.alertActive,
     renewal_days_until: alert.daysUntil,
     next_renewal_date: alert.nextDate,
   };
@@ -54,7 +55,7 @@ router.post("/", async (req, res) => {
       user_id, mobile_number, account_number, plan_name,
       data_allocation, monthly_cost, credit_limit,
       renewal_date, status, remarks, supplier,
-      unli_allnet_calls, unli_text, freebie,
+      unli_allnet_calls, unli_text, freebie, auto_renew,
       performed_by,
     } = req.body;
 
@@ -71,8 +72,8 @@ router.post("/", async (req, res) => {
         user_id, mobile_number, account_number, plan_name,
         data_allocation, monthly_cost, credit_limit,
         renewal_date, status, remarks, supplier,
-        unli_allnet_calls, unli_text, freebie
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        unli_allnet_calls, unli_text, freebie, auto_renew
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       RETURNING *
     `, [
       user_id || null, mobile_number, account_number || null, plan_name || null,
@@ -80,6 +81,7 @@ router.post("/", async (req, res) => {
       renewal_date || null, status || "Active", remarks || null,
       supplier?.trim() || "Globe Telecom", // ✅ NEW — custom, defaults to Globe Telecom
       !!unli_allnet_calls, !!unli_text, freebie || null,
+      !!auto_renew, // ✅ NEW
     ]);
 
     await logItemHistory({
@@ -104,7 +106,7 @@ router.put("/:id", async (req, res) => {
       user_id, mobile_number, account_number, plan_name,
       data_allocation, monthly_cost, credit_limit,
       renewal_date, status, remarks, supplier,
-      unli_allnet_calls, unli_text, freebie,
+      unli_allnet_calls, unli_text, freebie, auto_renew,
       performed_by,
     } = req.body;
 
@@ -125,15 +127,17 @@ router.put("/:id", async (req, res) => {
         user_id = $1, mobile_number = $2, account_number = $3, plan_name = $4,
         data_allocation = $5, monthly_cost = $6, credit_limit = $7,
         renewal_date = $8, status = $9, remarks = $10, supplier = $11,
-        unli_allnet_calls = $12, unli_text = $13, freebie = $14
-      WHERE plan_id = $15
+        unli_allnet_calls = $12, unli_text = $13, freebie = $14, auto_renew = $15
+      WHERE plan_id = $16
       RETURNING *
     `, [
       user_id || null, mobile_number, account_number || null, plan_name || null,
       data_allocation || null, monthly_cost || null, credit_limit || null,
       renewal_date || null, status || "Active", remarks || null,
       supplier?.trim() || old?.supplier || "Globe Telecom", // ✅ NEW
-      !!unli_allnet_calls, !!unli_text, freebie || null, req.params.id,
+      !!unli_allnet_calls, !!unli_text, freebie || null,
+      !!auto_renew, // ✅ NEW
+      req.params.id,
     ]);
 
     if (!result.rows.length) return res.status(404).json({ error: "Plan not found" });
