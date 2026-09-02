@@ -12,8 +12,34 @@
 // ============================================================
 
 
+function _clearAllModuleSearches() {
+  const inputs = [
+    'inventory-search', 'fur-search', 'it-search', 'lp-search',
+    'po-search', 'con-search', 'uni-search', 'ins-search',
+    'fin-search', 'log-search', 'user-search', 'veh-search',
+  ];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  searchQuery     = ''; currentInvPage  = 1; // inventory.js
+  furSearchQuery  = ''; currentFurPage  = 1; // furniture.js
+  itSearchQuery   = ''; currentITPage   = 1; // itsupplies.js
+  lpSearchQuery   = ''; currentLpPage   = 1; // laptops.js
+  poSearchQuery   = ''; currentPOPage   = 1; // orders.js
+  conSearchQuery  = ''; currentConPage  = 1; // contracts.js
+  uniSearchQuery  = ''; uniCurrentPage  = 1; // subscriptions.js
+  insSearchQuery  = ''; currentInsPage  = 1; // insurance.js
+  finSearchQuery  = ''; currentFinPage  = 1; // finance.js
+  logSearchQuery  = ''; currentLogPage  = 1; // main.js
+  userSearchQuery = ''; currentUserPage = 1; // users.js
+  vehSearchQuery  = ''; vehCurrentPage  = 1; // vehicles.js
+}
 
 function navigate(page, navEl) {
+  const _isModuleSwitch = page !== currentPage;
+
   document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
 
@@ -39,6 +65,8 @@ function navigate(page, navEl) {
 
   currentPage = page;
   sessionStorage.setItem("currentPage", page);
+
+  if (_isModuleSwitch) _clearAllModuleSearches();
 
   closeDP();
   refreshPageActions(page);
