@@ -23,7 +23,12 @@ async function fetchOne(module, id) {
   return res.json();
 }
 
-function statusBadge(status) {
+function statusBadge(status, autoRenew = false) {
+  // ✅ NEW — same treatment as Contracts: auto-renewing items never show
+  // Expired/For Renewal/etc. since the system handles renewal itself.
+  if (autoRenew) {
+    return `<span class="badge b-blue"><i data-lucide="repeat"></i> Auto-Renew</span>`;
+  }
   const map = {
     'Active':        'b-green',
     'Licensed':      'b-green',
@@ -103,6 +108,7 @@ async function renderSubscriptionsUnified(preservePage = false) {
         expiry: m.renewal_date,          // ✅ renewal-only now
         status: m.computed_status,       // "Licensed" / "No License"
         renewalAlert: m.renewal_alert_active,
+        autoRenew: m.auto_renew, // ✅ NEW
         _raw: m,
       });
     });
@@ -121,6 +127,7 @@ async function renderSubscriptionsUnified(preservePage = false) {
         expiry: g.renewal_date,
         status: g.computed_status,       // ✅ trusts stored status directly (backend fix)
         renewalAlert: g.renewal_alert_active,
+        autoRenew: g.auto_renew, // ✅ NEW
         searchExtra: `${g.account_number || ''} ${g.mobile_number || ''}`, // ✅ NEW — makes Account No. / Mobile No. searchable
         _raw: g,
       });
@@ -140,6 +147,7 @@ async function renderSubscriptionsUnified(preservePage = false) {
         expiry: s.renewal_date,          // ✅ renewal-only now
         status: s.computed_status,
         renewalAlert: s.renewal_alert_active,
+        autoRenew: s.auto_renew, // ✅ NEW
         _raw: s,
       });
     });
@@ -213,7 +221,7 @@ function _renderUniTable() {
         <td>${row.supplier}</td>
         <td>${fmtCost(row.cost)}</td>
         <td>${fmtDate(row.expiry)}</td>
-        <td>${statusBadge(row.status)}</td>
+        <td>${statusBadge(row.status, row.autoRenew)}</td>
       `;
       tr.addEventListener('click', () => {
         const typeMap = { M365: 'm365', Globe: 'globe', Other: 'subscriptions' };
@@ -289,7 +297,7 @@ async function renderM365() {
           <td>${m.license_type  || '—'}</td>
           <td>${fmtDate(m.renewal_date)}</td>
           <td>${fmtCost(m.monthly_cost ?? m.license_cost)}</td>
-          <td>${statusBadge(status)}</td>
+          <td>${statusBadge(status, m.auto_renew)}</td>
           <td><div class="flex-gap">
             <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editM365(${m.license_id})"><i data-lucide="pencil"></i></button>
             <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteM365Prompt(${m.license_id})"><i data-lucide="trash-2"></i></button>
@@ -315,7 +323,7 @@ async function dpM365(id) {
     const status = m.computed_status;
     setDPHeader('app-window', '#f0f9ff', m.assigned_email || '—', 'M365 License');
     const html = `
-      <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">License status</span></div>
+      <div class="dp-status-row">${statusBadge(status, m.auto_renew)}<span class="dp-status-label">License status</span></div>
       <div class="dp-section">
         <div class="dp-section-hd"><i data-lucide="mail"></i> License Info</div>
         <div class="dp-grid">
@@ -330,7 +338,8 @@ async function dpM365(id) {
         <div class="dp-section-hd"><i data-lucide="calendar"></i> Renewal (Yearly)</div>
         <div class="dp-grid">
           ${dpField('Renewal Date', fmtDate(m.renewal_date))}
-          ${dpField('Next Renewal', fmtDate(m.next_renewal_date))}
+          ${!m.auto_renew ? dpField('Next Renewal', fmtDate(m.next_renewal_date)) : ''}
+          ${m.auto_renew ? dpField('Auto-Renew', '<span class="badge b-blue"><i data-lucide="repeat"></i> Enabled</span>') : ''}
           ${m.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
@@ -452,7 +461,7 @@ async function renderGlobe() {
           <td>${g.plan_name      || '—'}</td>
           <td>${fmtCost(g.monthly_cost)}</td>
           <td>${fmtDate(g.renewal_date)}</td>
-          <td>${statusBadge(status)}</td>
+          <td>${statusBadge(status, g.auto_renew)}</td>
           <td><div class="flex-gap">
             <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editGlobe(${g.plan_id})"><i data-lucide="pencil"></i></button>
             <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteGlobePrompt(${g.plan_id})"><i data-lucide="trash-2"></i></button>
@@ -475,7 +484,7 @@ async function dpGlobe(id) {
     const status = g.computed_status;
 setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Plan');
     const html = `
-      <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">Plan status</span></div>
+      <div class="dp-status-row">${statusBadge(status, g.auto_renew)}<span class="dp-status-label">Plan status</span></div>
       <div class="dp-section">
         <div class="dp-section-hd"><i data-lucide="user"></i> Subscriber</div>
         <div class="dp-grid">
@@ -493,7 +502,8 @@ setDPHeader('smartphone', '#f0fdf4', g.employee_name || '—', 'Globe Mobile Pla
           ${dpField('Data',         g.data_allocation|| '—')}
           ${dpField('Credit Limit', fmtCost(g.credit_limit))}
           ${dpField('Renewal Date', fmtDate(g.renewal_date))}
-          ${dpField('Next Renewal', fmtDate(g.next_renewal_date))}
+          ${!g.auto_renew ? dpField('Next Renewal', fmtDate(g.next_renewal_date)) : ''}
+          ${g.auto_renew ? dpField('Auto-Renew', '<span class="badge b-blue"><i data-lucide="repeat"></i> Enabled</span>') : ''}
           ${g.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber"><i data-lucide="triangle-alert"></i> Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
@@ -646,7 +656,7 @@ async function renderSubscriptions() {
           <td>${s.supplier          || '—'}</td>
           <td>${fmtCost(s.monthly_cost)}</td>
           <td>${fmtDate(s.renewal_date)}</td>
-          <td>${statusBadge(status)}</td>
+          <td>${statusBadge(status, s.auto_renew)}</td>
           <td><div class="flex-gap">
             <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editSubscription(${s.subscription_id})"><i data-lucide="pencil"></i></button>
             <button class="btn btn-xs btn-red"     onclick="event.stopPropagation();deleteSubPrompt(${s.subscription_id})"><i data-lucide="trash-2"></i></button>
@@ -668,7 +678,7 @@ async function dpSubscriptions(id) {
     const status = s.computed_status;
     setDPHeader('🔐', '#fdf4ff', s.subscription_name || '—', s.category || '—');
     const html = `
-      <div class="dp-status-row">${statusBadge(status)}<span class="dp-status-label">Subscription status</span></div>
+      <div class="dp-status-row">${statusBadge(status, s.auto_renew)}<span class="dp-status-label">Subscription status</span></div>
       <div class="dp-section">
         <div class="dp-section-hd">📋 Details</div>
         <div class="dp-grid">
@@ -684,7 +694,8 @@ async function dpSubscriptions(id) {
         <div class="dp-section-hd">📅 Renewal</div>
         <div class="dp-grid">
           ${dpField('Renewal Date', fmtDate(s.renewal_date))}
-          ${s.billing_cycle !== 'one-time' ? dpField('Next Renewal', fmtDate(s.next_renewal_date)) : ''}
+          ${s.billing_cycle !== 'one-time' && !s.auto_renew ? dpField('Next Renewal', fmtDate(s.next_renewal_date)) : ''}
+          ${s.auto_renew ? dpField('Auto-Renew', '<span class="badge b-blue">🔁 Enabled</span>') : ''}
           ${s.renewal_alert_active ? dpField('Alert', '<span class="badge b-amber">⚠️ Renewal window (within 3 days)</span>') : ''}
         </div>
       </div>
