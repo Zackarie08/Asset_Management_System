@@ -988,14 +988,40 @@ function _esc(str) {
 /* ──────────────────────────────────────────────────────────
    EXPORT CSV
 ────────────────────────────────────────────────────────── */
+// ✅ FIX: previously scraped #uni-tbody's rendered <tr> rows directly —
+// since the table is paginated (20/page), this only ever exported
+// whatever page happened to be on screen, even though the dropdown/search
+// filters themselves were applied correctly. Now builds the CSV straight
+// from _uniAllRows (the full filtered dataset _renderUniTable() also
+// pulls from) with the search query re-applied, same as the table does —
+// but with NO pagination slice, so every filtered row is included
+// regardless of count.
 function exportUnifiedSubscriptions() {
-  const rows = document.querySelectorAll('#uni-tbody tr');
+  let rows = _uniAllRows;
+  if (uniSearchQuery) {
+    rows = rows.filter(r =>
+      r.name.toLowerCase().includes(uniSearchQuery) ||
+      r.assignedTo.toLowerCase().includes(uniSearchQuery) ||
+      r.supplier.toLowerCase().includes(uniSearchQuery) ||
+      r.category.toLowerCase().includes(uniSearchQuery) ||
+      (r.searchExtra && r.searchExtra.toLowerCase().includes(uniSearchQuery))
+    );
+  }
+
   if (!rows.length) { showToast('No data to export', 't-error'); return; }
 
   const headers = ['Source','Name','Assigned To','Supplier','Cost','Expiry','Status'];
   const csvRows = [headers.join(',')];
-  rows.forEach(tr => {
-    const cells = [...tr.querySelectorAll('td')].map(td => `"${td.innerText.trim().replace(/"/g,'""')}"`);
+  rows.forEach(r => {
+    const cells = [
+      r.source,
+      r.name,
+      r.assignedTo,
+      r.supplier,
+      fmtCost(r.cost),
+      fmtDate(r.expiry),
+      r.status || '—',
+    ].map(v => `"${String(v ?? '—').replace(/"/g,'""')}"`);
     csvRows.push(cells.join(','));
   });
 
