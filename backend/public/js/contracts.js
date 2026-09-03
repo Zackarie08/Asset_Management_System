@@ -389,7 +389,7 @@ async function renderContractActions(c) {
              <button class="btn btn-red btn-sm" onclick="denyRequest(${currentReq.request_id})"><i data-lucide="x"></i> Deny</button>`
           : `<span class="td-muted" style="font-size:12px"><i data-lucide="clock"></i> Pending — only a Super Admin can approve/deny</span>`;
       }
-      if (c.status === "WITH_EMPLOYEE" && currentReq) {
+      if (c.status === "WITH_EMPLOYEE" && currentReq && isSuperAdminUser()) {
         buttons += `<button class="btn btn-outline btn-sm" onclick="returnContract(${currentReq.request_id})"><i data-lucide="rotate-ccw"></i> Mark as Returned</button>`;
       }
       buttons += `<button class="btn btn-primary btn-sm" onclick="editContract(${c.contract_id})"><i data-lucide="pencil"></i> Edit</button>`;
