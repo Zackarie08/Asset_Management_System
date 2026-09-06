@@ -185,7 +185,14 @@ function badge(text, cls) { return `<span class="badge ${cls}">${text}</span>`; 
 /* ── SHARED BORROW REQUEST UI (IT Supplies + Event Supplies) ─────────
    Same request → approve/deny → borrowed → return pattern as Wine and
    Contracts. Shared here so both modules stay in sync. ──────────── */
-function buildBorrowRequestsHTML(module, records, isAdmin) {
+// ✅ CHANGED — added `recordName` param (needed by the Return button so
+// openReturnItem() can show which item is being returned) and full
+// partial-return support: shows "X of Y returned" progress, a sub-list of
+// every individual partial-return event, and a Return button that always
+// opens with the CURRENT remaining amount — never the original full
+// quantity — so an admin can return 5 of 10, then later return the other
+// 5, or any split in between, until the record is fully returned.
+function buildBorrowRequestsHTML(module, records, isAdmin, recordName = '') {
   const pending = records.filter(b => b.status === 'PENDING');
   const active  = records.filter(b => b.status === 'BORROWED');
   const history = records.filter(b => b.status === 'DENIED' || b.status === 'RETURNED');
@@ -203,14 +210,35 @@ function buildBorrowRequestsHTML(module, records, isAdmin) {
       DENIED:   ['<i data-lucide="x"></i> Denied', 'repair'],
     }[b.status] || [b.status, 'good'];
 
-    // ✅ NEW — shows the ACTUAL logged-in user who submitted the borrow/
-    // return, alongside the typed name, whenever they differ (e.g. an
-    // admin submitting a borrow request on behalf of someone else).
     const submitterLine = (b.submitted_by_name && b.submitted_by_name !== b.borrowed_by_name)
       ? `<div class="mh-remarks"><i data-lucide="user-check"></i> Submitted by ${b.submitted_by_name}</div>`
       : '';
-    const processedLine = (b.status === 'RETURNED' && b.processed_return_by_name && b.processed_return_by_name !== b.returned_by_name)
-      ? `<div class="mh-remarks"><i data-lucide="user-check"></i> Processed by ${b.processed_return_by_name}</div>`
+
+    // ✅ NEW — partial return tracking
+    const returnedQty  = b.returned_quantity || 0;
+    const remainingQty = b.quantity - returnedQty;
+    const returnLogs   = b.return_logs || [];
+
+    let returnProgressLine = '';
+    // Only show the progress line when there's actual partial-return data
+    // to report — legacy fully-RETURNED rows from before this feature
+    // have no return_logs and returned_quantity=0, so they fall back to
+    // the plain "Returned" status above with no confusing "0 of Y" line.
+    if (b.status === 'BORROWED' || returnLogs.length > 0) {
+      returnProgressLine = `<div class="mh-remarks"><i data-lucide="package-check"></i> Returned ${returnedQty} of ${b.quantity} unit(s)${b.status === 'BORROWED' ? ` — ${remainingQty} still out` : ''}</div>`;
+    }
+
+    const returnLogsHTML = returnLogs.length
+      ? `<div style="margin-top:6px;padding-left:10px;border-left:2px solid var(--slate-200)">
+          ${returnLogs.map(rl => `
+            <div class="mh-remarks" style="margin-top:2px">
+              <i data-lucide="corner-up-left"></i> ${rl.quantity} unit(s) returned by ${rl.returned_by_name} · ${formatDateHuman(rl.return_date)}${rl.remarks ? ` — ${rl.remarks}` : ''}
+            </div>`).join('')}
+        </div>`
+      : '';
+
+    const returnBtn = (isAdmin && b.status === 'BORROWED')
+      ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '${recordName}', ${remainingQty})"><i data-lucide="check"></i> Return</button>`
       : '';
 
     return `
@@ -221,8 +249,8 @@ function buildBorrowRequestsHTML(module, records, isAdmin) {
           <div class="mh-date">${b.borrowed_by_name} · ${formatDateHuman(b.borrow_date)}</div>
           ${submitterLine}
           ${b.borrow_remarks ? `<div class="mh-remarks"><i data-lucide="sticky-note"></i> ${b.borrow_remarks}</div>` : ''}
-          ${b.status === 'RETURNED' ? `<div class="mh-remarks"><i data-lucide="corner-up-left"></i> Returned by ${b.returned_by_name} · ${formatDateHuman(b.return_date)}</div>` : ''}
-          ${processedLine}
+          ${returnProgressLine}
+          ${returnLogsHTML}
           ${b.status === 'DENIED' ? `<div class="mh-remarks"><i data-lucide="x"></i> Denied by ${b.denied_by_name || '—'}</div>` : ''}
         </div>
         ${isAdmin && b.status === 'PENDING' ? `
@@ -230,7 +258,7 @@ function buildBorrowRequestsHTML(module, records, isAdmin) {
             <button class="btn btn-xs btn-green" onclick="approveBorrowRequest(${b.borrow_id},'${module}')"><i data-lucide="check"></i></button>
             <button class="btn btn-xs btn-red" onclick="denyBorrowRequest(${b.borrow_id},'${module}')"><i data-lucide="x"></i></button>
           </div>` : ''}
-        ${isAdmin && b.status === 'BORROWED' ? `<button class="btn btn-xs btn-green" onclick="openReturnItem(${b.borrow_id}, '')"><i data-lucide="check"></i> Mark Returned</button>` : ''}
+        ${returnBtn}
       </li>`;
   };
 
@@ -250,13 +278,17 @@ async function renderBorrowSection(module, recordId, recordName, currentQty, isA
     records = await res.json();
   } catch { /* ignore */ }
 
-  const pendingCount  = records.filter(b => b.status === 'PENDING').length;
-  const outCount      = records.filter(b => b.status === 'BORROWED').length;
+  const pendingCount = records.filter(b => b.status === 'PENDING').length;
+  // ✅ CHANGED — total UNITS still physically out (borrowed minus whatever
+  // has already been partially returned), not just a count of BORROWED rows.
+  const outUnits = records
+    .filter(b => b.status === 'BORROWED')
+    .reduce((s, b) => s + (b.quantity - (b.returned_quantity || 0)), 0);
   const pendingQty    = records.filter(b => b.status === 'PENDING').reduce((s, b) => s + (b.quantity || 0), 0);
   const trueAvailable = Math.max((currentQty || 0) - pendingQty, 0);
   const safeName      = String(recordName || '').replace(/'/g, "\\'");
 
-  const listHTML = buildBorrowRequestsHTML(module, records, isAdmin);
+  const listHTML = buildBorrowRequestsHTML(module, records, isAdmin, safeName);
 
   return {
     borrowButtonHTML: `<button class="btn btn-amber btn-sm" onclick="openBorrowItem(${recordId},'${safeName}','${module}',${trueAvailable})"><i data-lucide="send"></i> Request Borrow</button>`,
@@ -264,7 +296,7 @@ async function renderBorrowSection(module, recordId, recordName, currentQty, isA
       <div class="dp-section">
         <div class="dp-section-hd"><i data-lucide="package-minus"></i> Borrow / Return
           ${pendingCount ? `<span class="badge b-amber" style="margin-left:6px">${pendingCount} pending</span>` : ''}
-          ${outCount ? `<span class="badge b-blue" style="margin-left:6px">${outCount} out</span>` : ''}
+          ${outUnits ? `<span class="badge b-blue" style="margin-left:6px">${outUnits} unit(s) out</span>` : ''}
         </div>
         ${listHTML}
       </div>`,

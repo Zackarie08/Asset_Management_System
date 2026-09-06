@@ -768,19 +768,24 @@ function confirmReturnItem() {
   const returned_by = document.getElementById('return-by').value.trim();
   const return_date = document.getElementById('return-date').value;
   const remarks = document.getElementById('return-remarks').value;
+  const quantity = parseInt(document.getElementById('return-qty').value);
 
   if (!selectState['return-by'] || !returned_by) { showToast('Select a valid user', 't-error'); return; }
+
+  // ✅ NEW — client-side guard mirrors the server-side check
+  if (!quantity || quantity <= 0) { showToast('Enter a valid quantity', 't-error'); return; }
+  if (quantity > _returnMaxQty) { showToast(`Cannot return more than remaining (${_returnMaxQty})`, 't-error'); return; }
 
   fetch(`${API_URL}/api/borrow-return/return`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ borrow_id: _returnBorrowId, returned_by, user_id: currentUser.user_id, remarks, return_date }),
+    body: JSON.stringify({ borrow_id: _returnBorrowId, quantity, returned_by, user_id: currentUser.user_id, remarks, return_date }),
   })
     .then(res => { if (!res.ok) return res.json().then(e => { throw new Error(e.error); }); return res.json(); })
-    .then(() => {
-      showToast('Item returned', 't-success');
-      // ✅ FIX (Part 2): returner now goes into Performed By.
-      addLog('UPDATE', 'INVENTORY', `Returned ${_returnItemName}`, _returnBorrowId, returned_by);
+    .then((data) => {
+      // ✅ CHANGED — message now reflects partial vs. full return
+      showToast(data.fully_returned ? 'Item fully returned' : `${quantity} unit(s) returned — ${data.remaining} still out`, 't-success');
+      addLog('UPDATE', 'INVENTORY', `Returned ${quantity} unit(s) of ${_returnItemName}`, _returnBorrowId, returned_by);
       closeM('m-return-item');
       if (dpOpen && dpCurrentType === 'inventory') dpInventory(dpCurrentId);
       if (dpOpen && dpCurrentType === 'itsupplies') dpITSupplies(dpCurrentId);
@@ -788,9 +793,6 @@ function confirmReturnItem() {
       if (typeof renderITSupplies === 'function') renderITSupplies();
     })
     .catch(err => {
-      // ✅ Part 3: surfaces the new 403 ("Only Admin or Super Admin can
-      // process returns") from the backend permission check instead of a
-      // generic failure message.
       showToast(err.message || 'Failed to return item', 't-error');
     });
 }
@@ -846,10 +848,21 @@ function openBorrowItem(recordId, itemName, module, available) {
 
 let _returnBorrowId = null;
 let _returnItemName = null;
+let _returnMaxQty   = null;
 
-function openReturnItem(borrowId, itemName) {
+// ✅ CHANGED — now accepts remainingQty (the amount still outstanding on
+// this borrow record), so partial returns are possible: an admin can
+// return fewer units than the full amount, and this same modal is used
+// again later for the leftover, with remainingQty always reflecting
+// whatever's still out at that time.
+function openReturnItem(borrowId, itemName, remainingQty) {
   _returnBorrowId = borrowId;
   _returnItemName = itemName || 'item';
+  _returnMaxQty   = remainingQty || 1;
+  document.getElementById('return-item-name').textContent = _returnItemName;
+  document.getElementById('return-remaining').textContent = `Remaining to return: ${_returnMaxQty}`;
+  document.getElementById('return-qty').value = _returnMaxQty; // defaults to returning everything left
+  document.getElementById('return-qty').max   = _returnMaxQty;
   document.getElementById('return-date').value = todayStr();
   document.getElementById('return-by').value = '';
   selectState['return-by'] = false;

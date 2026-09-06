@@ -72,6 +72,9 @@ router.get("/open/:module", async (req, res) => {
 });
 
 // GET /api/borrow-return/:module/:record_id — full borrow ledger for ONE item
+// ✅ CHANGED — now aggregates each borrow row's individual partial-return
+// events (borrow_return_log) into a return_logs array, so the frontend
+// can show "5 of 10 returned" progress plus a per-event history line.
 router.get("/:module/:record_id", async (req, res) => {
   try {
     const { module, record_id } = req.params;
@@ -80,11 +83,23 @@ router.get("/:module/:record_id", async (req, res) => {
     const result = await pool.query(
       `SELECT br.*,
               ub.name AS submitted_by_name,
-              ur.name AS processed_return_by_name
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'return_log_id', rl.return_log_id,
+                    'quantity', rl.quantity,
+                    'returned_by_name', rl.returned_by_name,
+                    'return_date', rl.return_date,
+                    'remarks', rl.remarks
+                  ) ORDER BY rl.created_at ASC
+                ) FILTER (WHERE rl.return_log_id IS NOT NULL),
+                '[]'
+              ) AS return_logs
        FROM borrow_records br
        LEFT JOIN users ub ON br.borrowed_by_id = ub.user_id
-       LEFT JOIN users ur ON br.returned_by_id = ur.user_id
+       LEFT JOIN borrow_return_log rl ON rl.borrow_id = br.borrow_id
        WHERE br.module=$1 AND br.record_id=$2
+       GROUP BY br.borrow_id, ub.name
        ORDER BY br.borrow_date DESC`,
       [module, record_id]
     );
@@ -268,12 +283,17 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// POST /api/borrow-return/return — Admin or Super Admin, finalizes a
-// BORROWED record (unchanged role gate from before — still admin-only).
-// Body: { borrow_id, returned_by, user_id, remarks, return_date }
+// POST /api/borrow-return/return — Admin or Super Admin.
+// ✅ CHANGED — supports PARTIAL returns now. Body now requires `quantity`:
+// the amount being returned THIS time (can be less than the full borrowed
+// amount). Each call is logged individually in borrow_return_log; the
+// parent borrow_records row accumulates returned_quantity and only flips
+// to status='RETURNED' once fully returned. Until then it stays 'BORROWED'
+// with the outstanding remainder still trackable for a future return.
+// Body: { borrow_id, quantity, returned_by, user_id, remarks, return_date }
 router.post("/return", async (req, res) => {
   try {
-    const { borrow_id, returned_by, user_id, remarks, return_date } = req.body;
+    const { borrow_id, quantity, returned_by, user_id, remarks, return_date } = req.body;
 
     if (!returned_by || !returned_by.trim()) {
       return res.status(400).json({ error: "Returned By is required" });
@@ -286,32 +306,57 @@ router.post("/return", async (req, res) => {
     const rec = br.rows[0];
     if (rec.status !== "BORROWED") return res.status(400).json({ error: `Cannot return a ${rec.status} record` });
 
+    const alreadyReturned = rec.returned_quantity || 0;
+    const remaining       = rec.quantity - alreadyReturned;
+    const qty              = parseInt(quantity);
+
+    if (!qty || qty <= 0) return res.status(400).json({ error: "Invalid return quantity" });
+    if (qty > remaining) return res.status(400).json({ error: `Cannot return more than remaining (${remaining})` });
+
     const cfg = TABLE_MAP[rec.module];
     if (!cfg) return res.status(400).json({ error: "Invalid module on record" });
 
     await pool.query(
       `UPDATE ${cfg.table} SET ${cfg.qtyCol} = ${cfg.qtyCol} + $1 WHERE ${cfg.idCol}=$2`,
-      [rec.quantity, rec.record_id]
+      [qty, rec.record_id]
     );
+
+    const newReturnedQty   = alreadyReturned + qty;
+    const isFullyReturned  = newReturnedQty >= rec.quantity;
+    const effectiveDate    = return_date || new Date().toISOString().slice(0, 10);
 
     await pool.query(
       `UPDATE borrow_records SET
-        status='RETURNED', returned_by_id=$1, returned_by_name=$2,
-        return_date=$3, return_remarks=$4
-       WHERE borrow_id=$5`,
-      [user_id || null, returned_by.trim(), return_date || new Date().toISOString().slice(0, 10), remarks || null, borrow_id]
+        returned_quantity=$1,
+        status=$2,
+        returned_by_id=$3, returned_by_name=$4,
+        return_date=$5, return_remarks=$6
+       WHERE borrow_id=$7`,
+      [
+        newReturnedQty,
+        isFullyReturned ? 'RETURNED' : 'BORROWED',
+        user_id || null, returned_by.trim(),
+        effectiveDate, remarks || null,
+        borrow_id,
+      ]
+    );
+
+    await pool.query(
+      `INSERT INTO borrow_return_log (borrow_id, quantity, returned_by_id, returned_by_name, return_date, remarks)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [borrow_id, qty, user_id || null, returned_by.trim(), effectiveDate, remarks || null]
     );
 
     await logItemHistory({
       module: rec.module, record_id: rec.record_id,
       action: "RETURNED",
-      new_value: `${rec.quantity} unit(s)`,
-      remarks: `Returned by ${returned_by.trim()}${remarks ? " — " + remarks : ""} (originally borrowed by ${rec.borrowed_by_name})`,
+      new_value: `${qty} unit(s)`,
+      remarks: `Returned ${qty} of ${rec.quantity} unit(s) by ${returned_by.trim()}${remarks ? " — " + remarks : ""} (originally borrowed by ${rec.borrowed_by_name})${isFullyReturned ? '' : ` — ${rec.quantity - newReturnedQty} still outstanding`}`,
       performed_by_id: user_id || null,
       performed_by_name: returned_by.trim(),
     });
 
-    res.json({ success: true });
+    res.json({ success: true, returned_quantity: newReturnedQty, remaining: rec.quantity - newReturnedQty, fully_returned: isFullyReturned });
   } catch (err) {
     console.error("BorrowReturn POST /return", err);
     res.status(500).json({ error: "Failed to record return" });
